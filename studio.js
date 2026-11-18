@@ -9,6 +9,7 @@ const programLibrary = get("program-library");
 let render;
 let animation = 0;
 let compiling = false;
+let playingPreview = false;
 
 function hook(id, fn, status = programStatus) {
   get(id).onclick = async () => {
@@ -42,6 +43,7 @@ function drawPose(pose, joint) {
 
 function resetPreview() {
   animation++;
+  playingPreview = false;
   get("stop-preview").disabled = true;
   drawPose({});
   updateControls();
@@ -60,23 +62,26 @@ code.onkeydown = event => {
   code.dispatchEvent(new Event("input"));
 };
 
-function animate(route) {
+function animate(route, start = {}, onComplete = () => {}) {
   const generation = animation;
-  const pose = {};
+  const pose = {...start};
+  playingPreview = true;
   drawPose(pose);
   get("stop-preview").disabled = false;
   function next(index) {
     if (generation !== animation) return;
     if (index === route.steps.length) {
+      playingPreview = false;
       drawPose(pose);
       get("stop-preview").disabled = true;
       previewStatus.textContent = "Preview complete.";
       updateControls();
+      onComplete();
       return;
     }
     const {joint, [field(route.steps[index].joint)]: target} = route.steps[index];
     const isGripper = joint === "gripper";
-    const end = target;
+    const end = isGripper ? target : (start[joint] ?? 0) + target;
     const from = pose[joint] ?? (isGripper ? GRIP_HOME : 0);
     const duration = Math.max(550, Math.min(2700, Math.abs(end - from) * 85));
     let started;
@@ -103,13 +108,14 @@ hook("preview", async () => {
   const version = animation;
   try {
     programStatus.textContent = "Checking the Python route…";
-    const route = await hostedPython.compile(code.value);
+    const source = code.value;
+    const {route, start, ready} = await pageArm.preview(source);
     if (version !== animation) return;
     programStatus.textContent = `Validated ${route.steps.length} moves.`;
-    animate(route);
+    animate(route, start, ready);
   } finally {
     compiling = false;
-    updateControls();
+    pageArm.refresh();
   }
 });
 hook("stop-preview", () => {

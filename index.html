@@ -25,6 +25,20 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 <main id="studio">
 <header><h1>SO-101 Web Studio</h1><p id="connection" class="status" role="status">Browser simulator</p></header>
 <nav aria-label="Workspace"><a href="route-lab.html">Open 3D Route Lab</a><span aria-hidden="true">·</span><a href="codebook.html">Python Codebook</a></nav>
+<details class="panel" style="margin-bottom:16px">
+  <summary>Connect a real SO-101</summary>
+  <p>On the computer plugged into the arm, open the local bridge in Chrome or Edge and enter the pairing code from its terminal. <a href="SO101-Studio-Bridge.zip">Download the local bridge</a></p>
+  <form id="bridge-form" class="actions">
+    <label for="bridge-code">Pairing code</label><input id="bridge-code" type="password" required autocomplete="off" spellcheck="false">
+    <button id="pair-bridge" type="submit">Connect bridge</button>
+  </form>
+  <div id="arm-controls" class="actions" hidden>
+    <label for="arm-profile">Follower</label><select id="arm-profile"><option>A</option><option>B</option></select>
+    <button id="init-arm">Initialize arm</button><button id="disconnect-arm">Disconnect arm</button>
+    <button id="return-rest">Return to saved rest</button>
+  </div>
+  <p id="bridge-status" class="status" role="status"></p>
+</details>
 <div id="program" class="grid">
   <section class="panel">
     <h2><label for="code">Python editor</label></h2>
@@ -55,7 +69,16 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
     <canvas id="viewer" width="720" height="540" tabindex="0" aria-label="SO-101 arm model. Drag or use arrow keys to orbit."></canvas>
     <p id="active-motor" role="status" hidden></p>
     <p id="preview-status" class="status" role="status">Run your Python program to preview the route.</p>
-    <p>The simulation starts from a reference pose. Use the local Web Studio to connect a physical arm.</p>
+    <p id="preview-help">The simulation starts from a reference pose. Connect the local bridge to use live joint readings.</p>
+    <p id="live-pose" class="status" role="status" hidden></p>
+    <section id="arm-replay" hidden>
+      <div class="actions"><button id="prepare-arm" disabled>Prepare arm replay</button>
+      <button id="run-arm-step" class="primary" disabled>Review and move</button>
+      <button id="stop-arm" class="stop" disabled>Stop sending movement</button>
+      <button id="discard-arm" disabled>Discard remaining steps</button></div>
+      <p id="arm-result" class="status" role="status"></p>
+      <p id="arm-step" class="status"></p>
+    </section>
   </section>
 </div>
 <dialog id="confirm-dialog" aria-labelledby="confirm-title">
@@ -71,4 +94,5 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 <script src="so101-route-lab.js"></script>
 <script src="pages-compiler.js"></script>
 <script src="studio.js"></script>
+<script src="pages-arm.js"></script>
 </html>
