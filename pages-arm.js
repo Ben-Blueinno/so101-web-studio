@@ -12,7 +12,8 @@ const hostedArm = (() => {
     if (previous) stored = JSON.parse(previous);
   } catch { /* A new profile can still be used for this session. */ }
 
-  let code, follower, preview, replay, offer, scan, selectedUSB, busy = false;
+  let code, follower, preview, replay, offer, scan, selectedUSB, calibrationSession, busy = false;
+  let calibrationStatus = {phase: "idle", message: "", sample: ""}, calibrationRead;
 
   function save() {
     localStorage.setItem(storageKey, JSON.stringify(stored));
@@ -49,6 +50,12 @@ const hostedArm = (() => {
     }
   }
 
+  function portFor(label) {
+    const port = selectedUSB?.label === label ? selectedUSB.port : undefined;
+    selectedUSB = undefined;
+    return port && port.connected !== false ? port : chooseUSB();
+  }
+
   function restKey(arm) {
     return JSON.stringify([arm.label, stored.profiles[arm.label].id, arm.calibration]);
   }
@@ -77,13 +84,11 @@ const hostedArm = (() => {
   }
 
   async function connectUSB(label) {
-    if (code || follower || busy) throw new Error("Disconnect the active arm first.");
+    if (code || follower || busy || calibrationSession) throw new Error("Finish calibration or disconnect the active arm first.");
     busy = true;
     let bus;
     try {
-      const port = selectedUSB?.label === label ? selectedUSB.port : undefined;
-      selectedUSB = undefined;
-      bus = await ServoSerial.open(port && port.connected !== false ? port : await chooseUSB());
+      bus = await ServoSerial.open(await portFor(label));
       const calibration = await bus.calibration();
       const profile = stored.profiles[label];
       if (profile.calibration_file &&
@@ -170,12 +175,139 @@ const hostedArm = (() => {
     return arm.units(joint, arm.initial[joint]) + sign * step.offset_deg;
   }
 
+  function positionsWithOffsets(pose, before, offsets) {
+    return Object.fromEntries(SERIAL_JOINTS.map(joint => [
+      joint, (pose[joint] + before[joint].homing_offset - offsets[joint] + 4096) % 4096,
+    ]));
+  }
+
+  async function closeCalibration(phase, message) {
+    const session = calibrationSession;
+    calibrationSession = undefined;
+    await session?.bus.close().catch(() => {});
+    return calibrationStatus = {phase, message, sample: ""};
+  }
+
+  async function sampleCalibration() {
+    const {bus, before, offsets, lows, highs, last} = calibrationSession;
+    const pose = positionsWithOffsets(await bus.positions(), before, offsets);
+    for (const joint of SERIAL_JOINTS) {
+      if (joint === "wrist_roll") continue;
+      if (Math.abs(last[joint] - pose[joint]) > 2048) {
+        throw new Error(`${JOINTS[joint]} crossed the encoder boundary. Start again with the joint nearer the middle of its travel.`);
+      }
+      lows[joint] = Math.min(lows[joint], pose[joint]);
+      highs[joint] = Math.max(highs[joint], pose[joint]);
+      last[joint] = pose[joint];
+    }
+    calibrationStatus.sample = SERIAL_JOINTS.filter(joint => joint !== "wrist_roll")
+      .map(joint => `${JOINTS[joint]}  ${lows[joint]} – ${highs[joint]}`).join("\n");
+  }
+
+  async function calibrateUSB(action, data) {
+    if (action === "cal-status") {
+      if (calibrationStatus.phase === "range") {
+        try { await sampleCalibration(); }
+        catch (error) { return closeCalibration("error", error.message); }
+      }
+      return calibrationStatus;
+    }
+    if (action === "cal-start" || action === "cal-apply") {
+      if (!data.confirmed || follower || calibrationSession || !stored.profiles[data.label]) {
+        throw new Error("Disconnect the arm, choose its follower, and confirm that it is supported.");
+      }
+      let wanted;
+      if (action === "cal-apply") {
+        const name = stored.profiles[data.label].calibration_file;
+        if (!name) throw new Error("In Settings, import or select a calibration, choose Use for profile, then Save profile.");
+        const saved = validateCalibration(getCalibration(name));
+        wanted = Object.fromEntries(SERIAL_JOINTS.map(joint => {
+          const {drive_mode, ...motor} = saved[joint];
+          if (drive_mode !== 0 || motor.range_max - motor.range_min < 20 ||
+              (joint !== "wrist_roll" && motor.range_min === 0 && motor.range_max === 4095)) {
+            throw new Error(`${JOINTS[joint]} needs a valid SO-101 position calibration.`);
+          }
+          return [joint, {...motor, mode: 0}];
+        }));
+      }
+      const bus = await ServoSerial.open(await portFor(data.label));
+      try {
+        const before = await bus.calibrationRegisters();
+        if (wanted) {
+          await bus.writeCalibration(wanted, before);
+          return {message: "Saved calibration restored and verified on all six motors. Connect by USB to use it."};
+        }
+        if (SERIAL_JOINTS.some(joint => before[joint].mode !== 0)) {
+          throw new Error("The motors must already be in position mode to capture ranges. Restore a saved SO-101 calibration first.");
+        }
+        await bus.setCalibrationControl(SERIAL_REG.torque, 0);
+        calibrationSession = {bus, before, label: data.label};
+        return calibrationStatus = {phase: "midpoint", message: "Support the arm. Put all six joints near the middle of their usable travel, then select Capture midpoint.", sample: ""};
+      } finally {
+        if (!calibrationSession) await bus.close();
+      }
+    }
+    if (!calibrationSession) throw new Error("Start USB calibration first.");
+    if (action === "cal-cancel") return closeCalibration("idle", "Calibration cancelled. Motor torque remains off.");
+    const session = calibrationSession;
+    if (calibrationStatus.phase === "midpoint") {
+      const zeros = Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, 0]));
+      let actual;
+      try { actual = positionsWithOffsets(await session.bus.positions(), session.before, zeros); }
+      catch (error) { return closeCalibration("error", error.message); }
+      const offsets = Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, actual[joint] - 2047]));
+      if (SERIAL_JOINTS.some(joint => offsets[joint] > 2047)) {
+        calibrationStatus.message = "A joint is at the encoder boundary. Shift slightly and capture the midpoint again.";
+        return calibrationStatus;
+      }
+      const midpoints = Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, 2047]));
+      Object.assign(session, {offsets, lows: {...midpoints}, highs: {...midpoints}, last: midpoints});
+      return calibrationStatus = {phase: "range",
+        message: "Gently sweep each joint through its usable travel by hand. Skip wrist roll. Return the arm to a supported pose and select Save range.",
+        sample: ""};
+    }
+    if (calibrationStatus.phase !== "range") throw new Error("Wait for the calibration reading.");
+    try { await sampleCalibration(); }
+    catch (error) { return closeCalibration("error", error.message); }
+    const incomplete = SERIAL_JOINTS.filter(joint => joint !== "wrist_roll" &&
+      (session.lows[joint] >= 2047 || session.highs[joint] <= 2047 ||
+       session.highs[joint] - session.lows[joint] < 20));
+    if (incomplete.length) {
+      calibrationStatus.message = "Sweep both sides of the midpoint before saving: " + incomplete.map(joint => JOINTS[joint]).join(", ") + ".";
+      return calibrationStatus;
+    }
+    const registers = Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, {
+      id: SERVO_ID[joint], mode: 0, homing_offset: session.offsets[joint],
+      range_min: joint === "wrist_roll" ? 0 : session.lows[joint],
+      range_max: joint === "wrist_roll" ? 4095 : session.highs[joint],
+    }]));
+    try {
+      const name = `follower-${session.label}-usb-${Date.now()}.json`;
+      const saved = Object.fromEntries(SERIAL_JOINTS.map(joint => {
+        const {id, homing_offset, range_min, range_max} = registers[joint];
+        return [joint, {id, drive_mode: 0, homing_offset, range_min, range_max}];
+      }));
+      // Keep a browser copy even if the cable is unplugged during the write.
+      stored.files[name] = saved;
+      save();
+      await session.bus.writeCalibration(registers, session.before);
+      stored.profiles[session.label].calibration_file = name;
+      save();
+      return closeCalibration("done", "Calibration saved and verified on all six motors. Connect by USB to use it.");
+    } catch (error) {
+      return closeCalibration("error", error.message);
+    }
+  }
+
   async function dispatch(action, data) {
     if (action === "settings") return settings();
     if (action === "compile") return compile(data);
     if (action === "export-lerobot") return {code: await hostedPython.exportFunction(data.source)};
     if (action === "cal-view") return {text: JSON.stringify(getCalibration(data.name), null, 2)};
-    if (action === "cal-status") return {phase: "idle"};
+    if (["cal-start", "cal-apply", "cal-status", "cal-next", "cal-cancel"].includes(action)) {
+      return calibrateUSB(action, data);
+    }
+    if (calibrationSession && action !== "cal-view") throw new Error("Finish or cancel USB calibration first.");
     if (action === "scan-usb") {
       if (follower) throw new Error("Disconnect the active arm before selecting another USB port.");
       selectedUSB = undefined;
@@ -327,13 +459,20 @@ const hostedArm = (() => {
         scan = undefined;
       }
     }
+    if (action === "cal-status" && busy) return calibrationStatus;
+    if (calibrationRead && ["cal-next", "cal-cancel"].includes(action)) await calibrationRead;
     if (busy) throw new Error("The USB connection is busy. Try again.");
     busy = true;
     try {
       if (scan) await scan.catch(() => {});
-      return await dispatch(action, data);
+      const operation = dispatch(action, data);
+      if (action === "cal-status") calibrationRead = operation;
+      return await operation;
     }
-    finally { busy = false; }
+    finally {
+      if (action === "cal-status") calibrationRead = undefined;
+      busy = false;
+    }
   }
 
   return {

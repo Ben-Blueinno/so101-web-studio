@@ -1,20 +1,32 @@
 WEBVTT
 
-00:00:00.000 --> 00:00:04.400
-Open Start here to follow the setup guide.
+00:00:00.000 --> 00:00:04.000
+Start here explains each step and gives you
+a 3D example you can play without an arm.
 
-00:00:04.400 --> 00:00:09.000
-Select Play example to see wrist roll
-and the gripper move together in 3D.
+00:00:04.000 --> 00:00:10.000
+USB connection. Choose your follower and Scan ports.
+For a calibrated arm, select Connect by USB.
 
-00:00:09.000 --> 00:00:13.400
-Open Python & 3D to edit a route.
-One send_action call can move several joints.
+00:00:10.000 --> 00:00:13.500
+Calibration. Choose Calibrate new to capture
+the midpoint and usable range by hand.
 
-00:00:13.400 --> 00:00:19.400
-Select Preview in 3D.
-Gold highlights show which motors are moving.
+00:00:13.500 --> 00:00:16.500
+To reuse the same arm’s file, assign it in Settings,
+then choose Restore saved calibration.
 
-00:00:19.400 --> 00:00:23.700
-For a calibrated arm, open Arm setup and choose
-Connect by USB. Then read the current pose.
+00:00:16.500 --> 00:00:20.000
+Simulation. Write a route in the Python editor.
+
+00:00:20.000 --> 00:00:25.000
+Select Preview in 3D to check the motion.
+Gold highlights show the active motors.
+
+00:00:25.000 --> 00:00:31.300
+Deployment. With a calibrated arm connected, prepare
+the route, review every target, and confirm once.
+
+00:00:31.300 --> 00:00:36.400
+Settings. Manage follower profiles
+and import or save calibration files.

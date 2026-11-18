@@ -4,6 +4,8 @@ const code = get("code");
 const key = "so101-web-studio:programs:v1";
 const programStatus = get("program-status");
 const armStatus = get("arm-status");
+const calStatusMessage = get("cal-status-message");
+const deploymentStatus = get("deployment-status");
 const settingsStatus = get("settings-status");
 const previewStatus = get("preview-status");
 const stepStatus = get("step-status");
@@ -42,19 +44,38 @@ function confirmAction(message) {
   });
 }
 
+const tabs = [...document.querySelectorAll('[role="tab"]')];
 function selectView(view) {
-  for (const button of document.querySelectorAll("[data-view]")) {
-    const current = button.dataset.view === view;
-    get(button.dataset.view).hidden = !current;
-    button.setAttribute("aria-pressed", current);
+  if (moving && !returningToRest && view !== "deployment") return;
+  for (const tab of tabs) {
+    const current = tab.dataset.view === view;
+    get(tab.dataset.view).hidden = !current;
+    tab.setAttribute("aria-selected", current);
+    tab.tabIndex = current ? 0 : -1;
   }
+  if (view === "program" || view === "deployment") get(view).append(get("viewer-panel"));
+  if (view === "calibration") get("cal-follower").textContent = "Follower " + get("arm-profile").value;
   if (view === "program") pythonEditor?.refresh();
   if (view === "getting-started" && get("guide-play").disabled) initGuideDemo();
 }
 
-for (const button of document.querySelectorAll("[data-view]")) {
-  button.onclick = () => selectView(button.dataset.view);
+for (const [index, tab] of tabs.entries()) {
+  tab.onclick = () => selectView(tab.dataset.view);
+  tab.onkeydown = event => {
+    const direction = {ArrowLeft: -1, ArrowRight: 1}[event.key];
+    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1
+      : direction ? (index + direction + tabs.length) % tabs.length : undefined;
+    if (next === undefined) return;
+    event.preventDefault();
+    if (tabs[next].disabled) return;
+    selectView(tabs[next].dataset.view);
+    tabs[next].focus();
+  };
 }
+get("open-deployment").onclick = () => {
+  selectView("deployment");
+  get("tab-deployment").focus();
+};
 
 let guideReady = false;
 function initGuideDemo() {
@@ -88,7 +109,13 @@ function initGuideDemo() {
 }
 
 function updateControls() {
+  for (const tab of tabs) tab.disabled = moving && !returningToRest && tab.dataset.view !== "deployment";
   get("deploy").disabled = !initialized || !previewId || Boolean(currentStep) || moving || actionPending;
+  if (!currentStep && !moving) {
+    deploymentStatus.textContent = !initialized ? "Connect a calibrated arm in USB connection."
+      : !previewId ? "Preview your program in Simulation to prepare a route."
+      : "Preview ready. Prepare deployment to review the joint targets.";
+  }
   get("preview").disabled = !render || compiling || moving || Boolean(currentStep) || actionPending;
   get("move").disabled = moving || !currentStep || get("route-targets").hidden;
   get("stop-motion").disabled = !moving || !currentStep;
@@ -109,14 +136,15 @@ function updateControls() {
   }
   const bridge = hostedArm.mode === "bridge";
   const paired = Boolean(hostedArm.mode);
-  const blocked = paired || actionPending || compiling || simulating;
+  const blocked = paired || calibrating || actionPending || compiling || simulating;
   get("connect-usb").disabled = blocked || !hostedArm.supportsUSB;
   get("pair-bridge").disabled = blocked;
   get("init").disabled ||= !bridge;
   get("cal-read").disabled ||= !paired && !hostedArm.supportsUSB;
-  get("cal-apply").disabled ||= !bridge;
-  get("cal-start").disabled ||= !bridge;
-  get("scan").disabled = actionPending || (!bridge && (!hostedArm.supportsUSB || Boolean(initialized)));
+  get("cal-apply").disabled ||= !bridge && !hostedArm.supportsUSB;
+  get("cal-start").disabled ||= !bridge && !hostedArm.supportsUSB;
+  get("scan").disabled = get("scan-settings").disabled =
+    calibrating || actionPending || (!bridge && (!hostedArm.supportsUSB || Boolean(initialized)));
   get("profile-port").hidden = get("profile-port-label").hidden = !bridge;
 }
 
@@ -215,7 +243,7 @@ function animate(route, id) {
       drawPose(initialized?.model_pose ?? pose);
       previewId = id;
       get("stop-preview").disabled = true;
-      previewStatus.textContent = initialized ? "Preview complete. Prepare deployment to review each move." : "Preview complete.";
+      previewStatus.textContent = initialized ? "Preview complete. Open Deployment to review the route." : "Preview complete.";
       updateControls();
       return;
     }
@@ -302,11 +330,12 @@ hook("deploy", async () => {
   try {
     get("move-result").textContent = "";
     showStep(await api("deploy", {preview_id: previewId}));
+    deploymentStatus.textContent = "Route ready for review.";
   } finally {
     actionPending = false;
     updateControls();
   }
-});
+}, deploymentStatus);
 
 hook("move", async () => {
   if (!currentStep || moving || get("route-targets").hidden) return;
@@ -476,7 +505,7 @@ function connected(arm) {
   initialized = arm;
   get("connection").textContent = arm ? `Follower ${arm.label} initialized` : "Browser simulator";
   if (arm) get("arm-profile").value = arm.label;
-  get("arm-sample").textContent = arm ? Object.entries(arm.pose).map(([name, value]) =>
+  get("pose-sample").textContent = arm ? Object.entries(arm.pose).map(([name, value]) =>
     `${JOINTS[name.replace(".pos", "")]}: ${value.toFixed(2)}${name === "gripper.pos" ? "%" : "°"}`).join("\n") : "";
   updateControls();
 }
@@ -507,7 +536,7 @@ async function pollLivePose() {
   }
   setTimeout(pollLivePose, 300);
 }
-function armAction(id, fn) {
+function armAction(id, fn, status = armStatus) {
   hook(id, async () => {
     actionPending = true;
     updateControls();
@@ -517,7 +546,7 @@ function armAction(id, fn) {
       actionPending = false;
       updateControls();
     }
-  }, armStatus);
+  }, status);
 }
 const armLabel = () => ({label: get("arm-profile").value});
 armAction("init", async () => {
@@ -572,7 +601,7 @@ armAction("disconnect", async () => {
   showStep();
   resetPreview();
   previewStatus.textContent = "Arm disconnected. The 3D model uses its reference pose.";
-  get("arm-sample").textContent = "";
+  get("pose-sample").textContent = "";
   armStatus.textContent = "Arm disconnected.";
   if (!hostedArm.mode) get("bridge-status").textContent = "";
 });
@@ -584,31 +613,31 @@ armAction("cal-read", async () => {
   populateProfile();
   selectView("settings");
   settingsStatus.textContent = "Review the readback, then save it as a calibration copy if desired.";
-});
+}, calStatusMessage);
 armAction("cal-apply", async () => {
-  if (!await confirmAction("Support the arm. Applying calibration releases torque. Proceed?")) return;
-  armStatus.textContent = (await api("cal-apply", {...armLabel(), confirmed: true})).message;
-});
+  if (!await confirmAction("Restore calibration to this same arm from the selected follower profile? Support the arm before continuing because torque will be released.")) return;
+  calStatusMessage.textContent = (await api("cal-apply", {...armLabel(), confirmed: true})).message;
+}, calStatusMessage);
 armAction("cal-start", async () => {
   if (!await confirmAction("Support the arm. Calibration releases torque and requires moving the joints by hand. Proceed?")) return;
   await api("cal-start", {...armLabel(), confirmed: true});
   calibrating = true;
   updateControls();
   pollCalibration();
-});
+}, calStatusMessage);
 hook("cal-next", async () => {
   get("cal-next").disabled = true;
   await api("cal-next");
-}, armStatus);
+}, calStatusMessage);
 hook("cal-cancel", async () => {
   get("cal-cancel").disabled = true;
   await api("cal-cancel");
-}, armStatus);
+}, calStatusMessage);
 
 async function pollCalibration() {
   try {
     const {phase, message, sample} = await api("cal-status");
-    armStatus.textContent = message;
+    calStatusMessage.textContent = message;
     get("arm-sample").textContent = sample;
     calibrating = !["done", "error", "idle"].includes(phase);
     get("cal-controls").hidden = !calibrating;
@@ -616,8 +645,12 @@ async function pollCalibration() {
     get("cal-next").disabled = !["midpoint", "range"].includes(phase);
     get("cal-cancel").disabled = !calibrating;
     updateControls();
+    if (phase === "done" && hostedArm.mode !== "bridge") {
+      showSettings(await api("settings"), calibrationLibrary.value);
+      populateProfile();
+    }
   } catch (error) {
-    armStatus.textContent = error.message;
+    calStatusMessage.textContent = error.message;
   }
   if (calibrating) setTimeout(pollCalibration, 400);
 }
@@ -649,24 +682,25 @@ function showSettings(data, selection = "") {
   for (const name of data.files) calibrationLibrary.add(new Option(name, name));
   calibrationLibrary.value = selection;
 }
-hook("scan", async () => {
+async function scanPorts(status, label) {
   actionPending = true;
   updateControls();
   try {
     if (hostedArm.mode === "bridge") {
       showSettings(await api("settings"), calibrationLibrary.value);
-      settingsStatus.textContent = settings.ports.length ? settings.ports.join(" · ") : "No serial ports found. You can enter a port manually.";
+      status.textContent = settings.ports.length ? settings.ports.join(" · ") : "No serial ports found. You can enter a port manually.";
       return;
     }
-    const label = get("settings-profile").value;
     await api("scan-usb", {label});
     get("arm-profile").value = label;
-    settingsStatus.textContent = `USB port selected for follower ${label}. Open Arm setup and choose Connect by USB.`;
+    status.textContent = `USB port selected for follower ${label}. Choose Connect by USB, or open Calibration for a new arm.`;
   } finally {
     actionPending = false;
     updateControls();
   }
-}, settingsStatus);
+}
+hook("scan", () => scanPorts(armStatus, get("arm-profile").value), armStatus);
+hook("scan-settings", () => scanPorts(settingsStatus, get("settings-profile").value), settingsStatus);
 hook("profile-save", async () => {
   const label = get("settings-profile").value;
   const values = Object.fromEntries(Object.entries(profileFields).map(([f, id]) => [f, get(id).value]));
@@ -736,6 +770,7 @@ async function boot() {
     programStatus.textContent = "Browser storage is unavailable. You can download your program.";
   }
   render = createViewer(get("viewer"), SO101_MODEL);
+  selectView("getting-started");
   pollLivePose();
   if (!hostedArm.supportsUSB) get("usb-help").textContent = "USB connection requires desktop Chrome or Edge and browser permission.";
   if (!hostedArm.supportsUSB) get("settings-scope").textContent = "Open this page in desktop Chrome or Edge to scan for USB serial ports.";

@@ -4,7 +4,8 @@
 const SERIAL_JOINTS = Object.keys(JOINTS);
 const SERVO_ID = Object.fromEntries(SERIAL_JOINTS.map((joint, index) => [joint, index + 1]));
 const TICK_DEGREES = 360 / 4095;
-const SERIAL_REG = Object.freeze({model: 3, limits: 9, offset: 31, mode: 33, torque: 40, goal: 42, position: 56});
+const SERIAL_REG = Object.freeze({model: 3, limits: 9, maxLimit: 11, offset: 31, mode: 33,
+  torque: 40, goal: 42, lock: 55, position: 56});
 const serialDelay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 function servoPacket(id, instruction, args) {
@@ -104,7 +105,7 @@ class ServoSerial {
     await this.port.close();
   }
 
-  async calibration() {
+  async calibrationRegisters() {
     const calibration = {};
     for (const [joint, id] of Object.entries(SERVO_ID)) {
       if (word(await this.read(id, SERIAL_REG.model, 2)) !== 777) {
@@ -113,18 +114,71 @@ class ServoSerial {
       const range = await this.read(id, SERIAL_REG.limits, 4);
       const config = await this.read(id, SERIAL_REG.offset, 3);
       const range_min = word(range), range_max = word(range, 2);
-      if (config[2] !== 0 || range_max > 4095 || range_max - range_min < 20) {
-        throw new Error(`${JOINTS[joint]} needs valid position-mode calibration.`);
-      }
       const offset = word(config);
-      calibration[joint] = {id, drive_mode: 0, homing_offset: (offset & 2048 ? -1 : 1) * (offset & 2047),
+      calibration[joint] = {id, mode: config[2], homing_offset: (offset & 2048 ? -1 : 1) * (offset & 2047),
                             range_min, range_max};
     }
-    if (["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "gripper"].some(joint =>
-        calibration[joint].range_min === 0 && calibration[joint].range_max === 4095)) {
-      throw new Error("The arm has factory travel limits. Calibrate it with the local bridge before using direct USB motion.");
-    }
     return calibration;
+  }
+
+  async calibration() {
+    const registers = await this.calibrationRegisters();
+    return Object.fromEntries(SERIAL_JOINTS.map(joint => {
+      const {id, mode, homing_offset, range_min, range_max} = registers[joint];
+      if (mode !== 0 || range_max > 4095 || range_max - range_min < 20 ||
+          (joint !== "wrist_roll" && range_min === 0 && range_max === 4095)) {
+        throw new Error(`${JOINTS[joint]} needs calibration. In Arm setup, use Calibrate new or Restore saved calibration.`);
+      }
+      return [joint, {id, drive_mode: 0, homing_offset, range_min, range_max}];
+    }));
+  }
+
+  async writeVerified(register, values, bytes) {
+    await this.write(register, values, bytes);
+    await serialDelay(25);
+    for (const [joint, expected] of Object.entries(values)) {
+      const data = await this.read(SERVO_ID[joint], register, bytes);
+      if ((bytes === 1 ? data[0] : word(data)) !== expected) {
+        throw new Error(`${JOINTS[joint]} did not verify calibration register ${register}.`);
+      }
+    }
+  }
+
+  setCalibrationControl(register, value) {
+    return this.writeVerified(register, Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, value])), 1);
+  }
+
+  async writeCalibration(registers, previous) {
+    const values = read => Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, read(registers[joint])]));
+    const writeRegisters = async data => {
+      const field = key => Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, data[joint][key]]));
+      await this.writeVerified(SERIAL_REG.limits, values(() => 0), 2);
+      await this.writeVerified(SERIAL_REG.maxLimit, field("range_max"), 2);
+      await this.writeVerified(SERIAL_REG.limits, field("range_min"), 2);
+      await this.writeVerified(SERIAL_REG.offset, Object.fromEntries(SERIAL_JOINTS.map(joint => {
+        const offset = data[joint].homing_offset;
+        return [joint, offset < 0 ? 2048 | -offset : offset];
+      })), 2);
+      await this.writeVerified(SERIAL_REG.mode, field("mode"), 1);
+    };
+    let unlocked = false;
+    try {
+      await this.setCalibrationControl(SERIAL_REG.torque, 0);
+      unlocked = true;
+      await this.setCalibrationControl(SERIAL_REG.lock, 0);
+      await writeRegisters(registers);
+      await this.setCalibrationControl(SERIAL_REG.lock, 1);
+    } catch (error) {
+      if (!unlocked) throw error;
+      try {
+        await this.setCalibrationControl(SERIAL_REG.lock, 0);
+        await writeRegisters(previous);
+        await this.setCalibrationControl(SERIAL_REG.lock, 1);
+      } catch {
+        throw new Error(`${error.message} The original settings could not be verified. Reconnect and restore a saved calibration before running a route.`);
+      }
+      throw new Error(`${error.message} The original calibration was restored.`);
+    }
   }
 
   async positions() {
