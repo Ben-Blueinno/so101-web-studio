@@ -312,6 +312,7 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 }
 .select-menu { width: max-content; }
 .file-menu { width: 19rem; }
+.action-menu { width: 16rem; }
 .studio-dropdown button {
   display: flex;
   align-items: center;
@@ -338,7 +339,7 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 .file-menu [role="group"] + [role="group"] { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--edge); }
 .menu-heading { padding: 6px 12px 3px; color: var(--muted); font-size: .78rem; font-weight: 650; }
 
-.editor-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.editor-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .editor-file-tools {
   min-width: 0;
   display: flex;
@@ -375,3 +376,8 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
   .editor-toolbar .panel-tools { margin-inline-start: auto; }
   .export-sheet { padding: 16px; }
 }
+
+.labeled-action { display: inline-flex; align-items: center; gap: 6px; }
+.labeled-action svg { width: 17px; height: 17px; }
+.rest-actions { border-top: 1px solid var(--edge); margin-top: 18px; padding-top: 12px; }
+.rest-actions > span { color: var(--muted); font-size: .875rem; font-weight: 600; margin-inline-end: 4px; }

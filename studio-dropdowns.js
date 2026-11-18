@@ -12,7 +12,7 @@ function positionStudioDropdown(panel, trigger) {
   const viewportWidth = document.documentElement.clientWidth;
   panel.style.minWidth = Math.min(bounds.width, viewportWidth - 16) + "px";
   const width = panel.offsetWidth;
-  const anchor = panel.classList.contains("file-menu") ? bounds.right - width : bounds.left;
+  const anchor = panel.classList.contains("select-menu") ? bounds.left : bounds.right - width;
   const left = Math.max(8, Math.min(anchor, viewportWidth - width - 8));
   const below = innerHeight - bounds.bottom - 14;
   const above = bounds.top - 14;

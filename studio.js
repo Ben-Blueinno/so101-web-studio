@@ -164,6 +164,7 @@ function updateControls() {
   for (const id of ["save-rest", "return-rest"]) {
     get(id).disabled = !initialized || moving || Boolean(currentStep) || actionPending;
   }
+  get("rest-actions").hidden = !initialized && !returningToRest;
   get("stop-rest").hidden = !returningToRest;
   for (const id of ["cal-read", "cal-apply", "cal-start", "arm-profile"]) {
     get(id).disabled = Boolean(initialized) || calibrating || actionPending;
@@ -731,7 +732,7 @@ armAction("cal-read", async () => {
   selectStudioValue(get("settings-profile"), get("arm-profile").value);
   populateProfile();
   selectView("settings");
-  settingsStatus.textContent = "Review the readback, then save it as a calibration copy if desired.";
+  calFilesStatus.textContent = "Review the readback, then save a copy if needed.";
 }, calStatusMessage);
 armAction("cal-apply", async () => {
   if (!await confirmAction("Restore calibration to this same arm from the selected follower profile? Support the arm before continuing because torque will be released.")) return;
@@ -1030,7 +1031,9 @@ get("ports").onchange = () => {
   if (port) get("profile-port").value = port;
   selectStudioValue(get("ports"), "");
 };
-attachStudioDropdown(get("program-files"), get("program-menu"));
+for (const trigger of document.querySelectorAll("[data-studio-menu]")) {
+  attachStudioDropdown(trigger, get(trigger.getAttribute("aria-controls")));
+}
 for (const select of document.querySelectorAll("select")) attachStudioSelect(select);
 
 const limitPayload = new URLSearchParams(location.hash.slice(1)).get("limit-preview");
