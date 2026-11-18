@@ -42,6 +42,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 .guide-flow a{font-weight:650}.guide-flow span{display:block;margin-top:4px;color:var(--muted)}
 .guide-demo{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;margin-top:12px}
 .guide-demo pre{margin:0;padding:10px 12px;background:#14211f;border-radius:6px}
+.guide-video{margin:16px 0}.guide-video video{display:block;width:100%;border:1px solid var(--edge);border-radius:8px;background:#101818}
 @media(max-width:600px){.guide-demo{grid-template-columns:1fr}}
 @media(max-width:820px){.grid{grid-template-columns:1fr}main{padding:18px 12px}}
 </style>
@@ -50,6 +51,14 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 <nav aria-label="Workspace"><button data-view="getting-started" aria-pressed="false">Start here</button><button data-view="program" aria-pressed="true">Python &amp; 3D</button><button data-view="hardware" aria-pressed="false">Arm setup</button><button data-view="settings" aria-pressed="false">Settings</button><a href="route-lab.html">3D Route Lab</a><a href="codebook.html">Python Codebook</a></nav>
 <section id="getting-started" class="panel guide" hidden>
   <h2>Your first SO-101 route</h2>
+  <figure class="guide-video">
+    <video controls playsinline preload="none" width="1260" height="832" poster="media/studio-walkthrough.jpg" aria-label="SO-101 Web Studio walkthrough">
+      <source src="media/studio-walkthrough.mp4" type="video/mp4">
+      <track kind="captions" label="English" srclang="en" src="media/studio-walkthrough.vtt" default>
+      <a href="media/studio-walkthrough.mp4">Download the walkthrough</a>
+    </video>
+    <figcaption>Watch how to preview a Python route and find the USB and calibration controls. The steps below show how to run a reviewed route on the real arm.</figcaption>
+  </figure>
   <nav aria-label="Visual walkthrough">
     <ol class="guide-flow">
       <li><a href="#guide-preview">Preview in 3D</a><span>Run the starter in the simulator.</span></li>
