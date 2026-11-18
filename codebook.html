@@ -3,40 +3,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SO-101 Python Codebook</title>
-<style>
-:root{color-scheme:dark}body{background:#0e1918;color:#edf7f2;font:17px/1.6 system-ui,sans-serif;margin:0}
-main{max-width:960px;margin:auto;padding:36px 20px}h1{margin:0 0 10px;font-size:clamp(32px,6vw,48px);line-height:1.1}
-h2{margin:30px 0 6px}a{color:#a7f3d0}code,pre{font:0.95em/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}
-pre{background:#182b28;padding:14px 17px;border-radius:8px;overflow:auto}
-.motor-guide{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-.motor-guide>*{min-width:0}figure{margin:0}canvas{display:block;width:100%;aspect-ratio:4/3;background:#101c1d;border-radius:8px;touch-action:none;cursor:grab}
-figcaption{min-height:3.3em;margin-top:6px;color:#ffcf7b}table{width:100%;text-align:left;border-collapse:collapse}
-th,td{padding:6px;border-bottom:1px solid #3d5250}tbody th{font-weight:normal}
-button{font:inherit;color:inherit;background:#182b28;border:1px solid #5b7770;border-radius:6px;padding:5px 8px;cursor:pointer;text-align:left}
-button[aria-pressed=true]{background:#a7f3d0;color:#142621}button:focus-visible,canvas:focus-visible{outline:2px solid #a7f3d0;outline-offset:2px}
-@media(max-width:760px){.motor-guide{grid-template-columns:1fr}}
-</style>
-<main>
+<link rel="stylesheet" href="studio.css?v=workbench">
+<link rel="stylesheet" href="codebook.css?v=workbench">
+<main class="codebook">
+<p class="back"><a href="index.html#simulation">← Back to Simulation</a></p>
 <h1>SO-101 Python Codebook</h1>
-<p>A route is a set of moves the arm follows in order. Try each example in the <a href="index.html">Web Studio Python editor</a> and choose <strong>Preview in 3D</strong>.</p>
+<p>A route is a set of moves the arm follows in order. Try each example in the <a href="index.html#simulation">Web Studio Python editor</a> and choose <strong>Preview in 3D</strong>.</p>
 
 <h2>Find the six motors</h2>
-<p>A motor turns one joint. Pick a motor below to highlight it in gold, then drag the model to see it from another angle.</p>
+<p>Pick a motor to highlight it in gold. Drag the model or use the arrow keys to turn it.</p>
+<p id="range-note">These are the simulator’s default ranges. A USB-connected arm uses its own calibration.</p>
 <div class="motor-guide">
-  <figure>
-    <canvas id="motor-viewer" width="640" height="480" tabindex="0" aria-label="SO-101 motor model. Drag or use the arrow keys to turn the view."></canvas>
-    <figcaption id="motor-caption" role="status">Shoulder pan highlighted at the base.</figcaption>
+  <div class="motor-figure">
+    <figure class="motor-stage">
+      <canvas id="motor-viewer" width="640" height="480" tabindex="0" aria-label="SO-101 motor model. Drag or use the arrow keys to turn the view."></canvas>
+      <figcaption class="motor-caption" role="status">
+        <strong id="motor-name">Shoulder pan</strong>
+        <span id="motor-range"></span>
+      </figcaption>
+    </figure>
+    <p id="motor-view-error" role="status" hidden>The 3D view is unavailable. You can still select a motor and read its range.</p>
     <button id="camera" type="button">Reset view</button>
-  </figure>
-  <table aria-label="SO-101 motors and Python keys">
-    <thead><tr><th scope="col">Motor</th><th scope="col">Python key</th><th scope="col">What moves</th></tr></thead>
+  </div>
+  <table aria-label="SO-101 motor ranges and Python keys" aria-describedby="range-note">
+    <thead><tr><th scope="col">Motor and Python key</th><th scope="col">Default range</th><th scope="col">What moves</th></tr></thead>
     <tbody>
-      <tr><th scope="row"><button type="button" data-motor="shoulder_pan" aria-pressed="true">Shoulder pan</button></th><td><code>shoulder_pan.pos</code></td><td>Turns the base left or right.</td></tr>
-      <tr><th scope="row"><button type="button" data-motor="shoulder_lift" aria-pressed="false">Shoulder lift</button></th><td><code>shoulder_lift.pos</code></td><td>Raises or lowers the upper arm.</td></tr>
-      <tr><th scope="row"><button type="button" data-motor="elbow_flex" aria-pressed="false">Elbow flex</button></th><td><code>elbow_flex.pos</code></td><td>Bends or straightens the elbow.</td></tr>
-      <tr><th scope="row"><button type="button" data-motor="wrist_flex" aria-pressed="false">Wrist flex</button></th><td><code>wrist_flex.pos</code></td><td>Tilts the gripper up or down.</td></tr>
-      <tr><th scope="row"><button type="button" data-motor="wrist_roll" aria-pressed="false">Wrist roll</button></th><td><code>wrist_roll.pos</code></td><td>Twists the gripper like a doorknob.</td></tr>
-      <tr><th scope="row"><button type="button" data-motor="gripper" aria-pressed="false">Gripper</button></th><td><code>gripper.pos</code></td><td>Opens or closes the jaws.</td></tr>
+      <tr><th scope="row"><button type="button" data-motor="shoulder_pan" aria-pressed="true">Shoulder pan</button><code>shoulder_pan.pos</code></th><td class="default-range"></td><td>Turns the base left or right.</td></tr>
+      <tr><th scope="row"><button type="button" data-motor="shoulder_lift" aria-pressed="false">Shoulder lift</button><code>shoulder_lift.pos</code></th><td class="default-range"></td><td>Raises or lowers the upper arm.</td></tr>
+      <tr><th scope="row"><button type="button" data-motor="elbow_flex" aria-pressed="false">Elbow flex</button><code>elbow_flex.pos</code></th><td class="default-range"></td><td>Bends or straightens the elbow.</td></tr>
+      <tr><th scope="row"><button type="button" data-motor="wrist_flex" aria-pressed="false">Wrist flex</button><code>wrist_flex.pos</code></th><td class="default-range"></td><td>Tilts the gripper up or down.</td></tr>
+      <tr><th scope="row"><button type="button" data-motor="wrist_roll" aria-pressed="false">Wrist roll</button><code>wrist_roll.pos</code></th><td class="default-range"></td><td>Twists the gripper like a doorknob.</td></tr>
+      <tr><th scope="row"><button type="button" data-motor="gripper" aria-pressed="false">Gripper</button><code>gripper.pos</code></th><td class="default-range"></td><td>Opens or closes the jaws.</td></tr>
     </tbody>
   </table>
 </div>
@@ -50,7 +47,6 @@ button[aria-pressed=true]{background:#a7f3d0;color:#142621}button:focus-visible,
   <li><code>robot.send_action(...)</code> gives one motor a target. The quoted key picks the motor and the number sets the angle in degrees.</li>
   <li>The wrist goes to −5° first and then 0°. Change −5 to −10 and preview again to see the difference.</li>
 </ol>
-<p>The simulator uses default SO-101 limits. When the arm is connected by USB, Studio checks its calibrated limits.</p>
 
 <h2>2. Move a few degrees from where you start</h2>
 <pre><code>def route(robot):
@@ -65,7 +61,7 @@ button[aria-pressed=true]{background:#a7f3d0;color:#142621}button:focus-visible,
     robot.send_action({"gripper.pos": 33})</code></pre>
 <p>The gripper uses a percentage of its travel, from 0 to 100.</p>
 
-<h2>Move two joints together</h2>
+<h2>4. Move two joints together</h2>
 <pre><code>def route(robot):
     wrist_angle: float = -5.0
     robot.send_action({
@@ -76,7 +72,7 @@ button[aria-pressed=true]{background:#a7f3d0;color:#142621}button:focus-visible,
 <p>Targets inside the same <code>send_action()</code> move together. Studio waits for both targets before starting the next call. The optional <code>: float</code> type hint tells readers that the variable can contain a decimal. Use <code>: int</code> for a whole number. Type <code>robot.</code> or start typing a quoted joint key for suggestions.</p>
 <p>Try grouped moves in the 3D preview first. For a physical run, connect a calibrated arm by USB and check the path of all moving joints together before confirming.</p>
 
-<h2>4. Repeat a move with a loop</h2>
+<h2>5. Repeat a move with a loop</h2>
 <pre><code>def route(robot):
     start = robot.get_observation()
     turn = 6
@@ -96,23 +92,5 @@ run_route(robot)</code></pre>
 <script src="so101-tabletop-model.js?v=20261118-route-review"></script>
 <script src="so101-route-settings.js?v=20261118-route-review"></script>
 <script src="so101-route-lab.js?v=20261118-route-review"></script>
-<script>
-const motorButtons = [...document.querySelectorAll("[data-motor]")];
-const motorCaption = document.getElementById("motor-caption");
-try {
-  const drawMotor = createViewer(document.getElementById("motor-viewer"), SO101_MODEL);
-  function selectMotor(button) {
-    const joint = button.dataset.motor;
-    for (const choice of motorButtons) choice.setAttribute("aria-pressed", choice === button);
-    drawMotor({}, {joint, mode: "simulation"});
-    motorCaption.textContent = JOINTS[joint] + " motor highlighted. " + button.closest("tr").lastElementChild.textContent;
-  }
-  for (const button of motorButtons) button.onclick = () => selectMotor(button);
-  selectMotor(motorButtons[0]);
-} catch {
-  for (const button of motorButtons) button.disabled = true;
-  document.getElementById("camera").disabled = true;
-  motorCaption.textContent = "The 3D view is unavailable. Use the table to find each motor and its Python key.";
-}
-</script>
+<script src="codebook.js?v=workbench"></script>
 </html>

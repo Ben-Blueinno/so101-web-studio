@@ -1,0 +1,35 @@
+#code { min-height: 310px; white-space: pre; }
+.editor-frame {
+  position: relative;
+  padding-left: 2.8rem;
+  border: 1px solid var(--control-edge);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--input);
+}
+.editor-frame:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.editor-frame #code { border: 0; border-radius: 0; outline: none; padding: 6px 9px; }
+.editor-frame.enhanced { padding-left: 0; }
+.editor-frame.enhanced .editor-gutter { display: none; }
+.editor-frame .CodeMirror { height: 310px; font: 15px/1.6 ui-monospace, monospace; }
+.editor-gutter {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2.8rem;
+  overflow: hidden;
+  text-align: right;
+  padding: 6px 5px;
+  color: var(--muted);
+  background: var(--bg);
+  font: 15px/1.6 ui-monospace, monospace;
+  user-select: none;
+  white-space: pre;
+}
+.CodeMirror-hints { background: var(--panel); color: var(--ink); border-color: var(--control-edge); }
+.CodeMirror-hint { color: var(--ink); }
+.CodeMirror-hint-active { background: #255e50; color: white; }
+.python-api-hint { color: var(--accent); }
+#studio:has(#program.editor-expanded:not([hidden])) { max-width: none; }
+#program.editor-expanded { grid-template-columns: minmax(0, 1fr); }
+#program.editor-expanded #code { min-height: 65vh; }
+#program.editor-expanded .CodeMirror { height: 65vh; }

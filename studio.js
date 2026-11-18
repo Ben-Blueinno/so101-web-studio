@@ -56,7 +56,7 @@ function selectView(view) {
   if (view === "program" || view === "deployment") get(view).append(get("viewer-panel"));
   if (view === "calibration") get("cal-follower").textContent = "Follower " + get("arm-profile").value;
   if (view === "program") pythonEditor?.refresh();
-  if (view === "getting-started" && get("guide-play").disabled) initGuideDemo();
+  if (view === "getting-started") initGuideDemo();
 }
 
 for (const [index, tab] of tabs.entries()) {
@@ -72,10 +72,14 @@ for (const [index, tab] of tabs.entries()) {
     tabs[next].focus();
   };
 }
-get("open-deployment").onclick = () => {
-  selectView("deployment");
-  get("tab-deployment").focus();
-};
+for (const button of document.querySelectorAll("[data-open-tab]")) {
+  button.onclick = () => {
+    const tab = get("tab-" + button.dataset.openTab);
+    if (tab.disabled) return;
+    selectView(tab.dataset.view);
+    tab.focus();
+  };
+}
 
 let guideReady = false;
 function initGuideDemo() {
@@ -770,7 +774,7 @@ async function boot() {
     programStatus.textContent = "Browser storage is unavailable. You can download your program.";
   }
   render = createViewer(get("viewer"), SO101_MODEL);
-  selectView("getting-started");
+  selectView(location.hash === "#simulation" ? "program" : "getting-started");
   pollLivePose();
   if (!hostedArm.supportsUSB) get("usb-help").textContent = "USB connection requires desktop Chrome or Edge and browser permission.";
   if (!hostedArm.supportsUSB) get("settings-scope").textContent = "Open this page in desktop Chrome or Edge to scan for USB serial ports.";
