@@ -1,237 +1,302 @@
 "use strict";
 
-const pageArm = (() => {
-  const bridgeAddress = "http://127.0.0.1:8765";
-  const card = get("bridge-status");
-  const live = get("live-pose");
-  const profile = get("arm-profile");
-  let pairingCode, arm, preview, step, timer;
-  let busy = false, moving = false, reviewing = false;
+const hostedArm = (() => {
+  const address = "http://127.0.0.1:8765";
+  const storageKey = "so101-web-studio:usb-setup:v1";
+  const emptyProfile = () => Object.fromEntries([
+    ["port", ""], ["id", ""], ["calibration_file", ""], ...SERIAL_JOINTS.map(joint => [joint, ""]),
+  ]);
+  let stored = {profiles: {A: emptyProfile(), B: emptyProfile()}, files: {}, rests: {}};
+  try {
+    const previous = localStorage.getItem(storageKey);
+    if (previous) stored = JSON.parse(previous);
+  } catch { /* A new profile can still be used for this session. */ }
 
-  async function request(action, data = {}) {
+  let code, follower, preview, replay, offer, scan, busy = false;
+
+  function save() {
+    localStorage.setItem(storageKey, JSON.stringify(stored));
+  }
+
+  function settings() {
+    return {profiles: stored.profiles, ports: [], files: Object.keys(stored.files).sort()};
+  }
+
+  async function bridge(action, data = {}) {
     let response;
     try {
-      response = await fetch(`${bridgeAddress}/api/${action}`, {
-        method: "POST",
-        credentials: "omit",
-        redirect: "error",
-        headers: {"Content-Type": "application/json", "X-Studio-Token": pairingCode},
+      response = await fetch(`${address}/api/${action}`, {
+        method: "POST", credentials: "omit", redirect: "error",
+        headers: {"Content-Type": "application/json", "X-Studio-Token": code},
         body: JSON.stringify(data),
       });
     } catch {
-      throw new Error("Cannot reach the bridge. Check that it is running and allow local access in the browser.");
+      throw new Error("Cannot reach the bridge. Start the updated bridge and allow local access in Chrome.");
     }
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);
     return result;
   }
 
-  function refresh() {
-    const blocked = busy || reviewing || compiling;
-    get("pair-bridge").disabled = blocked || Boolean(pairingCode);
-    get("arm-controls").hidden = !pairingCode;
-    get("arm-replay").hidden = !arm;
-    profile.disabled = blocked || Boolean(arm);
-    get("init-arm").disabled = blocked || Boolean(arm);
-    get("disconnect-arm").disabled = blocked || !arm;
-    get("return-rest").disabled = blocked || !arm || Boolean(step);
-    get("prepare-arm").disabled = blocked || !arm || Boolean(step) || !preview ||
-      preview.source !== code.value || preview.generation !== animation;
-    get("run-arm-step").disabled = blocked || !step;
-    get("discard-arm").disabled = blocked || !step;
-    get("stop-arm").disabled = !moving;
-    code.readOnly = busy || reviewing || Boolean(step);
-    updateControls();
-    if (busy || reviewing || step) get("preview").disabled = true;
+  async function openUSB() {
+    const port = await navigator.serial.requestPort();
+    return ServoSerial.open(port);
   }
 
-  function showArm(measured, joint) {
-    arm = measured;
-    live.hidden = !arm;
-    if (!arm) {
-      get("connection").textContent = "Browser simulator";
-      return;
-    }
-    profile.value = arm.label;
-    get("connection").textContent = `Follower ${arm.label} initialized`;
-    live.textContent = `Live encoder pose · ${arm.at_rest ? "At rest" : "Away from rest"}\n` +
-      Object.entries(arm.pose).map(([name, value]) => {
-        const joint = name.replace(/\.pos$/, "");
-        return `${JOINTS[joint]} ${format(joint, value)}`;
-      }).join(" · ");
-    if (!playingPreview) {
-      render(arm.model_pose, joint ? {joint, mode: "physical"} : undefined);
-      motorStatus.hidden = !joint;
-      motorStatus.textContent = joint ? `Physical move · ${JOINTS[joint]}` : "";
-    }
+  function restKey(arm) {
+    return JSON.stringify([arm.label, stored.profiles[arm.label].id, arm.calibration]);
   }
 
-  async function poll() {
-    if (!pairingCode || !arm) return;
-    try {
-      const update = await request("telemetry");
-      if (!arm) return;
-      if (update.arm) showArm(update.arm, update.joint);
-      else if (update.live === false && !busy) {
-        showStep(null);
-        showArm(null);
-        refresh();
+  function getCalibration(name) {
+    const key = name?.split(/[/\\]/).at(-1);
+    if (!Object.hasOwn(stored.files, key)) throw new Error("Save or import that calibration in this browser first.");
+    return stored.files[key];
+  }
+
+  function validateCalibration(raw) {
+    if (!raw || typeof raw !== "object" || Object.keys(raw).length !== SERIAL_JOINTS.length) {
+      throw new Error("A calibration file must contain all six SO-101 joints.");
+    }
+    return Object.fromEntries(SERIAL_JOINTS.map(joint => {
+      const motor = raw[joint];
+      if (!motor || motor.id !== SERVO_ID[joint] || ![0, 1].includes(motor.drive_mode) ||
+          ![motor.homing_offset, motor.range_min, motor.range_max].every(Number.isInteger) ||
+          Math.abs(motor.homing_offset) > 2047 || motor.range_min < 0 ||
+          motor.range_max > 4095 || motor.range_min >= motor.range_max) {
+        throw new Error(`${JOINTS[joint]} has invalid calibration values.`);
       }
-    } catch {
-      live.textContent = "Live readings unavailable. Showing the last measured pose.";
-    } finally {
-      timer = setTimeout(poll, 400);
-    }
+      return [joint, {id: motor.id, drive_mode: motor.drive_mode, homing_offset: motor.homing_offset,
+                      range_min: motor.range_min, range_max: motor.range_max}];
+    }));
   }
 
-  function startPolling() {
-    clearTimeout(timer);
-    timer = setTimeout(poll, 0);
-  }
-
-  function format(joint, value) {
-    return value.toFixed(2) + (joint === "gripper" ? "%" : "°");
-  }
-
-  function showStep(next) {
-    step = next?.plan_id ? next : null;
-    get("arm-step").textContent = step
-      ? `Step ${step.index + 1}/${step.count} · ${JOINTS[step.joint]} → ${format(step.joint, step.target)}`
-      : next?.done ? "Replay complete." : "";
-  }
-
-  async function operation(fn) {
-    if (busy || reviewing || compiling) return;
+  async function connectUSB(label) {
+    if (code || follower || busy) throw new Error("Disconnect the active arm first.");
     busy = true;
-    refresh();
+    let bus;
     try {
-      await fn();
+      bus = await openUSB();
+      const calibration = await bus.calibration();
+      const profile = stored.profiles[label];
+      if (profile.calibration_file &&
+          JSON.stringify(getCalibration(profile.calibration_file)) !== JSON.stringify(calibration)) {
+        throw new Error("The servo calibration differs from the selected copy. Choose the correct follower or use the bridge.");
+      }
+      const directions = Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, profile[joint] === "-1" ? -1 : 1]));
+      const arm = new BrowserFollower(bus, label, calibration, directions, await bus.positions());
+      arm.validatePositions(arm.current);
+      const rest = stored.rests[restKey(arm)];
+      if (rest) {
+        arm.validatePositions(rest);
+        arm.rest = rest;
+      }
+      follower = arm;
+      return arm.snapshot();
     } catch (error) {
-      card.textContent = error.message;
+      if (bus) await bus.close().catch(() => {});
+      throw error;
     } finally {
       busy = false;
-      moving = false;
-      refresh();
     }
   }
 
-  function onClick(id, fn) {
-    get(id).onclick = () => operation(fn);
+  function nextStep() {
+    if (replay.index === replay.targets.length) {
+      replay = undefined;
+      return {done: true};
+    }
+    const {joint, raw} = replay.targets[replay.index];
+    return {plan_id: replay.id, index: replay.index, count: replay.targets.length,
+            joint, target: follower.units(joint, raw)};
   }
 
-  get("bridge-form").onsubmit = event => {
-    event.preventDefault();
-    operation(async () => {
-      if (pairingCode) return;
-      pairingCode = get("bridge-code").value.trim();
-      try {
-        const session = await request("session");
-        if (session.step) throw new Error("Finish or discard the active replay in the local Studio before pairing.");
-        get("bridge-code").value = "";
-        get("bridge-form").hidden = true;
-        showArm(session.arm);
-        card.textContent = session.arm ? "Bridge connected." : "Bridge connected. Choose a calibrated follower and initialize it.";
-        startPolling();
-      } catch (error) {
-        pairingCode = undefined;
-        throw error;
+  async function compile(data) {
+    if (replay) throw new Error("Finish or discard the active replay first.");
+    const original = await hostedPython.parse(data.source);
+    const directions = follower?.directions ?? Object.fromEntries(SERIAL_JOINTS.map(joint =>
+      [joint, stored.profiles[data.label]?.[joint] === "-1" ? -1 : 1]));
+    const route = {...original, steps: original.steps.map(step => {
+      if (original.coordinates !== "lerobot" || directions[step.joint] === 1) return step;
+      return step.joint === "gripper" ? {...step, position_pct: 100 - step.position_pct}
+        : {...step, offset_deg: -step.offset_deg};
+    })};
+    validateRoute(route);
+    preview = {route, id: crypto.randomUUID()};
+    return {route, preview_id: preview.id};
+  }
+
+  async function dispatch(action, data) {
+    if (action === "settings") return settings();
+    if (action === "compile") return compile(data);
+    if (action === "export-lerobot") return {code: await hostedPython.exportFunction(data.source)};
+    if (action === "cal-view") return {text: JSON.stringify(getCalibration(data.name), null, 2)};
+    if (action === "cal-status") return {phase: "idle"};
+    if (["profile-save", "profile-remove", "cal-save", "cal-archive"].includes(action) && follower) {
+      throw new Error("Support and disconnect the arm before changing its profile or calibration copies.");
+    }
+    if (action === "profile-save") {
+      const values = data.values;
+      if (values.calibration_file) getCalibration(values.calibration_file);
+      stored.profiles[data.label] = Object.fromEntries(Object.keys(emptyProfile()).map(field =>
+        [field, String(values[field] ?? "").trim()]));
+      save();
+      return settings();
+    }
+    if (action === "profile-remove") {
+      stored.profiles[data.label] = emptyProfile();
+      save();
+      return settings();
+    }
+    if (action === "cal-save") {
+      if (!/^[A-Za-z0-9_-]{1,60}$/.test(data.name)) throw new Error("Use letters, numbers, underscores, or hyphens.");
+      const name = data.name + ".json";
+      if (Object.hasOwn(stored.files, name) && !data.replace) throw new Error("Choose a new calibration name.");
+      stored.files[name] = validateCalibration(JSON.parse(data.text));
+      save();
+      return settings();
+    }
+    if (action === "cal-archive") {
+      for (const profile of Object.values(stored.profiles)) {
+        if (profile.calibration_file.split(/[/\\]/).at(-1) === data.name) {
+          throw new Error("Remove the calibration from its profile first.");
+        }
       }
-    });
-  };
+      delete stored.files[data.name];
+      save();
+      return settings();
+    }
+    if (action === "cal-read") {
+      if (follower) throw new Error("Support and disconnect the arm before reading calibration.");
+      const bus = await openUSB();
+      try {
+        return {text: JSON.stringify(await bus.calibration(), null, 2), name: `follower-${data.label}-readback`};
+      } finally {
+        await bus.close();
+      }
+    }
+    if (!follower) throw new Error("Connect your SO-101 in Arm setup first.");
+    const arm = follower;
+    switch (action) {
+      case "disconnect":
+        try { await arm.close(); }
+        finally { follower = preview = replay = offer = undefined; }
+        return {};
+      case "read-pose":
+      case "save-rest":
+      case "prepare-rest":
+        if (replay) throw new Error("Finish or discard the active replay first.");
+        arm.current = await arm.bus.positions();
+        if (action === "read-pose") {
+          arm.initial = arm.current;
+          preview = offer = undefined;
+        } else if (action === "save-rest") {
+          arm.validatePositions(arm.current);
+          stored.rests[restKey(arm)] = arm.current;
+          save();
+          arm.rest = arm.current;
+          offer = undefined;
+        } else {
+          const joints = SERIAL_JOINTS.toReversed().filter(joint =>
+            Math.abs(arm.current[joint] - arm.rest[joint]) * arm.scale(joint) > Math.max(0.5, arm.scale(joint)));
+          const token = joints.length ? crypto.randomUUID() : null;
+          offer = token ? {token, joints, pose: arm.current} : undefined;
+          return {token, joints, arm: arm.snapshot()};
+        }
+        return arm.snapshot();
+      case "return-rest": {
+        if (replay || !offer || offer.token !== data.token) throw new Error("Review the return to rest again.");
+        const reviewed = offer;
+        offer = preview = undefined;
+        arm.stopped = false;
+        const expected = {...reviewed.pose};
+        for (const joint of reviewed.joints) {
+          if (arm.stopped) throw new Error("Movement stopped. Review the arm pose.");
+          await arm.moveTo(joint, arm.rest[joint], expected);
+          expected[joint] = arm.rest[joint];
+        }
+        arm.current = await arm.bus.positions();
+        arm.initial = arm.current;
+        if (!arm.atRest()) throw new Error("The live pose is outside the saved rest tolerance.");
+        return arm.snapshot();
+      }
+      case "deploy": {
+        if (replay || !preview || preview.id !== data.preview_id) throw new Error("Preview the current program first.");
+        arm.current = await arm.bus.positions();
+        arm.verifyStartingPose(arm.initial, arm.current);
+        const targets = preview.route.steps.map(step => {
+          const {joint} = step, sign = arm.directions[joint];
+          const goal = joint === "gripper" ? (sign === 1 ? step.position_pct : 100 - step.position_pct)
+            : arm.units(joint, arm.initial[joint]) + sign * step.offset_deg;
+          return {joint, raw: arm.target(joint, goal)};
+        });
+        replay = {id: crypto.randomUUID(), index: 0, targets, expected: {...arm.initial}};
+        return nextStep();
+      }
+      case "move": {
+        if (!replay || replay.id !== data.plan_id || replay.index !== data.index) throw new Error("This step is no longer current.");
+        const {joint, raw} = replay.targets[replay.index];
+        arm.stopped = false;
+        try {
+          const result = await arm.moveTo(joint, raw, replay.expected);
+          replay.expected[joint] = raw;
+          replay.index++;
+          return {...nextStep(), arm: arm.snapshot(), result: {...result, index: data.index}};
+        } catch (error) {
+          replay = preview = undefined;
+          throw error;
+        }
+      }
+      case "discard":
+        replay = preview = undefined;
+        return {};
+      default:
+        throw new Error("Use the local bridge for this arm setup operation.");
+    }
+  }
 
-  onClick("init-arm", async () => {
-    preview = undefined;
-    showArm(await request("init", {label: profile.value}));
-    card.textContent = "Arm initialized. Preview your Python route to prepare a replay.";
-    startPolling();
-  });
-  onClick("disconnect-arm", async () => {
-    if (!await confirmAction("Support the arm before disconnecting. Disconnect now?")) return;
-    await request("disconnect");
-    preview = undefined;
-    showStep(null);
-    showArm(null);
-    card.textContent = "Arm disconnected. The bridge is still paired.";
-  });
-  onClick("prepare-arm", async () => {
-    if (!preview || preview.source !== code.value || preview.generation !== animation || step) return;
-    showStep(await request("deploy", {preview_id: preview.id}));
-    get("arm-result").textContent = "";
-    card.textContent = "Review and confirm each move at the arm.";
-  });
-  onClick("run-arm-step", async () => {
-    if (!step) return;
-    const reviewed = step;
-    if (!await confirmAction(`Follower ${arm.label} will move ${JOINTS[reviewed.joint]} to ${format(reviewed.joint, reviewed.target)}. Confirm the path is clear.`)) return;
-    moving = true;
-    refresh();
+  async function request(action, data = {}) {
+    if (code) return bridge(action, data);
+    if (action === "stop") {
+      if (follower) follower.stopped = true;
+      return {};
+    }
+    if (action === "telemetry") {
+      if (!follower) return {arm: null, live: false};
+      if (busy) return {arm: follower.snapshot(), joint: follower.activeJoint, live: follower.moving};
+      if (scan) return {arm: follower.snapshot(), live: false};
+      try {
+        scan = follower.bus.positions();
+        follower.current = await scan;
+        return {arm: follower.snapshot(), live: true};
+      } finally {
+        scan = undefined;
+      }
+    }
+    if (busy) throw new Error("The USB connection is busy. Try again.");
+    busy = true;
     try {
-      const reply = await request("move", {plan_id: reviewed.plan_id, index: reviewed.index});
-      showArm(reply.arm);
-      showStep(reply);
-      const {joint, measured, target} = reply.result;
-      get("arm-result").textContent = `${JOINTS[joint]} measured ${format(joint, measured)}. Target ${format(joint, target)}.`;
-      card.textContent = "Move verified by the bridge.";
-    } catch (error) {
-      showStep(null);
-      preview = undefined;
-      throw error;
+      if (scan) await scan.catch(() => {});
+      return await dispatch(action, data);
     }
-  });
-  onClick("discard-arm", async () => {
-    await request("discard");
-    showStep(null);
-    preview = undefined;
-    card.textContent = "Remaining moves discarded.";
-  });
-  onClick("return-rest", async () => {
-    const plan = await request("prepare-rest");
-    showArm(plan.arm);
-    if (!plan.token) {
-      card.textContent = "The arm is already at saved rest.";
-      return;
-    }
-    const joints = plan.joints.map(joint => JOINTS[joint]).join(", ");
-    if (!await confirmAction(`The arm will return these joints to saved rest in order. ${joints}. Confirm their paths are clear.`)) return;
-    moving = true;
-    preview = undefined;
-    refresh();
-    showArm(await request("return-rest", {token: plan.token}));
-    card.textContent = "Return complete. Check the live encoder pose.";
-  });
-  get("stop-arm").onclick = async () => {
-    try {
-      await request("stop");
-      card.textContent = "Stop requested. The arm can retain holding torque.";
-    } catch (error) {
-      card.textContent = error.message;
-    }
-  };
-
-  code.addEventListener("input", () => {
-    preview = undefined;
-    refresh();
-  });
-  get("stop-preview").addEventListener("click", () => {
-    preview = undefined;
-    refresh();
-  });
+    finally { busy = false; }
+  }
 
   return {
-    async preview(source) {
-      preview = undefined;
-      refresh();
-      if (!arm) return {route: await hostedPython.compile(source)};
-      showArm(await request("read-pose"));
-      const result = await request("compile", {source, label: arm.label});
-      const generation = animation;
-      return {route: result.route, start: arm.preview_start, ready() {
-        preview = {id: result.preview_id, source, generation};
-        refresh();
-      }};
+    get mode() { return code ? "bridge" : follower ? "usb" : null; },
+    supportsUSB: "serial" in navigator,
+    async pair(pairingCode) {
+      if (follower || code || !pairingCode) throw new Error("Enter the bridge’s pairing code with USB disconnected.");
+      code = pairingCode;
+      try {
+        const session = await bridge("session");
+        await bridge("settings");
+        return session;
+      } catch (error) {
+        code = undefined;
+        throw error;
+      }
     },
-    refresh,
+    request,
+    connectUSB,
   };
 })();
-
-pageArm.refresh();

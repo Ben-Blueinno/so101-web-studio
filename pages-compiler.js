@@ -40,11 +40,7 @@ const hostedPython = (() => {
     robot.send_action({"gripper.pos": 45})
     robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})
 `,
-    async compile(source) {
-      const route = await run(source, false);
-      validateRoute(route);
-      return route;
-    },
+    parse: source => run(source, false),
     exportFunction: source => run(source, true),
   };
 })();
