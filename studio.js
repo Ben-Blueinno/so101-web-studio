@@ -802,16 +802,10 @@ function updateComponentCards() {
 for (const button of document.querySelectorAll("[data-component-action]")) {
   button.onclick = () => {
     const label = button.dataset.component, action = button.dataset.componentAction, card = armCards.get(label);
-    if (action === "controls" || action === "connect") {
-      card.controls.hidden = false;
-      if (action === "connect") document.getElementById(label + "-connect-usb").click();
-      else card.controls.scrollIntoView({block: "nearest"});
-    } else {
-      selectView(action);
-      const panel = action === "calibration" ? card.calibration : card.profile;
-      panel.scrollIntoView({block: "start"});
-      panel.querySelector("h2").focus({preventScroll: true});
-    }
+    card.controls.hidden = false;
+    get("component-controls-trigger-" + label).setAttribute("aria-expanded", "true");
+    if (action === "connect") document.getElementById(label + "-connect-usb").click();
+    else card.controls.scrollIntoView({block: "nearest"});
   };
 }
 
@@ -1081,7 +1075,8 @@ function createArmCards(label, data) {
   populateProfile();
   get("component-controls-close").onclick = () => {
     get("component-controls").hidden = true;
-    document.getElementById("component-menu-trigger-" + armId).focus();
+    document.getElementById("component-controls-trigger-" + armId).setAttribute("aria-expanded", "false");
+    document.getElementById("component-controls-trigger-" + armId).focus();
   };
   function sync() {
     initialized = armSnapshots[armId];
@@ -1131,6 +1126,7 @@ function showMode() {
   updateCodebookMode(dual);
   for (const [label, card] of armCards) {
     card.controls.hidden = true;
+    get("component-controls-trigger-" + label).setAttribute("aria-expanded", "false");
     card.calibration.hidden = card.profile.hidden = label === "B" && !dual;
   }
   updateControls();

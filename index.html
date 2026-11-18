@@ -222,7 +222,7 @@
           <li>The first call moves A’s wrist −5° and B’s wrist +5° together. The second call returns both to their recorded angles.</li>
           <li>Preview first. Watch both wrist motors highlight during each step, then clear when the route ends.</li>
         </ol>
-        <p>For a physical run, connect both arms and read each current pose before previewing. To start from saved rest, open Pose and rest in each arm’s actions menu and use Return to rest first.</p>
+        <p>For a physical run, connect both arms and read each current pose before previewing. To start from saved rest, open Pose and rest on each arm’s card and use Return to rest first.</p>
         </section>
         <div class="code-example-title"><h3>5. Repeat a move with a loop</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-6" aria-label="Copy example — 5. Repeat a move with a loop"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-6">def route(robot):
@@ -273,8 +273,7 @@ run_route(robot)</code></pre>
       <p id="component-servo-A" class="component-calibration">Servo settings · Not checked</p><p id="component-calibration-A" class="component-calibration">Calibration file · None selected</p>
       <div class="component-actions">
         <button type="button" class="primary" data-component="A" data-component-action="connect">Connect USB</button>
-        <button id="component-menu-trigger-A" type="button" class="icon-action" aria-label="Arm A actions" aria-haspopup="menu" aria-expanded="false" aria-controls="component-menu-A" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-more"/></svg></button>
-        <div id="component-menu-A" class="studio-dropdown action-menu" role="menu" popover="auto" aria-label="Arm A actions"><button type="button" role="menuitem" tabindex="-1" data-component="A" data-component-action="controls"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-position"/></svg><span>Pose and rest</span></button><button type="button" role="menuitem" tabindex="-1" data-component="A" data-component-action="calibration"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg><span>Calibration</span></button><button type="button" role="menuitem" tabindex="-1" data-component="A" data-component-action="settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg><span>Settings</span></button></div>
+        <button id="component-controls-trigger-A" type="button" data-component="A" data-component-action="controls" aria-controls="A-component-controls" aria-expanded="false">Pose and rest</button>
       </div>
     </article>
     <article id="component-B" class="component-card" aria-labelledby="component-title-B" hidden>
@@ -283,8 +282,7 @@ run_route(robot)</code></pre>
       <p id="component-servo-B" class="component-calibration">Servo settings · Not checked</p><p id="component-calibration-B" class="component-calibration">Calibration file · None selected</p>
       <div class="component-actions">
         <button type="button" class="primary" data-component="B" data-component-action="connect">Connect USB</button>
-        <button id="component-menu-trigger-B" type="button" class="icon-action" aria-label="Arm B actions" aria-haspopup="menu" aria-expanded="false" aria-controls="component-menu-B" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-more"/></svg></button>
-        <div id="component-menu-B" class="studio-dropdown action-menu" role="menu" popover="auto" aria-label="Arm B actions"><button type="button" role="menuitem" tabindex="-1" data-component="B" data-component-action="controls"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-position"/></svg><span>Pose and rest</span></button><button type="button" role="menuitem" tabindex="-1" data-component="B" data-component-action="calibration"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg><span>Calibration</span></button><button type="button" role="menuitem" tabindex="-1" data-component="B" data-component-action="settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg><span>Settings</span></button></div>
+        <button id="component-controls-trigger-B" type="button" data-component="B" data-component-action="controls" aria-controls="B-component-controls" aria-expanded="false">Pose and rest</button>
       </div>
     </article>
   </div>
@@ -453,7 +451,7 @@ run_route(robot)</code></pre>
 </template>
 <template id="help-hardware">
   <div data-mode="single"><ol><li>Secure follower A and connect motor power and USB. Use desktop Chrome or Edge and close other apps using its port.</li><li>On Arm A’s card, choose Connect USB and pick its adapter. For a new arm, use Calibration first.</li><li>Use the crosshair to read A’s current pose. Save its rest pose with the save icon.</li><li>Return A to rest shows a warning before moving. Support A before disconnecting.</li></ol></div>
-  <div data-mode="dual"><ol><li>Secure both arms. Connect motor power and each arm’s USB data cable. Close other apps using the ports.</li><li>On the Right arm · A card, select Connect USB and pick A’s adapter.</li><li>On the Left arm · B card, select Connect USB and pick B’s other adapter. Check both card states.</li><li>Open Pose and rest in that arm’s actions menu for Read pose, Save rest, Return to rest, and Disconnect. Read and save rest for each arm separately.</li><li>The labels use the robot’s perspective. Match your tabletop layout to the shared preview.</li></ol></div>
+  <div data-mode="dual"><ol><li>Secure both arms. Connect motor power and each arm’s USB data cable. Close other apps using the ports.</li><li>On the Right arm · A card, select Connect USB and pick A’s adapter.</li><li>On the Left arm · B card, select Connect USB and pick B’s other adapter. Check both card states.</li><li>Select Pose and rest on that arm’s card for Read pose, Save rest, Return to rest, and Disconnect. Read and save rest for each arm separately.</li><li>The labels use the robot’s perspective. Match your tabletop layout to the shared preview.</li></ol></div>
 </template>
 <template id="help-calibration">
   <div data-mode="single"><ol><li>Disconnect follower A in Studio and support it. Choose Calibrate new, or import and save A’s existing calibration JSON.</li><li>For new calibration, put the joints near mid-travel and select Capture midpoint.</li><li>Move each joint gently through its usable range, skipping wrist roll. Select Save range.</li><li>For a saved file, choose it in Calibration files, open its actions menu, and select Use for follower A. Then open Calibration actions and choose Restore saved calibration.</li><li>Check the Calibration file and servo readback, then connect A in Robot.</li></ol></div>
@@ -465,7 +463,7 @@ run_route(robot)</code></pre>
 </template>
 <template id="help-deployment">
   <div data-mode="single"><ol><li>Connect follower A and read its current pose in Robot. Open A’s Controls and use Return A to rest first if the route should start at saved rest.</li><li>Preview the code in Simulation, then select Prepare deployment.</li><li>Review A’s targets and the full path with your teacher. Keep hands clear and choose Confirm and run route once.</li><li>Watch live position feedback and motor highlights. Stop route stops the run.</li></ol></div>
-  <div data-mode="dual"><ol><li>Connect both followers and read each current pose. To begin at saved rest, open Pose and rest in each arm’s actions menu and use Return to rest first.</li><li>Preview your A/B route, then select Prepare deployment. Check the follower label on every target.</li><li>Check both full paths, the space between arms, and the real mounting layout with your teacher.</li><li>Keep hands clear and select Confirm and run route once. Targets in the same call move together.</li><li>Watch both labeled arms and live feedback. Each step must finish before the next starts. Stop route stops both followers.</li></ol></div>
+  <div data-mode="dual"><ol><li>Connect both followers and read each current pose. To begin at saved rest, open Pose and rest on each arm’s card and use Return to rest first.</li><li>Preview your A/B route, then select Prepare deployment. Check the follower label on every target.</li><li>Check both full paths, the space between arms, and the real mounting layout with your teacher.</li><li>Keep hands clear and select Confirm and run route once. Targets in the same call move together.</li><li>Watch both labeled arms and live feedback. Each step must finish before the next starts. Stop route stops both followers.</li></ol></div>
 </template>
 <template id="help-settings">
   <div data-mode="single"><ol><li>Settings edits follower A’s profile. Set its LeRobot ID if you use it in a LeRobot project.</li><li>Use Advanced settings to set joint directions after comparing A’s real motion with its preview.</li><li>Select Save profile. Remove profile removes A’s stored profile.</li><li>Use Calibration to manage A’s calibration file.</li></ol></div>
@@ -542,5 +540,5 @@ run_route(robot)</code></pre>
 <script src="python-editor.js?v=independent-cards"></script>
 <script src="codebook.js?v=independent-cards"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=independent-cards"></script>
+<script src="studio.js?v=pose-rest-buttons"></script>
 </html>
