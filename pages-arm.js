@@ -181,11 +181,11 @@ const hostedArm = (() => {
     ]));
   }
 
-  async function closeCalibration(phase, message) {
+  async function closeCalibration(phase, message, file) {
     const session = calibrationSession;
     calibrationSession = undefined;
     await session?.bus.close().catch(() => {});
-    return calibrationStatus = {phase, message, sample: ""};
+    return calibrationStatus = {phase, message, sample: "", ...(file ? {label: session.label, file} : {})};
   }
 
   async function sampleCalibration() {
@@ -293,7 +293,7 @@ const hostedArm = (() => {
       await session.bus.writeCalibration(registers, session.before);
       stored.profiles[session.label].calibration_file = name;
       save();
-      return closeCalibration("done", "Calibration saved and verified on all six motors. Connect by USB to use it.");
+      return closeCalibration("done", "Calibration saved to this follower and verified on all six motors. Connect by USB to use it.", name);
     } catch (error) {
       return closeCalibration("error", error.message);
     }

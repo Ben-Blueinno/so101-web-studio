@@ -381,3 +381,5 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 .labeled-action svg { width: 17px; height: 17px; }
 .rest-actions { border-top: 1px solid var(--edge); margin-top: 18px; padding-top: 12px; }
 .rest-actions > span { color: var(--muted); font-size: .875rem; font-weight: 600; margin-inline-end: 4px; }
+
+.field-hint { font-size: .875rem; }

@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=control-row">
+<link rel="stylesheet" href="studio.css?v=usb-setup">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
 <link rel="stylesheet" href="codebook.css?v=code-colors">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
@@ -223,7 +223,6 @@ run_route(robot)</code></pre>
   <p id="usb-help" class="status" role="status"></p>
   <label for="arm-profile">Follower profile</label><select id="arm-profile"><option>A</option><option>B</option></select>
   <div class="actions" role="group" aria-label="Connection">
-    <button id="scan" type="button" class="icon-action" aria-label="Scan ports"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-search"/></svg></button>
     <button id="connect-usb" class="primary">Connect by USB</button>
     <button id="read-pose" type="button" class="icon-action" aria-label="Read current pose" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-position"/></svg></button>
     <button id="disconnect" disabled>Disconnect arm</button>
@@ -234,7 +233,7 @@ run_route(robot)</code></pre>
     <button id="return-rest" disabled>Return to rest</button>
     <button id="stop-rest" class="stop labeled-action" hidden><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-stop"/></svg><span>Stop return to rest</span></button>
   </div>
-  <p id="arm-status" class="status" role="status">Select a USB port for your follower.</p>
+  <p id="arm-status" class="status" role="status">Choose a follower, then connect its arm over USB.</p>
   <pre id="pose-sample"></pre>
 </section>
 <section id="calibration" role="tabpanel" aria-labelledby="tab-calibration" class="panel setup-panel" hidden>
@@ -271,9 +270,14 @@ run_route(robot)</code></pre>
       <label for="profile-id">LeRobot ID</label>
       <input id="profile-id">
       <label for="profile-calibration">Calibration file</label>
-      <input id="profile-calibration" placeholder="LeRobot default if empty">
+      <input id="profile-calibration" placeholder="Default" aria-describedby="calibration-source">
     </div>
-    <div class="actions"><button id="profile-save" class="primary">Save profile</button></div>
+    <p id="calibration-source" class="field-hint"></p>
+    <div class="actions">
+      <button id="profile-save" class="primary">Save profile</button>
+      <button id="scan-settings" type="button">Scan ports</button>
+      <button id="profile-remove" type="button">Remove profile</button>
+    </div>
     <p id="settings-status" class="status" role="status"></p>
     <details class="settings-advanced">
       <summary>Advanced settings</summary>
@@ -281,13 +285,6 @@ run_route(robot)</code></pre>
       <div class="fields">
         <label id="profile-port-label" for="profile-port" hidden>Serial port</label><div id="profile-port-tools" class="port-tools" hidden><input id="profile-port" autocomplete="off"><select id="ports" aria-label="Scanned ports"><option value="">Scanned ports…</option></select></div>
         <div id="joint-fields" style="display:contents"></div>
-      </div>
-      <div class="actions">
-        <button id="profile-options" type="button" class="icon-action" aria-label="Profile actions" aria-haspopup="menu" aria-expanded="false" aria-controls="profile-menu" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-more"/></svg></button>
-        <div id="profile-menu" class="studio-dropdown action-menu" role="menu" aria-label="Profile actions" popover="auto">
-          <button id="scan-settings" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-search"/></svg><span>Scan ports</span></button>
-          <button id="profile-remove" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-trash"/></svg><span>Remove profile</span></button>
-        </div>
       </div>
     </details>
   </section>
@@ -386,8 +383,8 @@ run_route(robot)</code></pre>
 <template id="help-hardware">
   <ol>
     <li>Secure the arm to the bench. Plug in motor power and USB. Use desktop Chrome or Edge and close other apps using the port.</li>
-    <li>Choose your follower. Use the magnifying glass to <strong>Scan ports</strong>, then pick the SO-101 adapter.</li>
-    <li>For a calibrated arm, select <strong>Connect by USB</strong>, then use the crosshair to <strong>Read current pose</strong>. Check for six readings. For a new arm, open <strong>Calibration</strong>.</li>
+    <li>Choose your follower. For a calibrated arm, select <strong>Connect by USB</strong> and pick its adapter when Chrome or Edge asks. For a new arm, open <strong>Calibration</strong> first.</li>
+    <li>Once connected, use the crosshair to <strong>Read current pose</strong>. Check for six readings.</li>
   </ol>
   <p>No adapter? Check the USB data cable. Adapter but no joints? Check motor power and the cable to the first servo.</p>
 </template>
@@ -396,7 +393,7 @@ run_route(robot)</code></pre>
   <ol>
     <li>Support the arm before selecting <strong>Calibrate new</strong>. The joints can move freely when motor torque releases.</li>
     <li>Put the joints near the middle of their travel. Select <strong>Capture midpoint</strong>.</li>
-    <li>Gently move each joint through its usable range by hand, skipping wrist roll. Select <strong>Save range</strong>.</li>
+    <li>Gently move each joint through its usable range by hand, skipping wrist roll. Select <strong>Save range</strong>. Studio assigns the verified file to this follower in Settings.</li>
   </ol>
   <h3>Restore a saved file</h3>
   <ol>
@@ -424,7 +421,7 @@ run_route(robot)</code></pre>
 </template>
 <template id="help-settings">
   <ol>
-    <li>Choose the follower profile before changing its settings.</li>
+    <li>Choose the follower profile. Studio assigns a file after successful calibration. If the field shows Default, Studio reads the connected arm’s calibration over USB.</li>
     <li>For an existing calibration, use the <strong>Import JSON</strong> icon. Select <strong>Save calibration</strong>. Open the options beside it and choose <strong>Use for profile</strong>, then select <strong>Save profile</strong>.</li>
     <li>Change joint direction only after comparing the real movement with the model. Studio keeps profiles and calibration copies in this browser.</li>
   </ol>
@@ -478,13 +475,13 @@ run_route(robot)</code></pre>
 <script src="so101-route-settings.js?v=20261118-simultaneous"></script>
 <script src="so101-viewer.js?v=side-panel"></script>
 <script src="pages-compiler.js?v=20261118-simultaneous"></script>
-<script src="pages-serial.js?v=20261118-tabbed-studio"></script>
-<script src="pages-arm.js?v=20261118-tabbed-studio"></script>
+<script src="pages-serial.js?v=usb-setup"></script>
+<script src="pages-arm.js?v=usb-setup"></script>
 <script src="vendor/codemirror.js"></script>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=export-editor"></script>
 <script src="codebook.js?v=code-colors"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=control-row"></script>
+<script src="studio.js?v=usb-setup"></script>
 </html>

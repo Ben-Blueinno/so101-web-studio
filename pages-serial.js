@@ -127,7 +127,7 @@ class ServoSerial {
       const {id, mode, homing_offset, range_min, range_max} = registers[joint];
       if (mode !== 0 || range_max > 4095 || range_max - range_min < 20 ||
           (joint !== "wrist_roll" && range_min === 0 && range_max === 4095)) {
-        throw new Error(`${JOINTS[joint]} needs calibration. In Arm setup, use Calibrate new or Restore saved calibration.`);
+        throw new Error(`${JOINTS[joint]} needs calibration. Open Calibration and choose Calibrate new or Restore saved calibration.`);
       }
       return [joint, {id, drive_mode: 0, homing_offset, range_min, range_max}];
     }));
