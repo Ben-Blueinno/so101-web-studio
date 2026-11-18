@@ -245,7 +245,7 @@ function showStep(step) {
       : `Follower ${initialized.label} will move through the targets below. Check the entire path and keep hands clear before confirming.`;
     if (list.hidden && !moving) stepStatus.textContent = "Update and reconnect the Studio bridge to review and run a full route.";
   } else if (step?.done) {
-    stepStatus.textContent = "Deployment complete.";
+    stepStatus.textContent = `Route complete. Verified ${step.count} of ${step.count} moves from encoder readings.`;
   }
   updateControls();
 }
@@ -269,11 +269,13 @@ hook("move", async () => {
   routeStopped = false;
   get("route-targets").hidden = true;
   get("move-result").textContent = "";
+  const feedback = get("route-feedback");
+  feedback.hidden = false;
   updateControls();
   try {
     while (currentStep && !routeStopped) {
       const {plan_id, index, joint, count} = currentStep;
-      stepStatus.textContent = `Running step ${index + 1}/${count} · ${JOINTS[joint]}.`;
+      showRouteFeedback();
       drawPose(initialized.model_pose, joint, "physical");
       const response = await api("move", {plan_id, index});
       connected(response.arm);
@@ -281,7 +283,7 @@ hook("move", async () => {
       const {result} = response;
       const unit = result.joint === "gripper" ? "%" : "°";
       get("move-result").textContent += `Step ${result.index + 1} · ${JOINTS[result.joint]} · measured ${result.measured.toFixed(2)}${unit}, target ${result.target.toFixed(2)}${unit}.\n`;
-      showStep(response);
+      showStep({...response, count});
     }
     if (routeStopped) {
       await api("discard");
@@ -295,11 +297,24 @@ hook("move", async () => {
     resetPreview();
     stepStatus.textContent = error.message;
   } finally {
+    feedback.hidden = true;
     moving = false;
     actionPending = false;
     updateControls();
   }
 }, stepStatus);
+
+function showRouteFeedback(pose, live) {
+  if (!currentStep || !moving || routeStopped) return;
+  const {joint, target, index, count} = currentStep;
+  const unit = joint === "gripper" ? "%" : "°";
+  const status = `Running step ${index + 1}/${count} · ${JOINTS[joint]} → ${target.toFixed(2)}${unit}.`;
+  if (stepStatus.textContent !== status) stepStatus.textContent = status;
+  const measured = pose?.[joint + ".pos"];
+  get("route-feedback").textContent = live && Number.isFinite(measured)
+    ? `Live encoder reading ${measured.toFixed(2)}${unit}`
+    : "Waiting for live encoder feedback…";
+}
 
 hook("stop-motion", async () => {
   routeStopped = true;
@@ -424,6 +439,7 @@ async function pollLivePose() {
       const result = await api("telemetry");
       if (initialized === previous && result.arm) {
         connected(result.arm);
+        showRouteFeedback(result.arm.pose, result.live);
         if (!simulating) drawPose(result.arm.model_pose, result.joint, "physical");
         status.hidden = simulating;
         const label = result.arm.at_rest ? "At rest" : "Away from rest";
@@ -435,6 +451,7 @@ async function pollLivePose() {
       status.hidden = true;
     }
   } catch (error) {
+    showRouteFeedback();
     status.hidden = false;
     status.textContent = "Live readings unavailable. Showing the last measured pose.";
   }

@@ -97,6 +97,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
     <section id="replay" hidden>
       <h3>Physical arm</h3>
       <p id="step-status" class="status" role="status"></p>
+      <p id="route-feedback" hidden></p>
       <ol id="route-targets" aria-label="Reviewed movement targets" hidden></ol>
       <div class="actions"><button id="move" class="primary">Confirm and run route</button><button id="stop-motion" class="stop" disabled>Stop route</button><button id="discard">Discard remaining steps</button></div>
       <p id="move-result" class="status" role="status"></p>
@@ -185,5 +186,5 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 <script src="pages-compiler.js?v=20261118-route-review"></script>
 <script src="pages-serial.js?v=20261118-route-review"></script>
 <script src="pages-arm.js?v=20261118-route-review"></script>
-<script src="studio.js?v=20261118-route-review"></script>
+<script src="studio.js?v=20261118-route-feedback"></script>
 </html>
