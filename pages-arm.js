@@ -105,9 +105,12 @@ const hostedArm = (() => {
       replay = undefined;
       return {done: true};
     }
-    const {joint, raw} = replay.targets[replay.index];
     return {plan_id: replay.id, index: replay.index, count: replay.targets.length,
-            joint, target: follower.units(joint, raw)};
+            ...reviewTargets(replay.targets[replay.index])};
+  }
+
+  function reviewTargets(group) {
+    return {actions: Object.entries(group).map(([joint, raw]) => ({joint, target: follower.units(joint, raw)}))};
   }
 
   async function compile(data) {
@@ -115,7 +118,7 @@ const hostedArm = (() => {
     const original = await hostedPython.parse(data.source);
     const directions = follower?.directions ?? Object.fromEntries(SERIAL_JOINTS.map(joint =>
       [joint, stored.profiles[data.label]?.[joint] === "-1" ? -1 : 1]));
-    const route = {...original, steps: original.steps.map(step => {
+    const toModelAction = step => {
       if (original.coordinates !== "lerobot") return step;
       const {joint, position_deg} = step;
       const sign = directions[joint];
@@ -125,20 +128,29 @@ const hostedArm = (() => {
       if (sign === 1) return step;
       return joint === "gripper" ? {...step, position_pct: 100 - step.position_pct}
         : {...step, offset_deg: -step.offset_deg};
-    })};
-    if (!follower || original.coordinates !== "lerobot") validateRoute(route);
-    route.fixed_angles = original.steps.map(step => step.position_deg ?? null);
+    };
+    const route = {...original, steps: original.steps.map(step =>
+      step.actions ? {actions: step.actions.map(toModelAction)} : toModelAction(step))};
+    if (!follower || original.coordinates !== "lerobot") validateRoute(route, {grouped: true});
+    route.fixed_angles = original.steps.map(step => routeActions(step).map(action => action.position_deg ?? null));
+    let targets;
     if (follower) {
+      targets = [];
       route.steps = route.steps.map((step, index) => {
-        const {joint} = step;
-        const fixedAngle = route.fixed_angles[index];
-        follower.target(joint, hardwareGoal(follower, step, fixedAngle));
-        if (fixedAngle === null) return step;
-        const start = follower.units(joint, follower.initial[joint]);
-        return {joint, offset_deg: directions[joint] * (fixedAngle - start)};
+        const raw = {};
+        const actions = routeActions(step).map((action, actionIndex) => {
+          const {joint} = action;
+          const fixedAngle = route.fixed_angles[index][actionIndex];
+          raw[joint] = follower.target(joint, hardwareGoal(follower, action, fixedAngle));
+          if (fixedAngle === null) return action;
+          const start = follower.units(joint, follower.initial[joint]);
+          return {joint, offset_deg: directions[joint] * (fixedAngle - start)};
+        });
+        targets.push(raw);
+        return step.actions ? {actions} : actions[0];
       });
     }
-    preview = {route, id: crypto.randomUUID()};
+    preview = {targets, id: crypto.randomUUID()};
     return {route, preview_id: preview.id};
   }
 
@@ -245,27 +257,22 @@ const hostedArm = (() => {
         return arm.snapshot();
       }
       case "deploy": {
-        if (replay || !preview || preview.id !== data.preview_id) throw new Error("Preview the current program first.");
+        if (replay || !preview?.targets || preview.id !== data.preview_id) throw new Error("Preview the current program first.");
         arm.current = await arm.bus.positions();
         arm.verifyStartingPose(arm.initial, arm.current);
-        const targets = preview.route.steps.map((step, index) => {
-          const {joint} = step;
-          const goal = hardwareGoal(arm, step, preview.route.fixed_angles[index]);
-          return {joint, raw: arm.target(joint, goal)};
-        });
+        const {targets} = preview;
         replay = {id: crypto.randomUUID(), index: 0, targets, expected: {...arm.initial}};
         arm.stopped = false;
-        return {...nextStep(), targets: targets.map(({joint, raw}) =>
-          ({joint, target: arm.units(joint, raw)}))};
+        return {...nextStep(), targets: targets.map(reviewTargets)};
       }
       case "move": {
         if (!replay || replay.id !== data.plan_id || replay.index !== data.index) throw new Error("This step is no longer current.");
-        const {joint, raw} = replay.targets[replay.index];
+        const targets = replay.targets[replay.index];
         try {
-          const result = await arm.moveTo(joint, raw, replay.expected);
-          replay.expected[joint] = raw;
+          const results = await arm.moveTogether(targets, replay.expected);
+          Object.assign(replay.expected, targets);
           replay.index++;
-          return {...nextStep(), arm: arm.snapshot(), result: {...result, index: data.index}};
+          return {...nextStep(), arm: arm.snapshot(), results, result_index: data.index};
         } catch (error) {
           replay = preview = undefined;
           throw error;
@@ -280,14 +287,23 @@ const hostedArm = (() => {
   }
 
   async function request(action, data = {}) {
-    if (code) return bridge(action, data);
+    if (code) {
+      if (action === "compile") {
+        const route = await hostedPython.parse(data.source);
+        if (route.steps.some(step => step.actions)) {
+          throw new Error("For simultaneous moves, disconnect the bridge and reconnect the calibrated arm by USB.");
+        }
+      }
+      if (action === "export-lerobot") return {code: await hostedPython.exportFunction(data.source)};
+      return bridge(action, data);
+    }
     if (action === "stop") {
       if (follower) follower.stopped = true;
       return {};
     }
     if (action === "telemetry") {
       if (!follower) return {arm: null, live: false};
-      if (busy) return {arm: follower.snapshot(), joint: follower.activeJoint, live: follower.moving};
+      if (busy) return {arm: follower.snapshot(), joints: follower.activeJoints, live: follower.moving};
       if (scan) return {arm: follower.snapshot(), live: false};
       try {
         scan = follower.bus.positions();

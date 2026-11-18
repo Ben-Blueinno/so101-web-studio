@@ -16,6 +16,7 @@ let compiling = false;
 let simulating = false;
 let returningToRest = false;
 let routeStopped = false;
+let pythonEditor;
 
 async function api(action, data = {}) {
   return hostedArm.request(action, data);
@@ -47,10 +48,43 @@ function selectView(view) {
     get(button.dataset.view).hidden = !current;
     button.setAttribute("aria-pressed", current);
   }
+  if (view === "program") pythonEditor?.refresh();
+  if (view === "getting-started" && get("guide-play").disabled) initGuideDemo();
 }
 
 for (const button of document.querySelectorAll("[data-view]")) {
   button.onclick = () => selectView(button.dataset.view);
+}
+
+let guideReady = false;
+function initGuideDemo() {
+  if (guideReady) return;
+  guideReady = true;
+  const play = get("guide-play"), status = get("guide-status");
+  try {
+    const draw = createViewer(get("guide-model"), SO101_MODEL, get("guide-camera"));
+    play.disabled = false;
+    play.onclick = () => {
+      play.disabled = true;
+      const motor = {joints: ["wrist_roll", "gripper"], mode: "simulation"};
+      status.textContent = "Moving wrist roll and gripper together…";
+      let started;
+      function frame(now) {
+        started ??= now;
+        const progress = Math.min(1, (now - started) / 1000);
+        draw({wrist_roll: -15 * progress, gripper: GRIP_HOME + (55 - GRIP_HOME) * progress}, motor);
+        if (progress < 1) requestAnimationFrame(frame);
+        else {
+          play.disabled = false;
+          status.textContent = "Wrist roll reached −15°. Gripper reached 55%.";
+        }
+      }
+      requestAnimationFrame(frame);
+    };
+  } catch {
+    get("guide-camera").disabled = true;
+    status.textContent = "3D preview is unavailable in this browser.";
+  }
 }
 
 function updateControls() {
@@ -70,6 +104,9 @@ function updateControls() {
     get(id).disabled = Boolean(initialized) || calibrating || actionPending;
   }
   code.readOnly = Boolean(currentStep) || actionPending;
+  if (pythonEditor && pythonEditor.getOption("readOnly") !== code.readOnly) {
+    pythonEditor.setOption("readOnly", code.readOnly);
+  }
   const bridge = hostedArm.mode === "bridge";
   const paired = Boolean(hostedArm.mode);
   const blocked = paired || actionPending || compiling || simulating;
@@ -82,12 +119,16 @@ function updateControls() {
   get("scan").disabled = !bridge;
 }
 
-function drawPose(pose, joint, mode) {
-  if (render) render(pose, joint ? {joint, mode} : undefined);
-  motorStatus.hidden = !joint;
+function drawPose(pose, joints, mode) {
+  const active = Array.isArray(joints) ? joints : joints ? [joints] : [];
+  if (render) render(pose, active.length ? {joints: active, mode} : undefined);
+  motorStatus.hidden = !active.length;
   motorStatus.dataset.mode = mode ?? "";
-  motorStatus.textContent = joint ? `${mode === "physical" ? "Physical move" : "Simulation"} · ${JOINTS[joint]}` : "";
+  motorStatus.textContent = active.length
+    ? `${mode === "physical" ? "Physical move" : "Simulation"} · ${active.map(joint => JOINTS[joint]).join(", ")}` : "";
 }
+
+const targetText = ({joint, target}) => `${JOINTS[joint]} → ${Number(target.toFixed(2))}${joint === "gripper" ? "%" : "°"}`;
 
 function resetPreview(resetModel = true) {
   animation++;
@@ -110,10 +151,11 @@ function expandEditor(expanded) {
   const button = get("expand-editor");
   button.setAttribute("aria-pressed", expanded);
   button.textContent = expanded ? "Collapse editor" : "Expand editor";
+  pythonEditor?.refresh();
 }
 hook("expand-editor", () => {
   expandEditor(get("expand-editor").getAttribute("aria-pressed") !== "true");
-  code.focus();
+  (pythonEditor ?? code).focus();
 });
 
 code.oninput = () => {
@@ -176,21 +218,24 @@ function animate(route, id) {
       updateControls();
       return;
     }
-    const {joint, [field(route.steps[index].joint)]: target} = route.steps[index];
-    const isGripper = joint === "gripper";
-    const end = isGripper ? target : (start[joint] ?? 0) + target;
-    const from = pose[joint] ?? (isGripper ? GRIP_HOME : 0);
-    const duration = Math.max(550, Math.min(2700, Math.abs(end - from) * 85));
+    const axes = routeActions(route.steps[index]).map((action, i) => {
+      const {joint} = action, target = action[field(joint)];
+      const isGripper = joint === "gripper";
+      return {joint, from: pose[joint] ?? (isGripper ? GRIP_HOME : 0),
+        end: isGripper ? target : (start[joint] ?? 0) + target,
+        target: route.fixed_angles?.[index]?.[i] ?? target};
+    });
+    const joints = axes.map(axis => axis.joint);
+    const duration = Math.max(550, Math.min(2700, Math.max(...axes.map(axis => Math.abs(axis.end - axis.from))) * 85));
     let started;
-    drawPose(pose, joint, "simulation");
-    const shownTarget = route.fixed_angles?.[index] ?? target;
-    previewStatus.textContent = `Step ${index + 1}/${route.steps.length} · ${JOINTS[joint]} to ${shownTarget}${isGripper ? "%" : "°"}`;
+    drawPose(pose, joints, "simulation");
+    previewStatus.textContent = `Step ${index + 1}/${route.steps.length} · ${axes.map(targetText).join(" · ")}`;
     function frame(now) {
       if (generation !== animation) return;
       started ??= now;
       const progress = Math.min(1, (now - started) / duration);
-      pose[joint] = from + (end - from) * progress;
-      render(pose, {joint, mode: "simulation"});
+      for (const {joint, from, end} of axes) pose[joint] = from + (end - from) * progress;
+      render(pose, {joints, mode: "simulation"});
       if (progress === 1) next(index + 1);
       else requestAnimationFrame(frame);
     }
@@ -230,9 +275,9 @@ function showStep(step) {
     list.replaceChildren();
     list.hidden = true;
   } else if (step.targets) {
-    const items = step.targets.slice(step.index).map(({joint, target}) => {
+    const items = step.targets.slice(step.index).map(group => {
       const item = document.createElement("li");
-      item.textContent = `${JOINTS[joint]} → ${target.toFixed(2)}${joint === "gripper" ? "%" : "°"}`;
+      item.textContent = routeActions(group).map(targetText).join(" · ");
       return item;
     });
     list.replaceChildren(...items);
@@ -241,7 +286,7 @@ function showStep(step) {
   }
   if (currentStep) {
     stepStatus.textContent = moving
-      ? `Running step ${step.index + 1}/${step.count} · ${JOINTS[step.joint]}.`
+      ? `Running step ${step.index + 1}/${step.count}.`
       : `Follower ${initialized.label} will move through the targets below. Check the entire path and keep hands clear before confirming.`;
     if (list.hidden && !moving) stepStatus.textContent = "Update and reconnect the Studio bridge to review and run a full route.";
   } else if (step?.done) {
@@ -274,15 +319,16 @@ hook("move", async () => {
   updateControls();
   try {
     while (currentStep && !routeStopped) {
-      const {plan_id, index, joint, count} = currentStep;
+      const {plan_id, index, count} = currentStep;
       showRouteFeedback();
-      drawPose(initialized.model_pose, joint, "physical");
+      drawPose(initialized.model_pose, routeActions(currentStep).map(action => action.joint), "physical");
       const response = await api("move", {plan_id, index});
       connected(response.arm);
       drawPose(response.arm.model_pose);
-      const {result} = response;
-      const unit = result.joint === "gripper" ? "%" : "°";
-      get("move-result").textContent += `Step ${result.index + 1} · ${JOINTS[result.joint]} · measured ${result.measured.toFixed(2)}${unit}, target ${result.target.toFixed(2)}${unit}.\n`;
+      for (const result of response.results ?? [response.result]) {
+        const unit = result.joint === "gripper" ? "%" : "°";
+        get("move-result").textContent += `Step ${index + 1} · ${JOINTS[result.joint]} · measured ${result.measured.toFixed(2)}${unit}, target ${result.target.toFixed(2)}${unit}.\n`;
+      }
       showStep({...response, count});
     }
     if (routeStopped) {
@@ -306,13 +352,13 @@ hook("move", async () => {
 
 function showRouteFeedback(pose, live) {
   if (!currentStep || !moving || routeStopped) return;
-  const {joint, target, index, count} = currentStep;
-  const unit = joint === "gripper" ? "%" : "°";
-  const status = `Running step ${index + 1}/${count} · ${JOINTS[joint]} → ${target.toFixed(2)}${unit}.`;
+  const {index, count} = currentStep;
+  const actions = routeActions(currentStep);
+  const status = `Running step ${index + 1}/${count} · ${actions.map(targetText).join(" · ")}.`;
   if (stepStatus.textContent !== status) stepStatus.textContent = status;
-  const measured = pose?.[joint + ".pos"];
-  get("route-feedback").textContent = live && Number.isFinite(measured)
-    ? `Live encoder reading ${measured.toFixed(2)}${unit}`
+  const readings = actions.map(({joint}) => ({joint, target: pose?.[joint + ".pos"]}));
+  get("route-feedback").textContent = live && readings.every(({target}) => Number.isFinite(target))
+    ? `Live encoder readings · ${readings.map(targetText).join(" · ")}`
     : "Waiting for live encoder feedback…";
 }
 
@@ -350,9 +396,12 @@ hook("program-save", async () => {
 });
 function openCode(text, name) {
   if (code.readOnly) throw new Error("Finish or discard the active deployment first.");
-  code.value = text;
+  if (pythonEditor) pythonEditor.setValue(text);
+  else {
+    code.value = text;
+    code.dispatchEvent(new Event("input"));
+  }
   get("program-name").value = name.slice(0, 60);
-  code.dispatchEvent(new Event("input"));
 }
 
 hook("program-open", () => {
@@ -440,7 +489,7 @@ async function pollLivePose() {
       if (initialized === previous && result.arm) {
         connected(result.arm);
         showRouteFeedback(result.arm.pose, result.live);
-        if (!simulating) drawPose(result.arm.model_pose, result.joint, "physical");
+        if (!simulating) drawPose(result.arm.model_pose, result.joints ?? result.joint, "physical");
         status.hidden = simulating;
         const label = result.arm.at_rest ? "At rest" : "Away from rest";
         const source = result.live ? "Live encoder pose" : "Last measured pose";
@@ -661,6 +710,8 @@ hook("cal-archive", async () => {
 
 async function boot() {
   code.value = hostedPython.example;
+  pythonEditor = attachPythonEditor(code, () => get("preview").click());
+  get("editor-frame").classList.toggle("enhanced", Boolean(pythonEditor));
   updateLineNumbers();
   showSettings(await api("settings"));
   populateProfile();

@@ -221,48 +221,67 @@ class BrowserFollower {
   }
 
   async moveTo(joint, target, expected) {
-    this.validatePositions({[joint]: target});
+    const [result] = await this.moveTogether({[joint]: target}, expected);
+    return result;
+  }
+
+  async moveTogether(targets, expected) {
+    this.validatePositions(targets);
     this.moving = true;
-    this.activeJoint = joint;
+    this.activeJoints = Object.keys(targets);
     try {
       this.current = await this.bus.positions();
       this.verifyStartingPose(expected, this.current);
-      const before = this.current[joint];
-      const scale = this.scale(joint);
-      const tolerance = Math.max(1, Math.floor(0.5 / scale));
-      const maxLead = Math.max(1, Math.floor(1 / scale));
+      const axes = Object.entries(targets).map(([joint, target]) => {
+        const before = this.current[joint], scale = this.scale(joint);
+        return {joint, target, before, scale, bestError: Math.abs(target - before),
+                tolerance: Math.max(1, Math.floor(0.5 / scale)),
+                maxLead: Math.max(1, Math.floor(1 / scale)), lastProgress: undefined};
+      });
       const start = performance.now();
-      const duration = Math.max(2500, Math.abs(target - before) * scale / 5 * 1000);
-      let lastProgress, bestError = Math.abs(target - before);
+      const duration = Math.max(2500, ...axes.map(axis => axis.bestError * axis.scale * 200));
       while (true) {
         if (this.stopped) throw new Error("Movement stopped. Review the arm pose.");
         this.current = await this.bus.positions();
         this.validatePositions(this.current);
-        this.verifyStartingPose({...expected, [joint]: this.current[joint]}, this.current);
-        const current = this.current[joint], error = Math.abs(target - current);
-        if (error <= tolerance) return {joint, before: this.units(joint, before), measured: this.units(joint, current), target: this.units(joint, target)};
+        const stationary = {...expected};
+        for (const {joint} of axes) stationary[joint] = this.current[joint];
+        this.verifyStartingPose(stationary, this.current);
+        if (this.stopped) throw new Error("Movement stopped. Review the arm pose.");
+        if (axes.every(({joint, target, tolerance}) => Math.abs(this.current[joint] - target) <= tolerance)) {
+          return axes.map(({joint, before, target}) => ({joint, before: this.units(joint, before),
+            measured: this.units(joint, this.current[joint]), target: this.units(joint, target)}));
+        }
         if (!this.holding && !this.stopped) await this.holdCurrentPose();
         const now = performance.now();
-        if (error < bestError) {
-          bestError = error;
-          if (lastProgress !== undefined) lastProgress = now;
+        const progress = Math.min(1, (now - start) / duration);
+        const goals = {};
+        for (const axis of axes) {
+          const {joint, before, target, tolerance, maxLead} = axis;
+          const current = this.current[joint], error = Math.abs(target - current);
+          if (error <= tolerance || error < axis.bestError) {
+            axis.bestError = error;
+            if (axis.lastProgress !== undefined) axis.lastProgress = now;
+          }
+          if (error <= tolerance) continue;
+          if (now - axis.lastProgress >= 3000 || now - start >= duration + 8000) {
+            throw new Error(`${JOINTS[joint]} did not reach the target. Review the live pose before trying again.`);
+          }
+          const planned = before + Math.trunc((target - before) * progress);
+          const sign = Math.sign(target - current);
+          const available = Math.min(error, maxLead);
+          const lead = Math.min(available, (planned - current) * sign);
+          if (lead > 0) {
+            goals[joint] = current + sign * lead;
+            if (lead === available) axis.lastProgress ??= now;
+          }
         }
-        if (now - lastProgress >= 3000 || now - start >= duration + 8000) {
-          throw new Error(`${JOINTS[joint]} did not reach the target. Review the live pose before trying again.`);
-        }
-        const planned = before + Math.trunc((target - before) * Math.min(1, (now - start) / duration));
-        const sign = Math.sign(target - current);
-        const available = Math.min(error, maxLead);
-        const lead = Math.min(available, (planned - current) * sign);
-        if (lead > 0 && !this.stopped) {
-          await this.bus.write(SERIAL_REG.goal, {[joint]: current + sign * lead}, 2);
-          if (lead === available) lastProgress ??= now;
-        }
+        if (Object.keys(goals).length && !this.stopped) await this.bus.write(SERIAL_REG.goal, goals, 2);
         await serialDelay(50);
       }
     } finally {
       this.moving = false;
-      this.activeJoint = undefined;
+      this.activeJoints = undefined;
     }
   }
 

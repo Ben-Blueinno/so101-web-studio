@@ -63,7 +63,18 @@ button[aria-pressed=true]{background:#a7f3d0;color:#142621}button:focus-visible,
 <pre><code>def route(robot):
     robot.send_action({"gripper.pos": 45})
     robot.send_action({"gripper.pos": 33})</code></pre>
-<p>The gripper uses a percentage of its travel, from 0 to 100. Use one <code>send_action()</code> line for each motor you want to move.</p>
+<p>The gripper uses a percentage of its travel, from 0 to 100.</p>
+
+<h2>Move two joints together</h2>
+<pre><code>def route(robot):
+    wrist_angle: float = -5.0
+    robot.send_action({
+        "wrist_roll.pos": wrist_angle,
+        "gripper.pos": 45,
+    })
+    robot.send_action({"wrist_roll.pos": 0, "gripper.pos": 33})</code></pre>
+<p>Targets inside the same <code>send_action()</code> move together. Studio waits for both targets before starting the next call. The optional <code>: float</code> type hint tells readers that the variable can contain a decimal. Use <code>: int</code> for a whole number. Type <code>robot.</code> or start typing a quoted joint key for suggestions.</p>
+<p>Try grouped moves in the 3D preview first. For a physical run, connect a calibrated arm by USB and check the path of all moving joints together before confirming.</p>
 
 <h2>4. Repeat a move with a loop</h2>
 <pre><code>def route(robot):

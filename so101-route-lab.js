@@ -16,21 +16,29 @@ const DRAFT = "so101-tabletop-move-set-v1";
 const LIBRARY_KEY = "so101-route-lab:move-sets:v1";
 const get = id => document.getElementById(id);
 const field = joint => joint === "gripper" ? "position_pct" : "offset_deg";
+const routeActions = step => step.actions ?? [step];
 
-function validateRoute(route) {
+function validateRoute(route, {grouped = false} = {}) {
   if (![V1, V2, DRAFT].includes(route?.schema) || !Array.isArray(route.steps)
       || route.steps.length < 1 || route.steps.length > 32) {
     throw new Error("Choose an SO-101 route file with 1 to 32 steps.");
   }
-  route.steps.forEach((step, i) => {
-    const joint = step?.joint, key = field(joint);
-    if (typeof joint !== "string" || !Object.hasOwn(JOINTS, joint)
-        || Object.keys(step).length !== 2 || (route.schema === V1 && joint === "gripper")) {
-      throw new Error(`Step ${i + 1}: choose a listed joint and its matching unit.`);
+  route.steps.forEach((group, i) => {
+    const actions = grouped ? routeActions(group) : [group];
+    if (!Array.isArray(actions) || !actions.length || actions.length > 6 ||
+        new Set(actions.map(action => action?.joint)).size !== actions.length) {
+      throw new Error(`Step ${i + 1}: choose up to six different joints.`);
     }
-    const value = step[key], [low, high] = route.schema === V1 ? [-15, 15] : LIMITS[joint];
-    if (!Number.isFinite(value) || value < low || value > high) {
-      throw new Error(`Step ${i + 1}: ${JOINTS[joint]} must be between ${low} and ${high}.`);
+    for (const step of actions) {
+      const joint = step?.joint, key = field(joint);
+      if (typeof joint !== "string" || !Object.hasOwn(JOINTS, joint)
+          || Object.keys(step).length !== 2 || (route.schema === V1 && joint === "gripper")) {
+        throw new Error(`Step ${i + 1}: choose a listed joint and its matching unit.`);
+      }
+      const value = step[key], [low, high] = route.schema === V1 ? [-15, 15] : LIMITS[joint];
+      if (!Number.isFinite(value) || value < low || value > high) {
+        throw new Error(`Step ${i + 1}: ${JOINTS[joint]} must be between ${low} and ${high}.`);
+      }
     }
   });
   return route.steps;
@@ -71,7 +79,7 @@ function cameraMatrix(yaw, pitch, aspect) {
     0,0,2*near*far/(near-far),0], view);
 }
 
-function createViewer(canvas, model) {
+function createViewer(canvas, model, resetButton = get("camera")) {
   const gl = canvas.getContext("webgl", {antialias: true});
   if (!gl) throw new Error("3D is unavailable. Try Chrome, Edge, or Safari with graphics acceleration.");
   function shader(kind, source) {
@@ -164,7 +172,8 @@ function createViewer(canvas, model) {
     for (const [link, visuals] of Object.entries(model.links)) {
       for (const [mesh, xyz, rpy, material] of visuals) {
         const isServo = material === "sts3215";
-        const highlighted = isServo && link === motorLinks[activeMotor?.joint];
+        const highlighted = isServo && (activeMotor?.joints ?? [activeMotor?.joint])
+          .some(joint => link === motorLinks[joint]);
         const highlight = activeMotor?.mode === "physical" ? [0.25,0.80,1] : [1,0.74,0.20];
         const tint = highlighted ? highlight : isServo ? [0.39,0.45,0.48] : [0.48,0.91,0.77];
         part(meshes[mesh], multiply(frames[link], transform(xyz, rpy)), tint);
@@ -192,7 +201,7 @@ function createViewer(canvas, model) {
     event.preventDefault();
     orbit(...moves[event.key]);
   });
-  get("camera").onclick = () => { yaw = -1.05; pitch = .47; render(); };
+  if (resetButton) resetButton.onclick = () => { yaw = -1.05; pitch = .47; render(); };
   render();
   return render;
 }

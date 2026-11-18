@@ -60,13 +60,16 @@ def compile_program(source):
             fail(node, "Number is outside the supported range.")
         return number
 
-    def add(call, joint, field, amount):
+    def target_for(call, joint, field, amount):
         low, high = (-360, 360) if native and joint != "gripper" else MODEL_LIMITS[joint]
         if not low <= amount <= high:
             fail(call, f"{joint} must be between {low:g} and {high:g}.")
+        return {"joint": joint, field: amount}
+
+    def add_step(call, step):
         if len(steps) >= 32:
             fail(call, "A route can have up to 32 moves.")
-        steps.append({"joint": joint, field: amount})
+        steps.append(step)
 
     def method_call(call, method):
         return (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
@@ -83,25 +86,29 @@ def compile_program(source):
         return True
 
     def send_action(call):
-        if len(call.args) != 1 or not isinstance(call.args[0], ast.Dict) or len(call.args[0].keys) != 1:
-            fail(call, "Use one joint per robot.send_action({...}) call.")
+        if len(call.args) != 1 or not isinstance(call.args[0], ast.Dict) or not call.args[0].keys:
+            fail(call, "Give robot.send_action({...}) one or more joint targets.")
         action = call.args[0]
-        key, target = action.keys[0], action.values[0]
+        targets = [joint_target(call, key, target) for key, target in zip(action.keys, action.values)]
+        if len({target["joint"] for target in targets}) != len(targets):
+            fail(call, "Give each joint only one target in a move.")
+        add_step(call, targets[0] if len(targets) == 1 else {"actions": targets})
+
+    def joint_target(call, key, target):
         if not isinstance(key, ast.Constant) or not isinstance(key.value, str) or not key.value.endswith(".pos"):
             fail(call, 'Use a LeRobot action key like "shoulder_pan.pos".')
         joint = key.value.removesuffix(".pos")
         if joint not in MODEL_LIMITS:
             fail(call, f"Unknown SO-101 joint {joint!r}.")
         if joint == "gripper":
-            add(call, joint, "position_pct", value(target))
-        elif baseline(target, key.value):
-            add(call, joint, "offset_deg", 0)
-        elif (isinstance(target, ast.BinOp) and isinstance(target.op, (ast.Add, ast.Sub))
-              and baseline(target.left, key.value)):
+            return target_for(call, joint, "position_pct", value(target))
+        if baseline(target, key.value):
+            return target_for(call, joint, "offset_deg", 0)
+        if (isinstance(target, ast.BinOp) and isinstance(target.op, (ast.Add, ast.Sub))
+                and baseline(target.left, key.value)):
             delta = value(target.right)
-            add(call, joint, "offset_deg", -delta if isinstance(target.op, ast.Sub) else delta)
-        else:
-            add(call, joint, "position_deg", value(target))
+            return target_for(call, joint, "offset_deg", -delta if isinstance(target.op, ast.Sub) else delta)
+        return target_for(call, joint, "position_deg", value(target))
 
     def visit(body):
         nonlocal budget
@@ -109,11 +116,21 @@ def compile_program(source):
             budget -= 1
             if budget < 0:
                 fail(node, "The program does too many operations.")
-            if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-                name = node.targets[0].id
+            assignment = (node.targets[0] if isinstance(node, ast.Assign) and len(node.targets) == 1
+                          else node.target if native and isinstance(node, ast.AnnAssign) else None)
+            if isinstance(assignment, ast.Name):
+                name = assignment.id
                 if name in COMMANDS or (native and name in ("robot", "start")):
                     fail(node, "Choose a different variable name.")
-                variables[name] = value(node.value)
+                if node.value is None:
+                    fail(node, "Give the typed variable a starting number.")
+                number = value(node.value)
+                if isinstance(node, ast.AnnAssign):
+                    if not isinstance(node.annotation, ast.Name) or node.annotation.id not in ("int", "float"):
+                        fail(node, "Use int or float for a numeric variable's type hint.")
+                    if node.annotation.id == "int" and type(number) is not int:
+                        fail(node, "An int variable needs a whole number.")
+                variables[name] = number
                 continue
             if isinstance(node, ast.For) and isinstance(node.target, ast.Name) and not node.orelse:
                 if node.target.id in COMMANDS or (native and node.target.id in ("robot", "start")):
@@ -135,13 +152,13 @@ def compile_program(source):
                     continue
                 if not native and isinstance(call.func, ast.Name) and not call.keywords:
                     if call.func.id == "grip" and len(call.args) == 1:
-                        add(call, "gripper", "position_pct", value(call.args[0]))
+                        add_step(call, target_for(call, "gripper", "position_pct", value(call.args[0])))
                         continue
                     if call.func.id == "move" and len(call.args) == 2:
                         joint = call.args[0]
                         if (isinstance(joint, ast.Constant) and isinstance(joint.value, str)
                                 and joint.value in MODEL_LIMITS and joint.value != "gripper"):
-                            add(call, joint.value, "offset_deg", value(call.args[1]))
+                            add_step(call, target_for(call, joint.value, "offset_deg", value(call.args[1])))
                             continue
                         fail(call, "Use a quoted arm joint name. Use grip() for the gripper.")
             commands = "robot.send_action()" if native else "move() or grip()"

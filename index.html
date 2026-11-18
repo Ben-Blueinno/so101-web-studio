@@ -3,6 +3,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SO-101 Web Studio</title>
+<link rel="stylesheet" href="vendor/codemirror.css">
+<link rel="stylesheet" href="vendor/codemirror-theme.css">
+<link rel="stylesheet" href="vendor/codemirror-hint.css">
 <style>
 :root{color-scheme:dark;--bg:#101818;--panel:#192624;--edge:#3d5250;--muted:#b4c9c4;--ink:#edf7f4;--accent:#a7f3d0}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
@@ -18,6 +21,13 @@ textarea{display:block;width:100%;min-height:155px;resize:vertical;font:15px/1.6
 .editor-frame{position:relative;padding-left:2.8rem;border:1px solid #5b7770;border-radius:6px;overflow:hidden;background:#14211f}
 .editor-frame:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .editor-frame #code{border:0;border-radius:0;outline:none;padding:6px 9px}
+.editor-frame.enhanced{padding-left:0}
+.editor-frame.enhanced .editor-gutter{display:none}
+.editor-frame .CodeMirror{height:310px;font:15px/1.6 ui-monospace,monospace}
+#program.editor-expanded .CodeMirror{height:65vh}
+.CodeMirror-hints{background:#192624;color:#edf7f4;border-color:#5b7770}
+.CodeMirror-hint{color:#edf7f4}.CodeMirror-hint-active{background:#255e50;color:white}
+.python-api-hint{color:#a7f3d0}
 .editor-gutter{position:absolute;inset:0 auto 0 0;width:2.8rem;overflow:hidden;text-align:right;padding:6px 5px;color:var(--muted);background:var(--bg);font:15px/1.6 ui-monospace,monospace;user-select:none;white-space:pre}
 #studio:has(#program.editor-expanded:not([hidden])){max-width:none}
 #program.editor-expanded{grid-template-columns:1fr}#program.editor-expanded #code{min-height:65vh}
@@ -27,6 +37,12 @@ textarea{display:block;width:100%;min-height:155px;resize:vertical;font:15px/1.6
 pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)}
 [hidden]{display:none!important}details{margin-top:14px}summary{cursor:pointer;color:var(--accent)}.stop{border-color:#efad91}
 .guide{max-width:860px}.guide li+li{margin-top:8px}.guide h3{margin-top:20px}
+.guide-flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:0;list-style:none}
+.guide .guide-flow li{margin:0;padding:10px 12px;background:#14211f;border:1px solid var(--edge);border-radius:8px}
+.guide-flow a{font-weight:650}.guide-flow span{display:block;margin-top:4px;color:var(--muted)}
+.guide-demo{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;margin-top:12px}
+.guide-demo pre{margin:0;padding:10px 12px;background:#14211f;border-radius:6px}
+@media(max-width:600px){.guide-demo{grid-template-columns:1fr}}
 @media(max-width:820px){.grid{grid-template-columns:1fr}main{padding:18px 12px}}
 </style>
 <main id="studio">
@@ -34,18 +50,38 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 <nav aria-label="Workspace"><button data-view="getting-started" aria-pressed="false">Start here</button><button data-view="program" aria-pressed="true">Python &amp; 3D</button><button data-view="hardware" aria-pressed="false">Arm setup</button><button data-view="settings" aria-pressed="false">Settings</button><a href="route-lab.html">3D Route Lab</a><a href="codebook.html">Python Codebook</a></nav>
 <section id="getting-started" class="panel guide" hidden>
   <h2>Your first SO-101 route</h2>
+  <nav aria-label="Visual walkthrough">
+    <ol class="guide-flow">
+      <li><a href="#guide-preview">Preview in 3D</a><span>Run the starter in the simulator.</span></li>
+      <li><a href="#guide-connect">Connect by USB</a><span>Pick your controller and read all six joints.</span></li>
+      <li><a href="#guide-calibrate">Calibrate if needed</a><span>Pair the bridge for a new or saved calibration.</span></li>
+      <li><a href="#guide-run">Review and run</a><span>Check the targets and watch the live readings.</span></li>
+    </ol>
+  </nav>
   <ol>
     <li>
-      <h3>Try the simulator</h3>
+      <h3 id="guide-preview">Try the simulator</h3>
       <p>Open <strong>Python &amp; 3D</strong> and choose <strong>Preview in 3D</strong>. The starter turns wrist roll to −5° and then to 0°. Change an angle and preview again. The simulator uses default joint limits when no arm is connected.</p>
+      <div class="guide-demo">
+        <canvas id="guide-model" width="480" height="360" tabindex="0" aria-label="Simulator example. Drag or use the arrow keys to rotate the model."></canvas>
+        <div>
+          <pre><code>robot.send_action({
+    "wrist_roll.pos": -15,
+    "gripper.pos": 55,
+})</code></pre>
+          <p>Put both targets in the same call to move the wrist and gripper together.</p>
+          <div class="actions"><button id="guide-play" type="button" disabled>Play example</button><button id="guide-camera" type="button">Reset view</button></div>
+          <p id="guide-status" class="status" role="status"></p>
+        </div>
+      </div>
     </li>
     <li>
-      <h3>Connect an already calibrated arm</h3>
+      <h3 id="guide-connect">Connect an already calibrated arm</h3>
       <p>Use desktop Chrome or Edge on Mac or Windows. Secure the arm to the bench, connect its motor power and USB cable, and close any other app using its serial port. In <strong>Arm setup</strong>, select the follower profile for that arm, then choose <strong>Connect by USB</strong> and select the controller in the browser’s port picker.</p>
       <p>Choose <strong>Read current pose</strong>. Look for all six joint readings, then check that <strong>Python &amp; 3D</strong> shows <strong>Live encoder pose</strong>. A calibrated arm can connect directly through the browser with its existing settings.</p>
     </li>
     <li>
-      <h3>Set up calibration if the arm needs it</h3>
+      <h3 id="guide-calibrate">Set up calibration if the arm needs it</h3>
       <p>With your teacher, download and unzip the <a href="SO101-Studio-Bridge.zip?v=20261118-route-review">Studio bridge</a>. Follow <strong>START HERE.txt</strong> to set up Python and LeRobot and launch the Mac or Windows bridge. Leave its terminal open. In <strong>Arm setup</strong>, expand <strong>Use the local bridge</strong>, paste the pairing code, and choose <strong>Connect bridge</strong>. Allow local access if prompted.</p>
       <p>In <strong>Settings</strong>, choose the follower profile, select the arm’s serial port and <strong>Save profile</strong>. On Windows the port usually starts with <code>COM</code>. On Mac it usually starts with <code>/dev/cu.usb</code>.</p>
       <ul>
@@ -55,8 +91,9 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
       <p>Once calibration succeeds, close the bridge and reload Web Studio to use <strong>Connect by USB</strong>. If you initialized the arm through the bridge, support it and choose <strong>Disconnect arm</strong> before closing the bridge.</p>
     </li>
     <li>
-      <h3>Preview and deploy your route</h3>
+      <h3 id="guide-run">Preview and deploy your route</h3>
       <p>Read the current pose before planning the first move. For a small test, set a wrist roll target a few degrees from its measured angle and within its calibrated limits. In <strong>Python &amp; 3D</strong>, run <strong>Preview in 3D</strong>, then choose <strong>Prepare deployment</strong>.</p>
+      <p>For moves with more than one joint, use <strong>Connect by USB</strong> after calibration.</p>
       <p>Review every joint and target in the list. Check the entire path with your teacher, keep hands clear, and choose <strong>Confirm and run route</strong> once. The moves run in order and the 3D view follows the encoder readings. Use <strong>Stop route</strong> if the arm moves unexpectedly.</p>
     </li>
   </ol>
@@ -65,8 +102,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 <div id="program" class="grid">
   <section class="panel">
     <div class="rail"><h2><label for="code">Python editor</label></h2><button id="expand-editor" type="button" aria-pressed="false">Expand editor</button></div>
-    <div class="editor-frame"><div class="editor-gutter" aria-hidden="true" id="code-lines">1</div><textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Python program" aria-describedby="editor-help"></textarea></div>
-    <p id="editor-help">Tab and Shift+Tab indent and unindent. Ctrl+Enter or ⌘+Enter previews the route. Esc exits the editor.</p>
+    <div class="editor-frame" id="editor-frame"><div class="editor-gutter" aria-hidden="true" id="code-lines">1</div><textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Python program" aria-describedby="editor-help"></textarea></div>
+    <p id="editor-help">Type <code>robot.</code> for method and type hints, or use Ctrl+Space. Ctrl+Enter or ⌘+Enter previews the route. Esc exits the editor.</p>
     <div class="actions"><button id="preview" class="primary">Preview in 3D</button><button id="stop-preview" disabled>Stop preview</button><button id="deploy" disabled>Prepare deployment</button></div>
     <p id="program-status" class="status" role="status"></p>
     <details><summary>Saved programs and files</summary>
@@ -180,11 +217,15 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
     </section>
   </div>
 </main>
-<script src="so101-tabletop-model.js?v=20261118-route-review"></script>
-<script src="so101-route-settings.js?v=20261118-route-review"></script>
-<script src="so101-route-lab.js?v=20261118-route-review"></script>
-<script src="pages-compiler.js?v=20261118-route-review"></script>
-<script src="pages-serial.js?v=20261118-route-review"></script>
-<script src="pages-arm.js?v=20261118-route-review"></script>
-<script src="studio.js?v=20261118-route-feedback"></script>
+<script src="so101-tabletop-model.js?v=20261118-simultaneous"></script>
+<script src="so101-route-settings.js?v=20261118-simultaneous"></script>
+<script src="so101-route-lab.js?v=20261118-simultaneous"></script>
+<script src="pages-compiler.js?v=20261118-simultaneous"></script>
+<script src="pages-serial.js?v=20261118-simultaneous"></script>
+<script src="pages-arm.js?v=20261118-simultaneous"></script>
+<script src="vendor/codemirror.js"></script>
+<script src="vendor/codemirror-python.js"></script>
+<script src="vendor/codemirror-hint.js"></script>
+<script src="python-editor.js?v=20261118-simultaneous"></script>
+<script src="studio.js?v=20261118-simultaneous"></script>
 </html>
