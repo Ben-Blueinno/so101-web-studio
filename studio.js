@@ -3,15 +3,11 @@
 const code = get("code");
 const key = "so101-web-studio:programs:v1";
 const programStatus = get("program-status");
-const armStatus = get("arm-status");
-const calStatusMessage = get("cal-status-message");
 const deploymentStatus = get("deployment-status");
-const settingsStatus = get("settings-status");
 const previewStatus = get("preview-status");
 const stepStatus = get("step-status");
 const motorStatus = get("active-motor");
 const programLibrary = get("program-library");
-const calibrationLibrary = get("cal-library");
 let render, initialized, currentStep, previewId;
 let armSnapshots = {}, simulatedPoses = {}, missingFollowers = [];
 let animation = 0, settings, moving = false, calibrating = false, actionPending = false;
@@ -26,11 +22,14 @@ const taskStages = new Map([...document.querySelectorAll("[data-task-stage]")].m
 ]));
 let activeMode = "single";
 let cleanProgram, guideDraw, guideFrame;
-let setupFollower = "A";
-const calibrationDrafts = new Map();
 
 async function api(action, data = {}) {
-  return hostedArm.request(action, data);
+  const result = await hostedArm.request(action, data);
+  if (result?.profiles) {
+    settings = result;
+    for (const card of armCards.values()) card.setSettings(result);
+  }
+  return result;
 }
 
 function hook(id, fn, status = programStatus) {
@@ -65,16 +64,10 @@ function selectView(view) {
     tab.tabIndex = current ? 0 : -1;
   }
   get("codebook-switch").hidden = view !== "program";
-  const componentTitle = get("component-title-" + get("arm-profile").value).textContent;
-  get("component-context-name").textContent = view === "program"
-    ? "Default arm · " + componentTitle
-    : view === "deployment" ? "Route review" : componentTitle;
-  get("component-context").hidden = !["calibration", "settings", "program", "deployment"].includes(view);
   if (view === "deployment") setCodebook(false);
   if (view === "program" || view === "deployment") {
     get(view).append(get("simulation-side-panel"));
   }
-  if (view === "calibration") showArmSetup();
   if (view === "program") pythonEditor?.refresh();
   if (view === "getting-started") {
     initGuideDemo();
@@ -126,11 +119,12 @@ get("close-codebook").onclick = () => {
   get("codebook-switch").focus();
 };
 
-for (const button of document.querySelectorAll("[data-help-view]")) {
-  button.onclick = () => {
+document.addEventListener("click", event => {
+  const button = event.target.closest("[data-help-view]");
+  if (!button) return;
     const view = button.dataset.helpView;
     const titles = {hardware: "Connect and control", "calibration-files": "Calibration files", preview: "3D preview", codebook: "Python Codebook"};
-    const label = button.dataset.helpComponent ?? ((button.closest("#component-controls") || ["calibration", "settings", "calibration-files"].includes(view)) ? get("arm-profile").value : "");
+    const label = button.dataset.helpComponent ?? "";
     const title = titles[view] ?? tabs.find(tab => tab.dataset.view === view).textContent;
     get("help-title").textContent = title + (label ? " · Arm " + label : "");
     get("help-content").replaceChildren(get("help-" + view).content.cloneNode(true));
@@ -139,8 +133,7 @@ for (const button of document.querySelectorAll("[data-help-view]")) {
     }
     get("help-dialog").addEventListener("close", () => button.focus(), {once: true});
     get("help-dialog").showModal();
-  };
-}
+});
 
 function sceneFollowers(labels, prefix, poses, active, mode) {
   get(prefix + "-label-b").hidden = labels.length < 2;
@@ -158,7 +151,7 @@ function resetGuideDemo() {
   if (!guideDraw) return;
   get("guide-play").disabled = false;
   get("guide-status").textContent = "";
-  const labels = activeMode === "dual" ? ["A", "B"] : [get("arm-profile").value];
+  const labels = activeMode === "dual" ? ["A", "B"] : ["A"];
   guideDraw.scene(sceneFollowers(labels, "guide", {}, {}, "simulation"));
 }
 
@@ -170,7 +163,7 @@ function initGuideDemo() {
     resetGuideDemo();
     play.onclick = () => {
       play.disabled = true;
-      const labels = activeMode === "dual" ? ["A", "B"] : [get("arm-profile").value];
+      const labels = activeMode === "dual" ? ["A", "B"] : ["A"];
       const active = Object.fromEntries(labels.map(label => [label, ["wrist_roll"]]));
       status.textContent = labels.length === 2 ? "Both wrists turn together, then return." : "Wrist roll turns, then returns.";
       let started;
@@ -212,45 +205,15 @@ function updateControls() {
   get("move").disabled = moving || !currentStep || get("route-targets").hidden;
   get("stop-motion").disabled = !moving || !currentStep;
   get("discard").disabled = moving || !currentStep;
-  get("init").disabled = Boolean(initialized) || calibrating || actionPending;
-  get("read-pose").disabled = !initialized || moving || Boolean(currentStep) || actionPending;
-  get("disconnect").disabled = !initialized || moving || actionPending;
-  for (const id of ["save-rest", "return-rest"]) {
-    get(id).disabled = !initialized || moving || Boolean(currentStep) || actionPending;
-  }
-  get("rest-actions").hidden = !initialized && !returningToRest;
-  get("stop-rest").hidden = !returningToRest;
-  const anyConnected = Boolean(initialized) || Object.keys(armSnapshots).length > 0;
-  for (const id of ["cal-read", "cal-apply", "cal-start"]) {
-    get(id).disabled = anyConnected || calibrating || actionPending;
-  }
-  get("arm-profile").disabled = calibrating || actionPending || compiling || simulating || Boolean(currentStep) || moving;
   code.readOnly = Boolean(currentStep) || actionPending;
-  if (pythonEditor && pythonEditor.getOption("readOnly") !== code.readOnly) {
-    pythonEditor.setOption("readOnly", code.readOnly);
-  }
-  get("settings-profile").disabled = get("arm-profile").disabled;
+  if (pythonEditor && pythonEditor.getOption("readOnly") !== code.readOnly) pythonEditor.setOption("readOnly", code.readOnly);
   updateComponentCards();
-  const bridge = hostedArm.mode === "bridge";
-  if (activeMode === "single") get("arm-profile").disabled = get("settings-profile").disabled = true;
-  const paired = Boolean(hostedArm.mode);
-  const blocked = paired || calibrating || actionPending || compiling || simulating;
-  get("connect-usb").disabled = bridge || (activeMode === "dual" ? Boolean(initialized) : anyConnected) || calibrating || actionPending
-    || compiling || simulating || Boolean(currentStep) || moving || !hostedArm.supportsUSB;
-  get("pair-bridge").disabled = blocked || activeMode === "dual";
-  get("init").disabled ||= !bridge;
-  get("cal-read").disabled ||= !paired && !hostedArm.supportsUSB;
-  get("cal-apply").disabled ||= !bridge && (!hostedArm.supportsUSB || !assignedCalibration());
-  get("cal-start").disabled ||= !bridge && !hostedArm.supportsUSB;
-  get("cal-default").disabled = anyConnected || calibrating || actionPending;
-  get("cal-use").disabled = get("cal-default").disabled;
-  get("bridge-port-options").hidden = !bridge;
-  get("scan-ports").disabled = calibrating || actionPending || Boolean(initialized);
-  get("save-port").disabled = get("scan-ports").disabled;
+  for (const card of armCards.values()) card.sync();
+
 }
 
 function drawScene(poses, active = {}, mode) {
-  const selected = get("arm-profile").value;
+  const selected = "A";
   const labels = activeMode === "dual" ? ["A", "B"] : [selected];
   if (render) render.scene(sceneFollowers(labels, "viewer", poses, active, mode));
   const motors = Object.entries(active).flatMap(([label, joints]) =>
@@ -263,7 +226,7 @@ function drawScene(poses, active = {}, mode) {
 
 const liveModels = () => Object.fromEntries(Object.entries(armSnapshots).map(([label, arm]) => [label, arm.model_pose]));
 function drawPose(pose, joints, mode) {
-  const label = get("arm-profile").value;
+  const label = "A";
   const poses = liveModels();
   if (pose && (initialized || !Object.keys(poses).length)) poses[label] = pose;
   const active = Array.isArray(joints) ? joints : joints ? [joints] : [];
@@ -356,7 +319,7 @@ code.onkeydown = event => {
 
 function animate(route, id, missing) {
   const generation = animation;
-  const defaultLabel = get("arm-profile").value;
+  const defaultLabel = "A";
   const labelFor = action => action.follower ?? defaultLabel;
   const routedLabels = new Set(route.steps.flatMap(step => routeActions(step).map(labelFor)));
   const labels = new Set([...Object.keys(armSnapshots), ...routedLabels]);
@@ -431,13 +394,13 @@ hook("preview", async () => {
   try {
     if (hostedArm.mode === "usb") acceptArms((await api("read-poses")).arms);
     else if (initialized) connected(await api("read-pose"));
-    const result = await api("compile", {source: code.value, label: get("arm-profile").value, mode: activeMode});
+    const result = await api("compile", {source: code.value, mode: activeMode});
     if (version !== animation) return;
     programStatus.textContent = `Validated ${result.route.steps.length} moves.`;
     if (!get("program").hidden && (!get("codebook-panel").hidden || matchMedia("(max-width: 820px)").matches)) {
       get("side-panel-heading").scrollIntoView({block: "nearest"});
     }
-    animate(result.route, result.preview_id, result.missing ?? (initialized ? [] : [get("arm-profile").value]));
+    animate(result.route, result.preview_id, result.missing ?? (initialized ? [] : ["A"]));
   } finally {
     compiling = false;
     updateControls();
@@ -467,7 +430,7 @@ function showStep(step) {
   }
   if (currentStep) {
     const labels = new Set((step.targets ?? [step]).flatMap(group => routeActions(group)
-      .map(action => action.follower ?? get("arm-profile").value)));
+      .map(action => action.follower ?? "A")));
     stepStatus.textContent = moving
       ? `Running step ${step.index + 1}/${step.count}.`
       : `Follower ${[...labels].join(" and ")} will move. Check the full paths, including clearance between the arms. Keep hands clear before confirming.`;
@@ -507,7 +470,7 @@ hook("move", async () => {
       showRouteFeedback();
       const active = {};
       for (const {follower, joint} of routeActions(currentStep)) {
-        (active[follower ?? get("arm-profile").value] ??= []).push(joint);
+        (active[follower ?? "A"] ??= []).push(joint);
       }
       drawScene(liveModels(), active, "physical");
       const response = await api("move", {plan_id, index});
@@ -687,7 +650,7 @@ get("generate-function").onclick = async () => {
   get("copy-function").disabled = get("download-function").disabled = true;
   exportDialog.showModal();
   try {
-    const {code: generated} = await api("export-lerobot", {source, label: get("arm-profile").value});
+    const {code: generated} = await api("export-lerobot", {source, label: "A"});
     if (!isCurrent()) return;
     exportCode.value = generated;
     exportFrame.hidden = false;
@@ -748,7 +711,7 @@ get("program-file").onchange = async event => {
 
 function acceptArms(arms) {
   armSnapshots = arms;
-  initialized = arms[get("arm-profile").value];
+  initialized = arms.A;
   const labels = Object.keys(arms).sort();
   const status = labels.length ? `Connected · ${labels.join(" and ")}` : "Browser simulator";
   if (get("connection").textContent !== status) get("connection").textContent = status;
@@ -757,12 +720,10 @@ function acceptArms(arms) {
     const text = arms[label] ? (arms[label].at_rest ? "Connected · At rest" : "Connected · Away from rest") : "Disconnected";
     if (indicator.textContent !== text) indicator.textContent = text;
   }
-  get("pose-sample").textContent = initialized ? Object.entries(initialized.pose).map(([name, value]) =>
-    `${JOINTS[name.replace(".pos", "")]}: ${value.toFixed(2)}${name === "gripper.pos" ? "%" : "°"}`).join("\n") : "";
   updateControls();
 }
 function connected(arm) {
-  const label = get("arm-profile").value;
+  const label = "A";
   const arms = {...armSnapshots};
   if (arm) arms[arm.label] = arm;
   else delete arms[label];
@@ -799,190 +760,27 @@ async function pollLivePose() {
   }
   setTimeout(pollLivePose, 300);
 }
-function armAction(id, fn, status = armStatus) {
-  hook(id, async () => {
-    actionPending = true;
-    updateControls();
-    try {
-      await fn();
-    } finally {
-      actionPending = false;
-      updateControls();
+function mountArmCards(label) {
+  for (const [kind, target] of [["controls", document.getElementById("component-" + label)],
+    ["calibration", document.getElementById("calibration")], ["settings", document.getElementById("settings")]]) {
+    const content = document.getElementById("arm-" + kind + "-template").content.cloneNode(true);
+    const wrapper = document.createElement("div");
+    wrapper.id = "arm-" + kind + "-" + label;
+    wrapper.className = kind === "calibration" ? "arm-calibration-group grid" : "arm-" + kind;
+    wrapper.append(content);
+    for (const element of wrapper.querySelectorAll("[data-field]")) element.id = label + "-" + element.dataset.field;
+    for (const element of wrapper.querySelectorAll("[for], [aria-controls], [aria-labelledby]")) {
+      for (const attribute of ["for", "aria-controls", "aria-labelledby"]) {
+        if (element.hasAttribute(attribute)) element.setAttribute(attribute,
+          element.getAttribute(attribute).split(" ").map(id => label + "-" + id).join(" "));
+      }
     }
-  }, status);
-}
-const armLabel = () => ({label: get("arm-profile").value});
-armAction("init", async () => {
-  const result = await api("init", armLabel());
-  connected(result);
-  resetPreview();
-  previewStatus.textContent = "Preview updated from the arm. Run your program from this pose.";
-  armStatus.textContent = "Calibration matches. The current pose is the starting point for replay.";
-});
-armAction("read-pose", async () => {
-  connected(await api("read-pose"));
-  resetPreview();
-  previewStatus.textContent = "Preview updated from the arm. Run your program from this pose.";
-  armStatus.textContent = "Read all six joints and updated the 3D starting pose.";
-});
-armAction("save-rest", async () => {
-  if (!await confirmAction("Save the current arm position as the rest pose for this follower?")) return;
-  connected(await api("save-rest"));
-  armStatus.textContent = "Saved the current position as rest for this follower.";
-});
-armAction("return-rest", async () => {
-  const plan = await api("prepare-rest");
-  connected(plan.arm);
-  if (!plan.token) {
-    armStatus.textContent = "The arm is already at rest.";
-    return;
+    for (const heading of wrapper.querySelectorAll("h2")) heading.tabIndex = -1;
+    for (const help of wrapper.querySelectorAll("[data-help-view]")) help.dataset.helpComponent = label;
+    target.append(wrapper);
   }
-  const order = plan.joints.map(joint => JOINTS[joint]).join(", ");
-  if (!await confirmAction(`The arm will move to its rest pose, one joint at a time: ${order}. Confirm the entire path is clear before continuing.`)) {
-    armStatus.textContent = "Return to rest cancelled.";
-    return;
-  }
-  returningToRest = moving = true;
-  resetPreview();
-  armStatus.textContent = "Returning to rest…";
-  try {
-    connected(await api("return-rest", {token: plan.token}));
-    drawPose(initialized.model_pose);
-    armStatus.textContent = "The arm reached its rest pose. Preview your route again before deployment.";
-  } finally {
-    returningToRest = moving = false;
-  }
-});
-hook("stop-rest", async () => {
-  await api("stop");
-  armStatus.textContent = "Stop requested.";
-}, armStatus);
-armAction("disconnect", async () => {
-  if (!await confirmAction("Support the arm before disconnecting. Continue?")) return;
-  const result = await api("disconnect");
-  if (result?.arms) acceptArms(result.arms);
-  else connected();
-  showStep();
-  resetPreview();
-  previewStatus.textContent = "Follower disconnected. Preview again before deploying.";
-  get("pose-sample").textContent = "";
-  armStatus.textContent = "Arm disconnected.";
-  if (!hostedArm.mode) get("bridge-status").textContent = "";
-});
-armAction("cal-read", async () => {
-  const result = await api("cal-read", armLabel());
-  get("cal-name").value = result.name;
-  get("cal-text").value = result.text;
-  calFilesStatus.textContent = "Review the readback, then save a copy if needed.";
-  get("cal-text").focus();
-}, calStatusMessage);
-armAction("cal-apply", async () => {
-  if (!await confirmAction("Restore calibration to this same arm from the selected follower profile? Support the arm before continuing because torque will be released.")) return;
-  calStatusMessage.textContent = (await api("cal-apply", {...armLabel(), confirmed: true})).message;
-}, calStatusMessage);
-armAction("cal-start", async () => {
-  if (!await confirmAction("Support the arm. Calibration releases torque and requires moving the joints by hand. Proceed?")) return;
-  await api("cal-start", {...armLabel(), confirmed: true});
-  calibrating = true;
-  updateControls();
-  pollCalibration();
-}, calStatusMessage);
-hook("cal-next", async () => {
-  get("cal-next").disabled = true;
-  await api("cal-next");
-}, calStatusMessage);
-hook("cal-cancel", async () => {
-  get("cal-cancel").disabled = true;
-  await api("cal-cancel");
-}, calStatusMessage);
-
-async function pollCalibration() {
-  try {
-    const {phase, message, sample, file} = await api("cal-status");
-    calStatusMessage.textContent = message;
-    get("arm-sample").textContent = sample;
-    calibrating = !["done", "error", "idle"].includes(phase);
-    get("cal-controls").hidden = !calibrating;
-    get("cal-next").textContent = phase === "range" ? "Save range" : "Capture midpoint";
-    get("cal-next").disabled = !["midpoint", "range"].includes(phase);
-    get("cal-cancel").disabled = !calibrating;
-    updateControls();
-    if (phase === "done" && hostedArm.mode !== "bridge") {
-      showSettings(await api("settings"), file ?? calibrationLibrary.value);
-      updateControls();
-    }
-  } catch (error) {
-    calStatusMessage.textContent = error.message;
-  }
-  if (calibrating) setTimeout(pollCalibration, 400);
 }
 
-const profileFields = {id: "profile-id"};
-for (const [joint, name] of Object.entries(JOINTS)) {
-  const id = "direction-" + joint;
-  const label = document.createElement("label");
-  label.htmlFor = id;
-  label.textContent = name + " direction";
-  const select = document.createElement("select");
-  select.id = id;
-  select.add(new Option("Unverified", ""));
-  select.add(new Option("Same (+1)", "1"));
-  select.add(new Option("Reversed (−1)", "-1"));
-  get("joint-fields").append(label, select);
-  profileFields[joint] = id;
-}
-function populateProfile() {
-  if (!settings) return;
-  const profile = settings.profiles[get("settings-profile").value];
-  for (const [fieldName, id] of Object.entries(profileFields)) selectStudioValue(get(id), profile[fieldName]);
-}
-get("settings-profile").onchange = () => {
-  selectStudioValue(get("arm-profile"), get("settings-profile").value);
-  get("arm-profile").onchange();
-};
-function assignedCalibration() {
-  return settings?.profiles[get("arm-profile").value]?.calibration_file ?? "";
-}
-function showArmSetup() {
-  const label = get("arm-profile").value;
-  if (setupFollower !== label) {
-    calibrationDrafts.set(setupFollower, {name: get("cal-name").value, text: get("cal-text").value});
-    const draft = calibrationDrafts.get(label);
-    get("cal-name").value = draft?.name ?? "";
-    get("cal-text").value = draft?.text ?? "";
-    for (const id of ["arm-sample", "cal-status-message", "cal-files-status", "settings-status"]) get(id).textContent = "";
-    selectStudioValue(calibrationLibrary, assignedCalibration().split(/[/\\]/).at(-1) ?? "");
-    setupFollower = label;
-  }
-  const assigned = assignedCalibration();
-  updateCodebookMode(activeMode === "dual", label);
-  const title = "Follower " + label + (activeMode === "dual" ? (label === "A" ? " · Right" : " · Left") : "");
-  get("cal-follower").textContent = title;
-  const componentName = activeMode === "dual" ? (label === "A" ? "Right arm · A" : "Left arm · B") : "Arm A";
-  get("component-context-name").textContent = componentName;
-  get("component-controls-title").textContent = componentName + " controls";
-  get("calibration-title").textContent = "Calibrate follower " + label;
-  get("settings-title").textContent = title + " profile";
-  get("connect-usb").textContent = "Connect follower " + label;
-  get("disconnect").textContent = "Disconnect follower " + label;
-  get("return-rest").textContent = "Return " + label + " to rest";
-  get("save-rest").setAttribute("aria-label", "Save follower " + label + " pose as rest");
-  get("read-pose").setAttribute("aria-label", "Read follower " + label + " current pose");
-  get("cal-use").querySelector("span").textContent = "Use for follower " + label;
-  get("cal-name").placeholder = "follower-" + label.toLowerCase();
-  get("connection-instructions").textContent = activeMode === "dual"
-    ? "Pose, rest, and disconnect controls apply to this arm."
-    : "Plug in follower A’s USB cable and motor power, then choose its adapter.";
-  get("calibration-instructions").textContent = activeMode === "dual"
-    ? "Disconnect both arms in Robot before calibrating this arm. Use its own USB adapter and calibration file."
-    : "Use follower A’s adapter and calibration file. Disconnect it in Studio before calibrating.";
-  const source = get("profile-calibration");
-  source.textContent = assigned.split(/[/\\]/).at(-1) || (hostedArm.mode === "bridge"
-    ? "Default · LeRobot calibration" : "Default · calibration stored on the arm");
-  source.title = assigned;
-  get("cal-default").hidden = !assigned;
-  get("profile-port").value = settings?.profiles[label]?.port ?? "";
-}
 function updateComponentCards() {
   const locked = calibrating || actionPending || compiling || simulating || Boolean(currentStep) || moving;
   const labels = activeMode === "dual" ? ["A", "B"] : ["A"];
@@ -990,146 +788,325 @@ function updateComponentCards() {
   for (const label of ["A", "B"]) {
     const card = get("component-" + label);
     card.hidden = !labels.includes(label);
-    const title = activeMode === "dual" ? (label === "A" ? "Right arm · A" : "Left arm · B") : "Arm A";
-    get("component-title-" + label).textContent = title;
-    const assigned = settings?.profiles[label]?.calibration_file;
-    const calibration = assigned ? "Calibration · " + assigned.split(/[/\\]/).at(-1) : "Calibration · Arm memory";
-    if (get("component-calibration-" + label).textContent !== calibration) get("component-calibration-" + label).textContent = calibration;
+    get("component-title-" + label).textContent = activeMode === "dual" ? (label === "A" ? "Right arm · A" : "Left arm · B") : "Arm A";
+    get("component-servo-" + label).textContent = "Servo settings · " + (armSnapshots[label] ? "Read from motors" : "Not checked");
+    const file = settings?.profiles[label]?.calibration_file;
+    get("component-calibration-" + label).textContent = "Calibration file · " + (file ? file.split(/[/\\]/).at(-1) : "None selected");
     card.dataset.connected = Boolean(armSnapshots[label]);
     for (const button of card.querySelectorAll("[data-component-action]")) {
-      const action = button.dataset.componentAction;
-      button.disabled = locked || (action === "connect" && (Boolean(armSnapshots[label]) || hostedArm.mode === "bridge" || !hostedArm.supportsUSB));
-      if (action === "connect") button.textContent = armSnapshots[label] ? "Connected" : "Connect USB";
-      if (action === "settings") button.setAttribute("aria-label", title + " settings");
+      button.disabled = locked || (button.dataset.componentAction === "connect" && (Boolean(armSnapshots[label]) || !hostedArm.supportsUSB));
+      if (button.dataset.componentAction === "connect") button.textContent = armSnapshots[label] ? "Connected" : "Connect USB";
     }
   }
-  get("component-controls-close").disabled = locked;
 }
-
-function openComponent(label, view) {
-  selectStudioValue(get("arm-profile"), label);
-  get("arm-profile").onchange();
-  selectView(view);
-  if (view === "hardware") {
-    get("component-controls").hidden = false;
-    get("component-controls-title").scrollIntoView({block: "nearest"});
-  }
-}
-
 for (const button of document.querySelectorAll("[data-component-action]")) {
   button.onclick = () => {
-    const action = button.dataset.componentAction;
-    openComponent(button.dataset.component, action === "controls" || action === "connect" ? "hardware" : action);
-    if (action === "connect") get("connect-usb").click();
-    else if (action !== "controls") get(action === "calibration" ? "calibration-title" : "settings-title").focus();
+    const label = button.dataset.component, action = button.dataset.componentAction, card = armCards.get(label);
+    if (action === "controls" || action === "connect") {
+      card.controls.hidden = false;
+      if (action === "connect") document.getElementById(label + "-connect-usb").click();
+      else card.controls.scrollIntoView({block: "nearest"});
+    } else {
+      selectView(action);
+      const panel = action === "calibration" ? card.calibration : card.profile;
+      panel.scrollIntoView({block: "start"});
+      panel.querySelector("h2").focus({preventScroll: true});
+    }
   };
 }
-get("component-overview").onclick = () => selectView("hardware");
-get("component-controls-close").onclick = () => {
-  get("component-controls").hidden = true;
-  get("component-" + get("arm-profile").value).querySelector('[data-component-action="controls"]').focus();
-};
-get("arm-profile").onchange = () => {
-  if (activeMode === "single") selectStudioValue(get("arm-profile"), "A");
-  if (hostedArm.mode !== "bridge") hostedArm.selectUSB(get("arm-profile").value);
-  acceptArms(armSnapshots);
-  selectStudioValue(get("settings-profile"), get("arm-profile").value);
-  populateProfile();
-  showArmSetup();
-  selectStudioValue(calibrationLibrary, assignedCalibration().split(/[/\\]/).at(-1) ?? "");
-  resetGuideDemo();
-  resetPreview();
-};
 
-async function saveFollowerFields(label, fields) {
-  const values = {...settings.profiles[label], ...fields};
-  showSettings(await api("profile-save", {label, values}), calibrationLibrary.value);
-  updateControls();
-}
-function showSettings(data, selection = "") {
-  settings = data;
-  get("ports").replaceChildren(new Option("Scanned ports…", ""), ...data.ports.map(port => new Option(port)));
-  calibrationLibrary.replaceChildren(new Option("Select calibration…", ""));
-  for (const name of data.files) calibrationLibrary.add(new Option(name, name));
-  selectStudioValue(calibrationLibrary, selection || "");
-  showArmSetup();
-}
-armAction("scan-ports", async () => {
-  showSettings(await api("settings"), calibrationLibrary.value);
-  get("bridge-status").textContent = settings.ports.length
-    ? "Choose a scanned port, then select Save port."
-    : "No serial ports found. You can enter a port manually.";
-}, get("bridge-status"));
-armAction("save-port", async () => {
-  const label = get("arm-profile").value;
-  await saveFollowerFields(label, {port: get("profile-port").value});
-  get("bridge-status").textContent = `Port saved for follower ${label}.`;
-}, get("bridge-status"));
-hook("profile-save", async () => {
-  const label = get("settings-profile").value;
-  const values = Object.fromEntries(Object.entries(profileFields).map(([f, id]) => [f, get(id).value]));
-  await saveFollowerFields(label, values);
-  settingsStatus.textContent = `Follower ${label} saved.`;
-}, settingsStatus);
-hook("profile-remove", async () => {
-  const label = get("settings-profile").value;
-  if (!await confirmAction(`Remove follower ${label}'s saved profile?`)) return;
-  showSettings(await api("profile-remove", {label}), calibrationLibrary.value);
-  populateProfile();
-  updateControls();
-  settingsStatus.textContent = `Follower ${label} removed.`;
-}, settingsStatus);
-const calFilesStatus = get("cal-files-status");
-hook("cal-view", async () => {
-  const name = calibrationLibrary.value;
-  if (!name) throw new Error("Select a calibration file first.");
-  get("cal-text").value = (await api("cal-view", {name})).text;
-  get("cal-name").value = name.replace(/\.json$/i, "");
-}, calFilesStatus);
-hook("cal-import", () => get("cal-file").click(), calFilesStatus);
-get("cal-file").onchange = async event => {
-  const file = event.target.files[0];
-  event.target.value = "";
-  if (!file) return;
-  if (file.size > 16384) {
-    calFilesStatus.textContent = "Calibration file is too large.";
-    return;
+const armCards = new Map();
+function createArmCards(label, data) {
+  const armId = label;
+  const get = id => document.getElementById(armId + "-" + id);
+  let initialized, settings = data;
+  const armStatus = get("arm-status"), calStatusMessage = get("cal-status-message");
+  const settingsStatus = get("settings-status"), calibrationLibrary = get("cal-library");
+  const armApi = (action, data = {}) => api(action, {...data, label: armId});
+  const armName = () => activeMode === "dual" ? (armId === "A" ? "Right arm · A" : "Left arm · B") : "Arm A";
+  function hook(id, fn, status = armStatus) {
+    get(id).onclick = async () => {
+      try { await fn(); } catch (error) { status.textContent = error.message; }
+    };
   }
-  get("cal-text").value = await file.text();
-  get("cal-name").value = file.name.replace(/\.json$/i, "");
-  calFilesStatus.textContent = "Save calibration to create a managed copy.";
-};
-hook("cal-new", () => {
-  get("cal-text").value = "";
-  get("cal-name").value = "";
-  get("cal-name").focus();
-  calFilesStatus.textContent = "";
-}, calFilesStatus);
-hook("cal-save", async () => {
-  const name = get("cal-name").value.trim();
-  const replace = settings.files.some(file => file.toLowerCase() === (name + ".json").toLowerCase());
-  if (replace && !await confirmAction("Replace this copy and archive the earlier version?")) return;
-  showSettings(await api("cal-save", {name, text: get("cal-text").value, replace}), name + ".json");
-  calFilesStatus.textContent = "Calibration copy saved.";
-}, calFilesStatus);
-armAction("cal-use", async () => {
-  const file = calibrationLibrary.value;
-  if (!file) throw new Error("Select a saved calibration file.");
-  const label = get("arm-profile").value;
-  await saveFollowerFields(label, {calibration_file: "calibrations/" + file});
-  calFilesStatus.textContent = `Assigned to follower ${label}. Use Restore saved calibration to write it to the arm.`;
-}, calFilesStatus);
-armAction("cal-default", async () => {
-  await saveFollowerFields(get("arm-profile").value, {calibration_file: ""});
-  calStatusMessage.textContent = "Default calibration selected.";
-}, calStatusMessage);
-hook("cal-archive", async () => {
-  const name = calibrationLibrary.value;
-  if (!name || !await confirmAction(`Archive ${name}?`)) return;
-  showSettings(await api("cal-archive", {name}));
-  calFilesStatus.textContent = "Calibration copy archived.";
-}, calFilesStatus);
+  function connected(arm) {
+    const arms = {...armSnapshots};
+    if (arm) arms[armId] = arm;
+    else delete arms[armId];
+    acceptArms(arms);
+  }
+  function armAction(id, fn, status = armStatus) {
+    hook(id, async () => {
+      actionPending = true;
+      updateControls();
+      try {
+        await fn();
+      } finally {
+        actionPending = false;
+        updateControls();
+      }
+    }, status);
+  }
+  const armLabel = () => ({label: armId});
+  armAction("read-pose", async () => {
+    connected(await armApi("read-pose"));
+    resetPreview();
+    previewStatus.textContent = "Preview updated from the arm. Run your program from this pose.";
+    armStatus.textContent = "Read all six joints and updated the 3D starting pose.";
+  });
+  armAction("save-rest", async () => {
+    if (!await confirmAction("Save the current arm position as the rest pose for this follower?")) return;
+    connected(await armApi("save-rest"));
+    armStatus.textContent = "Saved the current position as rest for this follower.";
+  });
+  armAction("return-rest", async () => {
+    const plan = await armApi("prepare-rest");
+    connected(plan.arm);
+    if (!plan.token) {
+      armStatus.textContent = "The arm is already at rest.";
+      return;
+    }
+    const order = plan.joints.map(joint => JOINTS[joint]).join(", ");
+    if (!await confirmAction(`The arm will move to its rest pose, one joint at a time: ${order}. Confirm the entire path is clear before continuing.`)) {
+      armStatus.textContent = "Return to rest cancelled.";
+      return;
+    }
+    returningToRest = moving = true;
+    resetPreview();
+    armStatus.textContent = "Returning to rest…";
+    try {
+      connected(await armApi("return-rest", {token: plan.token}));
+      drawScene(liveModels());
+      armStatus.textContent = "The arm reached its rest pose. Preview your route again before deployment.";
+    } finally {
+      returningToRest = moving = false;
+    }
+  });
+  hook("stop-rest", async () => {
+    await armApi("stop");
+    armStatus.textContent = "Stop requested.";
+  }, armStatus);
+  armAction("disconnect", async () => {
+    if (!await confirmAction("Support the arm before disconnecting. Continue?")) return;
+    const result = await armApi("disconnect");
+    if (result?.arms) acceptArms(result.arms);
+    else connected();
+    showStep();
+    resetPreview();
+    previewStatus.textContent = "Follower disconnected. Preview again before deploying.";
+    get("pose-sample").textContent = "";
+    armStatus.textContent = "Arm disconnected.";
+  });
+  armAction("cal-read", async () => {
+    const result = await armApi("cal-read", armLabel());
+    get("cal-name").value = result.name;
+    get("cal-text").value = result.text;
+    calFilesStatus.textContent = "Review the readback, then save a copy if needed.";
+    get("cal-text").focus();
+  }, calStatusMessage);
+  armAction("cal-apply", async () => {
+    if (!await confirmAction("Restore calibration to this same arm from the selected follower profile? Support the arm before continuing because torque will be released.")) return;
+    calStatusMessage.textContent = (await armApi("cal-apply", {...armLabel(), confirmed: true})).message;
+  }, calStatusMessage);
+  armAction("cal-start", async () => {
+    if (!await confirmAction("Support the arm. Calibration releases torque and requires moving the joints by hand. Proceed?")) return;
+    await armApi("cal-start", {...armLabel(), confirmed: true});
+    calibrating = true;
+    updateControls();
+    pollCalibration();
+  }, calStatusMessage);
+  hook("cal-next", async () => {
+    get("cal-next").disabled = true;
+    await armApi("cal-next");
+  }, calStatusMessage);
+  hook("cal-cancel", async () => {
+    get("cal-cancel").disabled = true;
+    await armApi("cal-cancel");
+  }, calStatusMessage);
 
+  async function pollCalibration() {
+    try {
+      const {phase, message, sample, file} = await armApi("cal-status");
+      calStatusMessage.textContent = message;
+      get("arm-sample").textContent = sample;
+      calibrating = !["done", "error", "idle"].includes(phase);
+      get("cal-controls").hidden = !calibrating;
+      get("cal-next").textContent = phase === "range" ? "Save range" : "Capture midpoint";
+      get("cal-next").disabled = !["midpoint", "range"].includes(phase);
+      get("cal-cancel").disabled = !calibrating;
+      updateControls();
+      if (phase === "done" && hostedArm.mode !== "bridge") {
+        showSettings(await armApi("settings"), file ?? calibrationLibrary.value);
+        updateControls();
+      }
+    } catch (error) {
+      calStatusMessage.textContent = error.message;
+    }
+    if (calibrating) setTimeout(pollCalibration, 400);
+  }
+
+  const profileFields = {id: "profile-id"};
+  for (const [joint, name] of Object.entries(JOINTS)) {
+    const id = "direction-" + joint;
+    const label = document.createElement("label");
+    label.htmlFor = armId + "-" + id;
+    label.textContent = name + " direction";
+    const select = document.createElement("select");
+    select.id = id;
+    select.add(new Option("Unverified", ""));
+    select.add(new Option("Same (+1)", "1"));
+    select.add(new Option("Reversed (−1)", "-1"));
+    select.id = armId + "-" + id;
+    get("joint-fields").append(label, select);
+    profileFields[joint] = id;
+  }
+  function populateProfile() {
+    if (!settings) return;
+    const profile = settings.profiles[label];
+    for (const [fieldName, id] of Object.entries(profileFields)) selectStudioValue(get(id), profile[fieldName]);
+  }
+  function assignedCalibration() {
+    return settings?.profiles[label]?.calibration_file ?? "";
+  }
+  function showArmSetup() {
+    const file = assignedCalibration();
+    get("component-controls-title").textContent = armName() + " · Pose and rest";
+    get("calibration-title").textContent = armName() + " · Calibration";
+    get("settings-title").textContent = armName() + " · Settings";
+    get("cal-follower").textContent = "";
+    get("calibration-files-title").textContent = armName() + " · Calibration files";
+    get("cal-use").querySelector("span").textContent = "Use for arm " + armId;
+    get("disconnect").setAttribute("aria-label", "Disconnect arm " + armId);
+    get("return-rest").setAttribute("aria-label", "Return arm " + armId + " to rest");
+    get("save-rest").setAttribute("aria-label", "Save arm " + armId + " pose as rest");
+    get("read-pose").setAttribute("aria-label", "Read arm " + armId + " pose");
+    get("profile-calibration").textContent = file ? file.split(/[/\\]/).at(-1) : "None selected";
+    get("profile-calibration").title = file;
+    get("cal-default").hidden = !file;
+    get("cal-name").placeholder = "follower-" + label.toLowerCase();
+    get("connection-instructions").textContent = "";
+    get("calibration-instructions").textContent = Object.keys(armSnapshots).length
+      ? "Disconnect the arms in Robot to change calibration."
+      : "";
+  }
+  async function saveFollowerFields(label, fields) {
+    const values = {...settings.profiles[label], ...fields};
+    showSettings(await armApi("profile-save", {label, values}), calibrationLibrary.value);
+    updateControls();
+  }
+  function showSettings(data, selection = calibrationLibrary.value) {
+    settings = data;
+    calibrationLibrary.replaceChildren(new Option("Select calibration…", ""));
+    for (const name of data.files) calibrationLibrary.add(new Option(name, name));
+    selectStudioValue(calibrationLibrary, selection || "");
+    showArmSetup();
+  }
+  hook("profile-save", async () => {
+    const values = Object.fromEntries(Object.entries(profileFields).map(([f, id]) => [f, get(id).value]));
+    await saveFollowerFields(label, values);
+    settingsStatus.textContent = `Follower ${label} saved.`;
+  }, settingsStatus);
+  hook("profile-remove", async () => {
+    if (!await confirmAction(`Remove follower ${label}'s saved profile?`)) return;
+    showSettings(await armApi("profile-remove", {label}), calibrationLibrary.value);
+    populateProfile();
+    updateControls();
+    settingsStatus.textContent = `Follower ${label} removed.`;
+  }, settingsStatus);
+  const calFilesStatus = get("cal-files-status");
+  hook("cal-view", async () => {
+    const name = calibrationLibrary.value;
+    if (!name) throw new Error("Select a calibration file first.");
+    get("cal-text").value = (await armApi("cal-view", {name})).text;
+    get("cal-name").value = name.replace(/\.json$/i, "");
+  }, calFilesStatus);
+  hook("cal-import", () => get("cal-file").click(), calFilesStatus);
+  get("cal-file").onchange = async event => {
+    const file = event.target.files[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > 16384) {
+      calFilesStatus.textContent = "Calibration file is too large.";
+      return;
+    }
+    get("cal-text").value = await file.text();
+    get("cal-name").value = file.name.replace(/\.json$/i, "");
+    calFilesStatus.textContent = "Save calibration to create a managed copy.";
+  };
+  hook("cal-new", () => {
+    get("cal-text").value = "";
+    get("cal-name").value = "";
+    get("cal-name").focus();
+    calFilesStatus.textContent = "";
+  }, calFilesStatus);
+  hook("cal-save", async () => {
+    const name = get("cal-name").value.trim();
+    const replace = settings.files.some(file => file.toLowerCase() === (name + ".json").toLowerCase());
+    if (replace && !await confirmAction("Replace this copy and archive the earlier version?")) return;
+    showSettings(await armApi("cal-save", {name, text: get("cal-text").value, replace}), name + ".json");
+    calFilesStatus.textContent = "Calibration copy saved.";
+  }, calFilesStatus);
+  armAction("cal-use", async () => {
+    const file = calibrationLibrary.value;
+    if (!file) throw new Error("Select a saved calibration file.");
+    await saveFollowerFields(label, {calibration_file: "calibrations/" + file});
+    calFilesStatus.textContent = `Assigned to follower ${label}. Use Restore saved calibration to write it to the arm.`;
+  }, calFilesStatus);
+  armAction("cal-default", async () => {
+    await saveFollowerFields(label, {calibration_file: ""});
+    calStatusMessage.textContent = "File assignment cleared. Servo settings will be read when connecting.";
+  }, calStatusMessage);
+  hook("cal-archive", async () => {
+    const name = calibrationLibrary.value;
+    if (!name || !await confirmAction(`Archive ${name}?`)) return;
+    showSettings(await armApi("cal-archive", {name}));
+    calFilesStatus.textContent = "Calibration copy archived.";
+  }, calFilesStatus);
+
+  armAction("connect-usb", async () => {
+    const result = await hostedArm.connectUSB(label, activeMode);
+    showSettings(await armApi("settings"));
+    populateProfile();
+    connected(result);
+    resetPreview();
+    armStatus.textContent = `Follower ${result.label} connected. Preview your route before deploying.`;
+  });
+
+
+  for (const trigger of document.querySelectorAll('[id^="' + armId + '-"][data-studio-menu]')) {
+    attachStudioDropdown(trigger, document.getElementById(trigger.getAttribute("aria-controls")));
+  }
+  for (const select of document.querySelectorAll('select[id^="' + armId + '-"]')) attachStudioSelect(select);
+  showSettings(data);
+  populateProfile();
+  get("component-controls-close").onclick = () => {
+    get("component-controls").hidden = true;
+    document.getElementById("component-menu-trigger-" + armId).focus();
+  };
+  function sync() {
+    initialized = armSnapshots[armId];
+    const locked = compiling || simulating || moving || calibrating || actionPending || Boolean(currentStep);
+    const anyConnected = Object.keys(armSnapshots).length > 0;
+    for (const id of ["connect-usb", "read-pose", "disconnect", "save-rest", "return-rest"]) {
+      get(id).disabled = locked || (id === "connect-usb" ? Boolean(initialized) || !hostedArm.supportsUSB : !initialized);
+    }
+    for (const id of ["cal-read", "cal-apply", "cal-start", "cal-default", "cal-use", "cal-save", "cal-archive", "profile-save", "profile-remove"]) {
+      get(id).disabled = locked || anyConnected || (id === "cal-apply" && !assignedCalibration());
+    }
+    get("profile-id").disabled = locked;
+    for (const joint of Object.keys(JOINTS)) get("direction-" + joint).disabled = locked;
+    get("rest-actions").hidden = !initialized && !returningToRest;
+    get("stop-rest").hidden = !returningToRest || !initialized;
+    get("pose-sample").textContent = initialized ? Object.entries(initialized.pose).map(([key, value]) =>
+      JOINTS[key.replace(".pos", "")] + " " + value.toFixed(2) + (key === "gripper.pos" ? "%" : "°")).join("\n") : "";
+    get("component-controls-close").disabled = locked;
+    get("servo-settings").textContent = initialized ? "Read from motors" : "Not checked";
+    showArmSetup();
+  }
+  return {sync, setSettings: showSettings, controls: get("component-controls"),
+    calibration: document.getElementById("arm-calibration-" + armId),
+    profile: document.getElementById("arm-settings-" + armId)};
+}
 const dualStarter = `def route(robot):
     robot.send_action({"A.wrist_roll.pos": -5, "B.wrist_roll.pos": 5})
     robot.send_action({"A.wrist_roll.pos": 0, "B.wrist_roll.pos": 0})
@@ -1149,28 +1126,14 @@ function showMode() {
   get("guide-connect-step").textContent = dual ? "Connect both followers by USB." : "Plug in USB and motor power.";
   get("guide-calibrate-step").textContent = dual ? "Set ranges for each arm." : "Set ranges for this arm.";
   get("component-B").hidden = !dual;
-  get("component-expansion").hidden = !dual;
-  get("component-controls").hidden = true;
   get("codebook-dual-example").hidden = !dual;
-  for (const section of get("codebook-panel").querySelectorAll("[data-mode]")) {
-    section.hidden = section.dataset.mode !== activeMode;
+  for (const section of get("codebook-panel").querySelectorAll("[data-mode]")) section.hidden = section.dataset.mode !== activeMode;
+  updateCodebookMode(dual);
+  for (const [label, card] of armCards) {
+    card.controls.hidden = true;
+    card.calibration.hidden = card.profile.hidden = label === "B" && !dual;
   }
-  updateCodebookMode(dual, get("arm-profile").value);
-  get("bridge-option").hidden = dual;
-  get("settings-follower-field").hidden = true;
-  const labels = dual ? ["A", "B"] : ["A"];
-  const selected = dual ? get("arm-profile").value : "A";
-  for (const id of ["arm-profile", "settings-profile"]) {
-    const select = get(id);
-    select.replaceChildren(...labels.map(label => new Option(
-      dual ? label + (label === "A" ? " · Right" : " · Left") : "A", label)));
-    selectStudioValue(select, selected);
-  }
-  if (hostedArm.mode !== "bridge") hostedArm.selectUSB(selected);
-  acceptArms(armSnapshots);
-  populateProfile();
-  showArmSetup();
-  get("physical-title").textContent = dual ? "Follower targets · A and B" : "Follower A";
+  updateControls();
   resetGuideDemo();
 }
 
@@ -1239,8 +1202,11 @@ async function boot() {
   });
   get("editor-frame").classList.toggle("enhanced", Boolean(pythonEditor));
   updateLineNumbers();
-  showSettings(await api("settings"));
-  populateProfile();
+  settings = await api("settings");
+  for (const label of ["A", "B"]) {
+    mountArmCards(label);
+    armCards.set(label, createArmCards(label, settings));
+  }
   try {
     migrateSavedMoveSets();
   } catch {
@@ -1258,47 +1224,10 @@ async function boot() {
   selectView(views[location.hash] ?? "getting-started");
   if (location.hash === "#codebook") setCodebook(true);
   pollLivePose();
-  if (!hostedArm.supportsUSB) get("usb-help").textContent = "USB connection requires desktop Chrome or Edge and browser permission.";
+
   updateControls();
 }
 
-armAction("connect-usb", async () => {
-  const result = await hostedArm.connectUSB(get("arm-profile").value, activeMode);
-  showSettings(await api("settings"));
-  populateProfile();
-  connected(result);
-  resetPreview();
-  armStatus.textContent = `Follower ${result.label} connected. Preview your route before deploying.`;
-});
-
-get("bridge-form").onsubmit = event => {
-  event.preventDefault();
-  if (actionPending || hostedArm.mode || activeMode !== "single") return;
-  actionPending = true;
-  updateControls();
-  hostedArm.pair(get("bridge-code").value.trim(), "A").then(async session => {
-    get("bridge-code").value = "";
-    const bridgeSettings = await api("settings");
-    showSettings(bridgeSettings);
-    populateProfile();
-
-    connected(session.arm);
-    if (session.step) showStep(session.step);
-    resetPreview();
-    get("bridge-status").textContent = "Bridge connected. Local profiles and calibration settings are available.";
-    get("settings-scope").textContent = "Profile changes apply on the connected computer.";
-    const calibration = await api("cal-status");
-    if (["working", "midpoint", "range"].includes(calibration.phase)) {
-      calibrating = true;
-      pollCalibration();
-    }
-  }).catch(error => {
-    get("bridge-status").textContent = error.message;
-  }).finally(() => {
-    actionPending = false;
-    updateControls();
-  });
-};
 function startLimitPreview(payload) {
   get("studio").hidden = true;
   get("limit-preview").hidden = false;
@@ -1379,16 +1308,11 @@ function startLimitPreview(payload) {
   reset("Ready at the saved rest pose.");
 }
 
-get("ports").onchange = () => {
-  const port = get("ports").value;
-  if (port) get("profile-port").value = port;
-  selectStudioValue(get("ports"), "");
-};
 for (const trigger of document.querySelectorAll("[data-studio-menu]")) {
   attachStudioDropdown(trigger, get(trigger.getAttribute("aria-controls")));
 }
 for (const select of document.querySelectorAll("select")) {
-  if (!["arm-profile", "settings-profile"].includes(select.id)) attachStudioSelect(select);
+  attachStudioSelect(select);
 }
 
 const limitPayload = new URLSearchParams(location.hash.slice(1)).get("limit-preview");

@@ -6,9 +6,9 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=component-workflow">
+<link rel="stylesheet" href="studio.css?v=independent-cards">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
-<link rel="stylesheet" href="codebook.css?v=copy-icons">
+<link rel="stylesheet" href="codebook.css?v=independent-cards">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
   <symbol id="glyph-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.6 0c0 2-2.8 2.1-2.8 4.2m0 3.2h.01"/></symbol>
   <symbol id="glyph-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
@@ -56,11 +56,6 @@
   <button type="button" id="tab-about" role="tab" aria-selected="false" aria-controls="about" tabindex="-1" data-view="about">About</button>
 </nav>
 <div class="workspace-tools" aria-label="Workspace tools">
-  <select id="arm-profile" aria-label="Internal follower context" hidden><option value="A">A</option><option value="B">B</option></select>
-  <div id="component-context" hidden>
-    <button type="button" id="component-overview" class="icon-action" aria-label="Back to robot components"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-next"/></svg></button>
-    <span id="component-context-name"></span>
-  </div>
   <button id="codebook-switch" type="button" class="icon-action" role="switch" aria-label="Codebook" aria-checked="false" aria-controls="codebook-panel" hidden><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-sidebar"/></svg></button>
 </div>
 <section id="getting-started" role="tabpanel" aria-labelledby="tab-getting-started">
@@ -164,12 +159,12 @@
           <table aria-label="SO-101 motor ranges and Python keys" aria-describedby="range-note">
             <thead><tr><th scope="col">Motor and Python key</th><th scope="col">Default range</th></tr></thead>
             <tbody>
-              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="shoulder_pan" data-motion="Turns the base left or right." aria-pressed="true"><span class="motor-label">Shoulder pan</span><code>shoulder_pan.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="shoulder_pan.pos" aria-label="Copy shoulder_pan.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="shoulder_lift" data-motion="Raises or lowers the upper arm." aria-pressed="false"><span class="motor-label">Shoulder lift</span><code>shoulder_lift.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="shoulder_lift.pos" aria-label="Copy shoulder_lift.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="elbow_flex" data-motion="Bends or straightens the elbow." aria-pressed="false"><span class="motor-label">Elbow flex</span><code>elbow_flex.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="elbow_flex.pos" aria-label="Copy elbow_flex.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="wrist_flex" data-motion="Tilts the gripper up or down." aria-pressed="false"><span class="motor-label">Wrist flex</span><code>wrist_flex.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="wrist_flex.pos" aria-label="Copy wrist_flex.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="wrist_roll" data-motion="Twists the gripper like a doorknob." aria-pressed="false"><span class="motor-label">Wrist roll</span><code>wrist_roll.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="wrist_roll.pos" aria-label="Copy wrist_roll.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="gripper" data-motion="Opens or closes the jaws." aria-pressed="false"><span class="motor-label">Gripper</span><code>gripper.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="gripper.pos" aria-label="Copy gripper.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="shoulder_pan" data-motion="Turns the base left or right." aria-pressed="true"><span class="motor-label">Shoulder pan</span></button><div class="motor-key-list"><div><code>A.shoulder_pan.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="A.shoulder_pan.pos" aria-label="Copy A.shoulder_pan.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div><div data-mode="dual" hidden><code>B.shoulder_pan.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="B.shoulder_pan.pos" aria-label="Copy B.shoulder_pan.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></div></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="shoulder_lift" data-motion="Raises or lowers the upper arm." aria-pressed="false"><span class="motor-label">Shoulder lift</span></button><div class="motor-key-list"><div><code>A.shoulder_lift.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="A.shoulder_lift.pos" aria-label="Copy A.shoulder_lift.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div><div data-mode="dual" hidden><code>B.shoulder_lift.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="B.shoulder_lift.pos" aria-label="Copy B.shoulder_lift.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></div></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="elbow_flex" data-motion="Bends or straightens the elbow." aria-pressed="false"><span class="motor-label">Elbow flex</span></button><div class="motor-key-list"><div><code>A.elbow_flex.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="A.elbow_flex.pos" aria-label="Copy A.elbow_flex.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div><div data-mode="dual" hidden><code>B.elbow_flex.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="B.elbow_flex.pos" aria-label="Copy B.elbow_flex.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></div></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="wrist_flex" data-motion="Tilts the gripper up or down." aria-pressed="false"><span class="motor-label">Wrist flex</span></button><div class="motor-key-list"><div><code>A.wrist_flex.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="A.wrist_flex.pos" aria-label="Copy A.wrist_flex.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div><div data-mode="dual" hidden><code>B.wrist_flex.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="B.wrist_flex.pos" aria-label="Copy B.wrist_flex.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></div></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="wrist_roll" data-motion="Twists the gripper like a doorknob." aria-pressed="false"><span class="motor-label">Wrist roll</span></button><div class="motor-key-list"><div><code>A.wrist_roll.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="A.wrist_roll.pos" aria-label="Copy A.wrist_roll.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div><div data-mode="dual" hidden><code>B.wrist_roll.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="B.wrist_roll.pos" aria-label="Copy B.wrist_roll.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></div></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="gripper" data-motion="Opens or closes the jaws." aria-pressed="false"><span class="motor-label">Gripper</span></button><div class="motor-key-list"><div><code>A.gripper.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="A.gripper.pos" aria-label="Copy A.gripper.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div><div data-mode="dual" hidden><code>B.gripper.pos</code><button type="button" class="icon-action copy-codebook" data-copy-key="B.gripper.pos" aria-label="Copy B.gripper.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></div></div></th><td class="default-range"></td></tr>
             </tbody>
           </table>
         </div>
@@ -177,8 +172,8 @@
 
         <div class="code-example-title"><h3>1. Give a motor a target angle</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-1" aria-label="Copy example — 1. Give a motor a target angle"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-1">def route(robot):
-    robot.send_action({"wrist_roll.pos": -5})
-    robot.send_action({"wrist_roll.pos": 0})</code></pre>
+    robot.send_action({"A.wrist_roll.pos": -5})
+    robot.send_action({"A.wrist_roll.pos": 0})</code></pre>
         <ol>
           <li><code>def route(robot):</code> names the function. Indent its instructions by four spaces.</li>
           <li><code>robot.send_action(...)</code> gives one motor a target. The quoted key picks the motor and the number sets the angle in degrees.</li>
@@ -188,24 +183,24 @@
         <div class="code-example-title"><h3>2. Move a few degrees from where you start</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-2" aria-label="Copy example — 2. Move a few degrees from where you start"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-2">def route(robot):
     start = robot.get_observation()
-    robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + 8})
-    robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
-        <p><code>get_observation()</code> records the route’s starting positions. <code>start["shoulder_pan.pos"]</code> picks the base angle from those readings. If it starts at 10°, adding 8 sends it to 18°. The last line sends it back to 10°. You can skip the observation line when all targets are fixed numbers.</p>
+    robot.send_action({"A.shoulder_pan.pos": start["A.shoulder_pan.pos"] + 8})
+    robot.send_action({"A.shoulder_pan.pos": start["A.shoulder_pan.pos"]})</code></pre>
+        <p><code>get_observation()</code> records the route’s starting positions. <code>start["shoulder_pan.pos"]</code> picks the base angle from those readings. If it starts at 10°, adding 8 sends it to 18°. The last line sends it back to 10°. You can skip the observation line when all targets are fixed numbers. Every key still starts with A. or B.</p>
 
         <div class="code-example-title"><h3>3. Open and close the gripper</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-3" aria-label="Copy example — 3. Open and close the gripper"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-3">def route(robot):
-    robot.send_action({"gripper.pos": 45})
-    robot.send_action({"gripper.pos": 33})</code></pre>
+    robot.send_action({"A.gripper.pos": 45})
+    robot.send_action({"A.gripper.pos": 33})</code></pre>
         <p>The gripper uses a percentage of its travel, from 0 to 100.</p>
 
         <div class="code-example-title"><h3>4. Move two joints together</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-4" aria-label="Copy example — 4. Move two joints together"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-4">def route(robot):
     wrist_angle: float = -5.0
     robot.send_action({
-        "wrist_roll.pos": wrist_angle,
-        "gripper.pos": 45,
+        "A.wrist_roll.pos": wrist_angle,
+        "A.gripper.pos": 45,
     })
-    robot.send_action({"wrist_roll.pos": 0, "gripper.pos": 33})</code></pre>
+    robot.send_action({"A.wrist_roll.pos": 0, "A.gripper.pos": 33})</code></pre>
         <p>Targets inside the same <code>send_action()</code> move together. Studio waits for both targets before starting the next call. The optional <code>: float</code> type hint tells readers that the variable can contain a decimal. Use <code>: int</code> for a whole number. Type <code>robot.</code> or start typing a quoted joint key for suggestions.</p>
         <p>Try grouped moves in the 3D preview first. For a physical run, connect a calibrated arm by USB and check the path of all moving joints together before confirming.</p>
 
@@ -227,15 +222,15 @@
           <li>The first call moves A’s wrist −5° and B’s wrist +5° together. The second call returns both to their recorded angles.</li>
           <li>Preview first. Watch both wrist motors highlight during each step, then clear when the route ends.</li>
         </ol>
-        <p>For a physical run, connect both arms and read each current pose before previewing. To start from saved rest, open Controls on each Robot card and use Return to rest first.</p>
+        <p>For a physical run, connect both arms and read each current pose before previewing. To start from saved rest, open Pose and rest in each arm’s actions menu and use Return to rest first.</p>
         </section>
         <div class="code-example-title"><h3>5. Repeat a move with a loop</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-6" aria-label="Copy example — 5. Repeat a move with a loop"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-6">def route(robot):
     start = robot.get_observation()
     turn = 6
     for attempt in range(2):
-        robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + (turn + attempt * 2)})
-        robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
+        robot.send_action({"A.shoulder_pan.pos": start["A.shoulder_pan.pos"] + (turn + attempt * 2)})
+        robot.send_action({"A.shoulder_pan.pos": start["A.shoulder_pan.pos"]})</code></pre>
         <p><code>range(2)</code> repeats the indented lines twice. Python starts counting at 0, so the first turn adds 6° and the second adds 8°. Change <code>turn</code> to 3 and predict both turns before previewing. Keep each route to 32 moves or fewer.</p>
 
         <section data-mode="single">
@@ -248,7 +243,7 @@ run_route(robot)</code></pre>
         <section data-mode="dual" hidden>
           <h3>Save and export</h3>
           <p>Name the program and select the save icon to keep it in this browser. In Files, choose Download Python source to keep the full A/B route.</p>
-          <p>Generate LeRobot function supports one follower. Use a route with unprefixed keys for that export.</p>
+          <p>Generate LeRobot function supports one named arm per export. Download Python source to keep a complete two-arm route.</p>
         </section>
         <p>In Web Studio, select <strong>Start here</strong> for connection and calibration instructions. After previewing, choose <strong>Prepare deployment</strong> and review the full route with your teacher. Select <strong>Confirm and run route</strong> once to run the moves in order.</p>
       </div>
@@ -275,143 +270,28 @@ run_route(robot)</code></pre>
     <article id="component-A" class="component-card" aria-labelledby="component-title-A">
       <div class="rail"><h3 id="component-title-A">Arm A</h3><div class="panel-tools"><button type="button" class="icon-action card-help" data-help-view="hardware" data-help-component="A" aria-label="Help with arm A connection" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div></div>
       <p id="usb-status-A" class="component-state">Disconnected</p>
-      <p id="component-calibration-A" class="component-calibration">Calibration on arm</p>
+      <p id="component-servo-A" class="component-calibration">Servo settings · Not checked</p><p id="component-calibration-A" class="component-calibration">Calibration file · None selected</p>
       <div class="component-actions">
         <button type="button" class="primary" data-component="A" data-component-action="connect">Connect USB</button>
-        <button type="button" data-component="A" data-component-action="controls">Controls</button>
-        <button type="button" data-component="A" data-component-action="calibration">Calibrate</button>
-        <button type="button" class="icon-action" data-component="A" data-component-action="settings" aria-label="Arm A settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg></button>
+        <button id="component-menu-trigger-A" type="button" class="icon-action" aria-label="Arm A actions" aria-haspopup="menu" aria-expanded="false" aria-controls="component-menu-A" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-more"/></svg></button>
+        <div id="component-menu-A" class="studio-dropdown action-menu" role="menu" popover="auto" aria-label="Arm A actions"><button type="button" role="menuitem" tabindex="-1" data-component="A" data-component-action="controls"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-position"/></svg><span>Pose and rest</span></button><button type="button" role="menuitem" tabindex="-1" data-component="A" data-component-action="calibration"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg><span>Calibration</span></button><button type="button" role="menuitem" tabindex="-1" data-component="A" data-component-action="settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg><span>Settings</span></button></div>
       </div>
     </article>
     <article id="component-B" class="component-card" aria-labelledby="component-title-B" hidden>
       <div class="rail"><h3 id="component-title-B">Left arm</h3><div class="panel-tools"><button type="button" class="icon-action card-help" data-help-view="hardware" data-help-component="B" aria-label="Help with arm B connection" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div></div>
       <p id="usb-status-B" class="component-state">Disconnected</p>
-      <p id="component-calibration-B" class="component-calibration">Calibration on arm</p>
+      <p id="component-servo-B" class="component-calibration">Servo settings · Not checked</p><p id="component-calibration-B" class="component-calibration">Calibration file · None selected</p>
       <div class="component-actions">
         <button type="button" class="primary" data-component="B" data-component-action="connect">Connect USB</button>
-        <button type="button" data-component="B" data-component-action="controls">Controls</button>
-        <button type="button" data-component="B" data-component-action="calibration">Calibrate</button>
-        <button type="button" class="icon-action" data-component="B" data-component-action="settings" aria-label="Left arm settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg></button>
+        <button id="component-menu-trigger-B" type="button" class="icon-action" aria-label="Arm B actions" aria-haspopup="menu" aria-expanded="false" aria-controls="component-menu-B" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-more"/></svg></button>
+        <div id="component-menu-B" class="studio-dropdown action-menu" role="menu" popover="auto" aria-label="Arm B actions"><button type="button" role="menuitem" tabindex="-1" data-component="B" data-component-action="controls"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-position"/></svg><span>Pose and rest</span></button><button type="button" role="menuitem" tabindex="-1" data-component="B" data-component-action="calibration"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg><span>Calibration</span></button><button type="button" role="menuitem" tabindex="-1" data-component="B" data-component-action="settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-settings"/></svg><span>Settings</span></button></div>
       </div>
     </article>
   </div>
-  <details id="component-expansion" class="component-expansion">
-    <summary>Next components</summary>
-    <div class="future-components">
-      <div><strong>Wrist cameras</strong><span>Coming soon</span></div>
-      <div><strong>Depth camera</strong><span>Coming soon</span></div>
-      <div><strong>Mobile base</strong><span>Coming soon</span></div>
-    </div>
-    <button type="button" data-open-tab="roadmap">View roadmap</button>
-  </details>
-  <section id="component-controls" class="panel component-controls" hidden aria-labelledby="component-controls-title">
-  <div class="rail"><h2 id="component-controls-title">Arm A controls</h2><div class="panel-tools"><button type="button" class="icon-action card-help" data-help-view="hardware" aria-label="Help with component controls" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button><button id="component-controls-close" type="button" class="icon-action" aria-label="Close component controls"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-close"/></svg></button></div></div>
-  <p id="connection-instructions"></p>
-  <p id="usb-help" class="status" role="status"></p>
-  <div class="actions" role="group" aria-label="Connection">
-    <button id="connect-usb" class="primary">Connect by USB</button>
-    <button id="read-pose" type="button" class="icon-action" aria-label="Read current pose" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-position"/></svg></button>
-    <button id="disconnect" disabled>Disconnect selected follower</button>
-  </div>
-  <div id="rest-actions" class="actions rest-actions" role="group" aria-label="Rest pose" hidden>
-    <span>Rest pose</span>
-    <button id="save-rest" type="button" class="icon-action" aria-label="Save current pose as rest" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-save"/></svg></button>
-    <button id="return-rest" disabled>Return to rest</button>
-    <button id="stop-rest" class="stop labeled-action" hidden><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-stop"/></svg><span>Stop return to rest</span></button>
-  </div>
-  <p id="arm-status" class="status" role="status">Connect this arm’s USB adapter.</p>
-  <pre id="pose-sample"></pre>
-  <details id="bridge-option">
-    <summary>Local bridge (legacy)</summary>
-    <p>Use the <a href="SO101-Studio-Bridge.zip?v=20261118-route-review">local bridge</a> to access existing local Studio profiles.</p>
-    <form id="bridge-form" class="actions">
-      <label for="bridge-code">Pairing code</label><input id="bridge-code" type="password" required autocomplete="off" spellcheck="false">
-      <button id="pair-bridge" type="submit">Connect bridge</button>
-    </form>
-    <p id="bridge-status" class="status" role="status"></p>
-    <div class="actions">
-      <button id="init">Initialize arm through bridge</button>
-    </div>
-    <div id="bridge-port-options" hidden>
-      <div class="fields">
-        <label for="profile-port">Serial port</label><div class="port-tools"><input id="profile-port" autocomplete="off"><select id="ports" aria-label="Scanned ports"><option value="">Scanned ports…</option></select></div>
-      </div>
-      <div class="actions">
-        <button id="scan-ports" type="button">Scan ports</button>
-        <button id="save-port" type="button">Save port</button>
-      </div>
-    </div>
-  </details>
-  </section>
 </section>
-<div id="calibration" role="tabpanel" aria-labelledby="tab-calibration" class="grid" hidden>
-  <section class="panel">
-    <div class="rail"><h2 id="calibration-title" tabindex="-1">Calibrate follower A</h2><div class="panel-tools"><p id="cal-follower">Follower A</p><button type="button" class="icon-action card-help" data-help-view="calibration" aria-label="Help with arm calibration" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div></div>
-    <p id="calibration-instructions"></p>
-    <div class="calibration-assignment">
-      <div><strong>Calibration source</strong><p id="profile-calibration"></p></div>
-      <button id="cal-default" type="button" hidden>Use default</button>
-    </div>
-    <div class="actions">
-      <button id="cal-start" class="primary">Calibrate new</button>
-      <button id="cal-apply">Restore saved calibration</button>
-      <button id="cal-read" type="button" class="icon-action" aria-label="Read motor calibration"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-eye"/></svg></button>
-    </div>
-    <div class="actions" id="cal-controls" hidden><button id="cal-next" class="primary">Capture midpoint</button><button id="cal-cancel">Cancel calibration</button></div>
-    <p id="cal-status-message" class="status" role="status"></p>
-    <pre id="arm-sample"></pre>
-  </section>
-  <section class="panel settings-panel">
-    <div class="rail"><h2>Calibration files</h2><button type="button" class="icon-action card-help" data-help-view="calibration-files" aria-label="Help with calibration files" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div>
-    <p>Use a calibration file from this same arm.</p>
-    <div class="actions calibration-tools">
-      <select id="cal-library" aria-label="Saved calibration files"></select>
-      <button id="cal-view" type="button" class="icon-action" aria-label="View file"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-eye"/></svg></button>
-      <button id="cal-import" type="button" class="icon-action" aria-label="Import JSON"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-upload"/></svg></button>
-      <button id="cal-new" type="button" class="icon-action" aria-label="New file"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-new-file"/></svg></button>
-      <input id="cal-file" type="file" accept=".json" hidden>
-    </div>
-    <label for="cal-name">File name</label>
-    <input id="cal-name" maxlength="60" placeholder="follower-a">
-    <label for="cal-text">Calibration JSON</label>
-    <textarea id="cal-text" spellcheck="false"></textarea>
-    <div class="actions">
-      <button id="cal-save" class="primary">Save calibration</button>
-      <button id="cal-file-options" type="button" class="icon-action" aria-label="Calibration file actions" aria-haspopup="menu" aria-expanded="false" aria-controls="cal-file-menu" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-more"/></svg></button>
-      <div id="cal-file-menu" class="studio-dropdown action-menu" role="menu" aria-label="Calibration file actions" popover="auto">
-        <button id="cal-use" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-attach"/></svg><span>Use for this follower</span></button>
-        <button id="cal-archive" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-archive"/></svg><span>Archive selected file</span></button>
-      </div>
-    </div>
-    <p id="cal-files-status" class="status" role="status"></p>
-  </section>
-</div>
-<div id="settings" role="tabpanel" aria-labelledby="tab-settings" class="setup-panel" hidden>
-  <section class="panel settings-panel">
-    <div class="rail"><h2 id="settings-title" tabindex="-1">Follower A profile</h2><button type="button" class="icon-action card-help" data-help-view="settings" aria-label="Help with component settings" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div>
-    <p id="settings-scope" class="status" role="status"></p>
-    <div class="fields">
-      <div id="settings-follower-field" hidden>
-        <label for="settings-profile">Follower</label>
-        <select id="settings-profile"><option value="A">A · Right</option><option value="B">B · Left</option></select>
-      </div>
-      <label for="profile-id">LeRobot ID</label>
-      <input id="profile-id">
-    </div>
-    <div class="actions">
-      <button id="profile-save" class="primary">Save profile</button>
-      <button id="profile-remove" type="button">Remove profile</button>
-    </div>
-    <p id="settings-status" class="status" role="status"></p>
-    <details class="settings-advanced">
-      <summary>Advanced settings</summary>
-      <p>Set each direction after comparing the physical joint with the 3D model.</p>
-      <div class="fields">
-        <div id="joint-fields" style="display:contents"></div>
-      </div>
-    </details>
-  </section>
-</div>
+<div id="calibration" role="tabpanel" aria-labelledby="tab-calibration" hidden></div>
+<div id="settings" role="tabpanel" aria-labelledby="tab-settings" class="component-grid" hidden></div>
+
 <section id="roadmap" class="workspace-page" role="tabpanel" aria-labelledby="tab-roadmap" hidden>
   <h2>From SO-101 to XLeRobot</h2>
   <ol class="roadmap-list">
@@ -483,33 +363,117 @@ run_route(robot)</code></pre>
     <div id="help-content"></div>
   </form>
 </dialog>
+<template id="arm-controls-template">  <section data-field="component-controls" class="panel component-controls" hidden aria-labelledby="component-controls-title">
+  <div class="rail"><h2 data-field="component-controls-title">Arm A controls</h2><div class="panel-tools"><button type="button" class="icon-action card-help" data-help-view="hardware" aria-label="Help with component controls" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button><button data-field="component-controls-close" type="button" class="icon-action" aria-label="Close component controls"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-close"/></svg></button></div></div>
+  <p data-field="connection-instructions"></p>
+  <p data-field="usb-help" class="status" role="status"></p>
+  <div class="actions" role="group" aria-label="Connection">
+    <button data-field="connect-usb" class="primary" hidden>Connect by USB</button>
+    <button data-field="read-pose" type="button" class="icon-action" aria-label="Read current pose" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-position"/></svg></button>
+    <button data-field="disconnect" type="button" class="icon-action" aria-label="Disconnect this arm"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-close"/></svg></button>
+  </div>
+  <div data-field="rest-actions" class="actions rest-actions" role="group" aria-label="Rest pose" hidden>
+    <span>Rest pose</span>
+    <button data-field="save-rest" type="button" class="icon-action" aria-label="Save current pose as rest" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-save"/></svg></button>
+    <button data-field="return-rest" type="button" class="icon-action" aria-label="Return this arm to rest"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-reset"/></svg></button>
+    <button data-field="stop-rest" class="stop labeled-action" hidden><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-stop"/></svg><span>Stop return to rest</span></button>
+  </div>
+  <p data-field="arm-status" class="status" role="status">Connect this arm’s USB adapter.</p>
+  <pre data-field="pose-sample"></pre>
+  </section></template>
+<template id="arm-calibration-template">
+  <section class="panel">
+    <div class="rail"><h2 data-field="calibration-title" tabindex="-1">Calibrate follower A</h2><div class="panel-tools"><p data-field="cal-follower">Follower A</p><button type="button" class="icon-action card-help" data-help-view="calibration" aria-label="Help with arm calibration" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div></div>
+    <p data-field="calibration-instructions"></p>
+    <p class="servo-readback">Servo settings · <span data-field="servo-settings">Not checked</span></p>
+    <div class="calibration-assignment">
+      <div><strong>Calibration file</strong><p data-field="profile-calibration"></p></div>
+    </div>
+    <div class="actions">
+      <button data-field="cal-start" class="primary">Calibrate new</button>
+      <button data-field="cal-actions" type="button" class="icon-action" aria-label="Calibration actions" aria-haspopup="menu" aria-expanded="false" aria-controls="cal-actions-menu" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-more"/></svg></button>
+      <div data-field="cal-actions-menu" class="studio-dropdown action-menu" role="menu" aria-label="Calibration actions" popover="auto">
+<button data-field="cal-apply" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-reset"/></svg><span>Restore saved calibration</span></button><button data-field="cal-read" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-eye"/></svg><span>Read servo settings</span></button><button data-field="cal-default" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-close"/></svg><span>Clear file assignment</span></button>
+      </div>
+    </div>
+    <div class="actions" data-field="cal-controls" hidden><button data-field="cal-next" class="primary">Capture midpoint</button><button data-field="cal-cancel">Cancel calibration</button></div>
+    <p data-field="cal-status-message" class="status" role="status"></p>
+    <pre data-field="arm-sample"></pre>
+  </section>
+  <section class="panel settings-panel">
+    <div class="rail"><h2 data-field="calibration-files-title">Arm calibration files</h2><button type="button" class="icon-action card-help" data-help-view="calibration-files" aria-label="Help with calibration files" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div>
+    <p>Use a calibration file from this same arm.</p>
+    <div class="actions calibration-tools">
+      <select data-field="cal-library" aria-label="Saved calibration files"></select>
+      <button data-field="cal-view" type="button" class="icon-action" aria-label="View file"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-eye"/></svg></button>
+      <button data-field="cal-import" type="button" class="icon-action" aria-label="Import JSON"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-upload"/></svg></button>
+      <button data-field="cal-new" type="button" class="icon-action" aria-label="New file"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-new-file"/></svg></button>
+      <input data-field="cal-file" type="file" accept=".json" hidden>
+    </div>
+    <label for="cal-name">File name</label>
+    <input data-field="cal-name" maxlength="60" placeholder="follower-a">
+    <label for="cal-text">Calibration JSON</label>
+    <textarea data-field="cal-text" spellcheck="false"></textarea>
+    <div class="actions">
+      <button data-field="cal-save" class="primary">Save calibration</button>
+      <button data-field="cal-file-options" type="button" class="icon-action" aria-label="Calibration file actions" aria-haspopup="menu" aria-expanded="false" aria-controls="cal-file-menu" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-more"/></svg></button>
+      <div data-field="cal-file-menu" class="studio-dropdown action-menu" role="menu" aria-label="Calibration file actions" popover="auto">
+        <button data-field="cal-use" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-attach"/></svg><span>Use for this follower</span></button>
+        <button data-field="cal-archive" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-archive"/></svg><span>Archive selected file</span></button>
+      </div>
+    </div>
+    <p data-field="cal-files-status" class="status" role="status"></p>
+  </section>
+</template>
+<template id="arm-settings-template">
+  <section class="panel settings-panel">
+    <div class="rail"><h2 data-field="settings-title" tabindex="-1">Follower A profile</h2><button type="button" class="icon-action card-help" data-help-view="settings" aria-label="Help with component settings" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div>
+    <p data-field="settings-scope" class="status" role="status"></p>
+    <div class="fields">
+      <label for="profile-id">LeRobot ID</label>
+      <input data-field="profile-id">
+    </div>
+    <div class="actions">
+      <button data-field="profile-save" class="primary">Save profile</button>
+      <button data-field="profile-remove" type="button">Remove profile</button>
+    </div>
+    <p data-field="settings-status" class="status" role="status"></p>
+    <details class="settings-advanced">
+      <summary>Advanced settings</summary>
+      <p>Set each direction after comparing the physical joint with the 3D model.</p>
+      <div class="fields">
+        <div data-field="joint-fields" style="display:contents"></div>
+      </div>
+    </details>
+  </section>
+</template>
 <template id="help-getting-started">
   <div data-mode="single"><ol><li>Use One tabletop follower in Robot mode. The arm is follower A.</li><li>Play the starter in the right-hand viewer, then open Simulation to edit its Python. Use Robot to set up hardware.</li><li>For hardware, connect A in Robot and set up its calibration.</li></ol></div>
   <div data-mode="dual"><ol><li>Use Two tabletop followers in Robot mode. The shared viewer labels A · Right and B · Left.</li><li>Play the starter to see both wrists move together and return.</li><li>Open Simulation and Codebook. Copy Move both arms and return to rest to practise a route that returns to its starting angles.</li><li>For hardware, connect and calibrate each follower using its own USB adapter.</li></ol></div>
 </template>
 <template id="help-hardware">
   <div data-mode="single"><ol><li>Secure follower A and connect motor power and USB. Use desktop Chrome or Edge and close other apps using its port.</li><li>On Arm A’s card, choose Connect USB and pick its adapter. For a new arm, use Calibration first.</li><li>Use the crosshair to read A’s current pose. Save its rest pose with the save icon.</li><li>Return A to rest shows a warning before moving. Support A before disconnecting.</li></ol></div>
-  <div data-mode="dual"><ol><li>Secure both arms. Connect motor power and each arm’s USB data cable. Close other apps using the ports.</li><li>On the Right arm · A card, select Connect USB and pick A’s adapter.</li><li>On the Left arm · B card, select Connect USB and pick B’s other adapter. Check both card states.</li><li>Open Controls on the arm’s card for Read pose, Save rest, Return to rest, and Disconnect. Read and save rest for each arm separately.</li><li>The labels use the robot’s perspective. Match your tabletop layout to the shared preview.</li></ol></div>
+  <div data-mode="dual"><ol><li>Secure both arms. Connect motor power and each arm’s USB data cable. Close other apps using the ports.</li><li>On the Right arm · A card, select Connect USB and pick A’s adapter.</li><li>On the Left arm · B card, select Connect USB and pick B’s other adapter. Check both card states.</li><li>Open Pose and rest in that arm’s actions menu for Read pose, Save rest, Return to rest, and Disconnect. Read and save rest for each arm separately.</li><li>The labels use the robot’s perspective. Match your tabletop layout to the shared preview.</li></ol></div>
 </template>
 <template id="help-calibration">
-  <div data-mode="single"><ol><li>Disconnect follower A in Studio and support it. Choose Calibrate new, or import and save A’s existing calibration JSON.</li><li>For new calibration, put the joints near mid-travel and select Capture midpoint.</li><li>Move each joint gently through its usable range, skipping wrist roll. Select Save range.</li><li>For a saved file, choose it in Calibration files, open its actions menu, and select Use for follower A. Then choose Restore saved calibration.</li><li>Check Calibration source, then connect A in Robot.</li></ol></div>
-  <div data-mode="dual"><ol><li>Disconnect both followers in Studio. Support the arm being calibrated.</li><li>Open Calibrate on the arm’s Robot card. Check the component name and Calibration source before proceeding.</li><li>Choose Calibrate new and pick that arm’s adapter. Capture midpoint, move each joint gently through its usable range while skipping wrist roll, then Save range.</li><li>To restore a file, import and save JSON from that same arm. Choose Use for follower A or B in the file menu, then Restore saved calibration.</li><li>Repeat for the other arm with its own adapter and file. Each arm keeps its own calibration draft.</li><li>Return to Robot and connect both followers.</li></ol></div>
+  <div data-mode="single"><ol><li>Disconnect follower A in Studio and support it. Choose Calibrate new, or import and save A’s existing calibration JSON.</li><li>For new calibration, put the joints near mid-travel and select Capture midpoint.</li><li>Move each joint gently through its usable range, skipping wrist roll. Select Save range.</li><li>For a saved file, choose it in Calibration files, open its actions menu, and select Use for follower A. Then open Calibration actions and choose Restore saved calibration.</li><li>Check the Calibration file and servo readback, then connect A in Robot.</li></ol></div>
+  <div data-mode="dual"><ol><li>Disconnect both followers in Studio. Support the arm being calibrated.</li><li>Use the arm’s own calibration card. Servo settings and the selected JSON file are shown separately.</li><li>Choose Calibrate new and pick that arm’s adapter. Capture midpoint, move each joint gently through its usable range while skipping wrist roll, then Save range.</li><li>To restore a file, import and save JSON from that same arm. Choose Use for follower A or B in the file menu, then use Calibration actions → Restore saved calibration.</li><li>Repeat for the other arm with its own adapter and file. Each arm keeps its own calibration draft.</li><li>Return to Robot and connect both followers.</li></ol></div>
 </template>
 <template id="help-program">
-  <div data-mode="single"><ol><li>Open Codebook for follower A’s motor keys, ranges, and copyable Python examples.</li><li>Copy an example into the Python editor. Keys such as <code>"wrist_roll.pos"</code> control A.</li><li>Select Play to preview. Motor highlights show which joints are moving.</li><li>Name the program and use the save icon. Files holds saved programs, Python downloads, and Generate LeRobot function.</li></ol></div>
-  <div data-mode="dual"><ol><li>Open Codebook and copy Move both arms and return to rest into the Python editor.</li><li><code>A.</code> selects the right arm and <code>B.</code> the left. Put targets for both in one <code>send_action()</code> call to move them together.</li><li>Select Play. Watch both labeled arms, the wrist highlights, and their return to the recorded starting angles.</li><li>Use the explicit A. and B. keys in a two-arm route. Unprefixed examples use the arm named in the component context.</li><li>Name and save the program. Files → Download Python source keeps the complete A/B route. LeRobot function generation supports a single follower with unprefixed keys.</li></ol></div>
+  <div data-mode="single"><ol><li>Open Codebook for follower A’s motor keys, ranges, and copyable Python examples.</li><li>Copy an example into the Python editor. Keys such as <code>"A.wrist_roll.pos"</code> control A.</li><li>Select Play to preview. Motor highlights show which joints are moving.</li><li>Name the program and use the save icon. Files holds saved programs, Python downloads, and Generate LeRobot function.</li></ol></div>
+  <div data-mode="dual"><ol><li>Open Codebook and copy Move both arms and return to rest into the Python editor.</li><li><code>A.</code> selects the right arm and <code>B.</code> the left. Put targets for both in one <code>send_action()</code> call to move them together.</li><li>Select Play. Watch both labeled arms, the wrist highlights, and their return to the recorded starting angles.</li><li>Use the explicit A. and B. keys in a two-arm route. Every action key must name A. or B.; a missing arm prefix shows an error.</li><li>Name and save the program. Files → Download Python source keeps the complete A/B route. LeRobot function generation supports a single follower for one named arm.</li></ol></div>
 </template>
 <template id="help-deployment">
   <div data-mode="single"><ol><li>Connect follower A and read its current pose in Robot. Open A’s Controls and use Return A to rest first if the route should start at saved rest.</li><li>Preview the code in Simulation, then select Prepare deployment.</li><li>Review A’s targets and the full path with your teacher. Keep hands clear and choose Confirm and run route once.</li><li>Watch live position feedback and motor highlights. Stop route stops the run.</li></ol></div>
-  <div data-mode="dual"><ol><li>Connect both followers and read each current pose. To begin at saved rest, open Controls on each Robot card and use Return to rest first.</li><li>Preview your A/B route, then select Prepare deployment. Check the follower label on every target.</li><li>Check both full paths, the space between arms, and the real mounting layout with your teacher.</li><li>Keep hands clear and select Confirm and run route once. Targets in the same call move together.</li><li>Watch both labeled arms and live feedback. Each step must finish before the next starts. Stop route stops both followers.</li></ol></div>
+  <div data-mode="dual"><ol><li>Connect both followers and read each current pose. To begin at saved rest, open Pose and rest in each arm’s actions menu and use Return to rest first.</li><li>Preview your A/B route, then select Prepare deployment. Check the follower label on every target.</li><li>Check both full paths, the space between arms, and the real mounting layout with your teacher.</li><li>Keep hands clear and select Confirm and run route once. Targets in the same call move together.</li><li>Watch both labeled arms and live feedback. Each step must finish before the next starts. Stop route stops both followers.</li></ol></div>
 </template>
 <template id="help-settings">
   <div data-mode="single"><ol><li>Settings edits follower A’s profile. Set its LeRobot ID if you use it in a LeRobot project.</li><li>Use Advanced settings to set joint directions after comparing A’s real motion with its preview.</li><li>Select Save profile. Remove profile removes A’s stored profile.</li><li>Use Calibration to manage A’s calibration file.</li></ol></div>
-  <div data-mode="dual"><ol><li>Open Settings on the arm’s Robot card. Check the component name and profile heading.</li><li>Edit that follower’s LeRobot ID and, in Advanced settings, its joint directions. Select Save profile.</li><li>Switch followers and save the other profile separately. Open the other arm’s card to edit its settings.</li><li>Remove profile affects the selected follower. Calibration files and rest poses are assigned separately to each arm.</li></ol></div>
+  <div data-mode="dual"><ol><li>Use the arm’s own Settings card. Check its name before editing.</li><li>Edit that follower’s LeRobot ID and, in Advanced settings, its joint directions. Select Save profile.</li><li>Switch followers and save the other profile separately. The other arm’s settings are in a separate card.</li><li>Remove profile affects the selected follower. Calibration files and rest poses are assigned separately to each arm.</li></ol></div>
 </template>
 <template id="help-calibration-files">
-  <div data-mode="single"><ol><li>Use the import icon to load follower A’s JSON, or the new-file icon to enter it.</li><li>Name the file and choose Save calibration.</li><li>Use the eye icon to inspect a saved file. In its actions menu, choose Use for follower A.</li><li>Restore saved calibration in A’s calibration card to write it to the arm.</li></ol></div>
-  <div data-mode="dual"><ol><li>Check the arm named above the card. Open the correct component from Robot before assigning a file.</li><li>Import JSON from that same arm, name it, and Save calibration.</li><li>Use the eye icon to inspect it. In its actions menu, choose Use for follower A or B.</li><li>Restore saved calibration in that arm’s calibration card. Each arm keeps its own draft and assignment.</li></ol></div>
+  <div data-mode="single"><ol><li>Use the import icon to load follower A’s JSON, or the new-file icon to enter it.</li><li>Name the file and choose Save calibration.</li><li>Use the eye icon to inspect a saved file. In its actions menu, choose Use for follower A.</li><li>Restore saved calibration from A’s calibration actions menu to write it to the arm.</li></ol></div>
+  <div data-mode="dual"><ol><li>Each arm has its own calibration and file cards. Check the arm name before assigning a file.</li><li>Import JSON from that same arm, name it, and Save calibration.</li><li>Use the eye icon to inspect it. In its actions menu, choose Use for follower A or B.</li><li>Restore saved calibration from that arm’s calibration actions menu. Each arm keeps its own draft and assignment.</li></ol></div>
 </template>
 <template id="help-preview">
   <div data-mode="single"><ol><li>Play the starter or run the Python editor to see follower A’s movement.</li><li>Drag the model or use arrow keys to orbit. The reset icon restores the camera.</li><li>Yellow motors show simulated movement. Blue highlights show physical movement with live feedback.</li></ol></div>
@@ -517,7 +481,7 @@ run_route(robot)</code></pre>
 </template>
 <template id="help-codebook">
   <div data-mode="single"><ol><li>Select a motor to see it highlighted and read its default range.</li><li>The adjacent copy icon copies its Python key. Example copy icons preserve the whole function and its indentation.</li><li>Paste into the Python editor and preview before deploying to follower A.</li></ol></div>
-  <div data-mode="dual"><ol><li>The context above the editor identifies the arm used for unprefixed keys. Motor-key copy icons include its A. or B. prefix.</li><li>Copy Move both arms and return to rest for a complete two-arm route.</li><li>Keep both arm targets in one call to move them together. The example records and returns to each wrist’s starting angle.</li></ol></div>
+  <div data-mode="dual"><ol><li>Each motor has separate A. and B. copy keys.</li><li>Copy Move both arms and return to rest for a complete two-arm route.</li><li>Keep both arm targets in one call to move them together. The example records and returns to each wrist’s starting angle.</li></ol></div>
 </template>
 <template id="help-roadmap">
   <div data-mode="single"><p>You are practising with follower A. Choose an available mode in Start here. Coming soon modes are disabled; their roadmap entries explain the required hardware.</p></div>
@@ -569,14 +533,14 @@ run_route(robot)</code></pre>
 <script src="so101-tabletop-model.js?v=20261118-simultaneous"></script>
 <script src="so101-route-settings.js?v=20261118-simultaneous"></script>
 <script src="so101-viewer.js?v=mode-workspaces"></script>
-<script src="pages-compiler.js?v=mode-guides"></script>
+<script src="pages-compiler.js?v=independent-cards"></script>
 <script src="pages-serial.js?v=two-followers"></script>
-<script src="pages-arm.js?v=mode-workspaces"></script>
+<script src="pages-arm.js?v=independent-cards"></script>
 <script src="vendor/codemirror.js"></script>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
-<script src="python-editor.js?v=robot-mode"></script>
-<script src="codebook.js?v=component-workflow"></script>
+<script src="python-editor.js?v=independent-cards"></script>
+<script src="codebook.js?v=independent-cards"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=component-workflow"></script>
+<script src="studio.js?v=independent-cards"></script>
 </html>

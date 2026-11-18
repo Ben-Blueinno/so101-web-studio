@@ -37,8 +37,8 @@ const hostedPython = (() => {
 
   return {
     example: `def route(robot):
-    robot.send_action({"wrist_roll.pos": -5})
-    robot.send_action({"wrist_roll.pos": 0})
+    robot.send_action({"A.wrist_roll.pos": -5})
+    robot.send_action({"A.wrist_roll.pos": 0})
 `,
     parse: source => run(source, false),
     exportFunction: source => run(source, true),

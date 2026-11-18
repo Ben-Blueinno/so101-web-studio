@@ -99,8 +99,12 @@ RUNNER = dedent('''
 
 def export_lerobot(source, directions):
     route = compile_program(source)
-    if any("follower" in action for step in route["steps"] for action in step.get("actions", [step])):
-        raise ValueError("This export takes one SO-101. Remove A. and B. prefixes to export a single-follower route.")
+    actions = [action for step in route["steps"] for action in step.get("actions", [step])]
+    followers = {action["follower"] for action in actions if "follower" in action}
+    if len(followers) > 1:
+        raise ValueError("Generate a LeRobot function for one arm at a time. Download Python source for a two-arm route.")
+    for action in actions:
+        action.pop("follower", None)
     groups = [tuple((action["joint"], key, value)
                     for action in step.get("actions", [step])
                     for key, value in action.items() if key != "joint")

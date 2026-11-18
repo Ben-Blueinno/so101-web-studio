@@ -21,7 +21,7 @@ function attachPythonEditor(textarea, {preview, escape, dualFollower = () => fal
     if (token.type?.includes("comment")) return;
     if (quotedKey) {
       partial = quotedKey[1];
-      const prefixes = dualFollower() ? ["", "A.", "B."] : [""];
+      const prefixes = dualFollower() ? ["A.", "B."] : ["A."];
       list = prefixes.flatMap(prefix => Object.entries(JOINTS).map(([joint, name]) => ({
         text: prefix + joint + ".pos",
         displayText: prefix + joint + ".pos — " + name + (joint === "gripper" ? " (%)" : " (degrees)"),

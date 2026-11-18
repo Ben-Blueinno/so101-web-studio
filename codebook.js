@@ -17,17 +17,10 @@ function initCodebookModel() {
   }
 }
 
-function updateCodebookMode(dual, label) {
+function updateCodebookMode(dual) {
   get("codebook-mode-note").textContent = dual
-    ? "A is right and B is left. Basic examples use the default arm named above the editor. Use the two-arm example to move both together."
-    : "These examples control follower A. Joint angles use degrees and the gripper uses percent.";
-  for (const button of motorButtons) {
-    const key = (dual ? label + "." : "") + button.dataset.motor + ".pos";
-    button.querySelector("code").textContent = key;
-    const copy = button.closest("tr").querySelector("[data-copy-key]");
-    copy.dataset.copyKey = key;
-    copy.setAttribute("aria-label", "Copy " + key);
-  }
+    ? "A is right and B is left. Every action key names its arm. Put A and B targets in one call to move both together."
+    : "Every action key starts with A. Joint angles use degrees and the gripper uses percent.";
   get("codebook-copy-status").textContent = "";
 }
 
@@ -51,28 +44,28 @@ for (const button of motorButtons) {
 }
 selectMotor(motorButtons[0]);
 
-for (const button of document.querySelectorAll(".copy-codebook")) {
+const copyTimers = new WeakMap();
+document.addEventListener("click", async event => {
+  const button = event.target.closest(".copy-codebook");
+  if (!button) return;
   const example = button.dataset.copyExample ? get(button.dataset.copyExample) : undefined;
+  const key = button.dataset.copyKey;
   const icon = button.querySelector("use");
-  let feedbackTimer;
-  button.onclick = async () => {
-    const key = button.dataset.copyKey;
-    try {
-      await navigator.clipboard.writeText(example?.textContent ?? key);
-      codebookCopyStatus.textContent = example ? "Python example copied." : `Copied ${key}`;
-      icon.setAttribute("href", "#glyph-check");
-      clearTimeout(feedbackTimer);
-      feedbackTimer = setTimeout(() => icon.setAttribute("href", "#glyph-copy"), 1400);
-    } catch {
-      if (example) {
-        window.getSelection()?.selectAllChildren(example);
-        codebookCopyStatus.textContent = "Code selected. Press Ctrl+C or Command+C to copy.";
-      } else {
-        codebookCopyStatus.textContent = `Clipboard unavailable. Copy this key manually: ${key}`;
-      }
+  try {
+    await navigator.clipboard.writeText(example?.textContent ?? key);
+    codebookCopyStatus.textContent = example ? "Python example copied." : `Copied ${key}`;
+    icon.setAttribute("href", "#glyph-check");
+    clearTimeout(copyTimers.get(button));
+    copyTimers.set(button, setTimeout(() => icon.setAttribute("href", "#glyph-copy"), 1400));
+  } catch {
+    if (example) {
+      window.getSelection()?.selectAllChildren(example);
+      codebookCopyStatus.textContent = "Code selected. Press Ctrl+C or Command+C to copy.";
+    } else {
+      codebookCopyStatus.textContent = `Clipboard unavailable. Copy this key manually: ${key}`;
     }
-  };
-}
+  }
+});
 
 function highlightCodebookExamples() {
   const mirror = window.CodeMirror;

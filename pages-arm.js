@@ -164,8 +164,11 @@ const hostedArm = (() => {
       const angles = [];
       const actions = routeActions(step).map(action => {
         const {follower: explicit, position_deg: fixed, ...target} = action;
+        if (!explicit && data.mode) {
+          throw new Error(`Step ${index + 1}: specify the arm in every action key, for example "A.wrist_roll.pos".`);
+        }
         const label = explicit ?? data.label;
-        if (data.mode === "single" && label !== data.label) {
+        if (data.mode === "single" && label !== "A") {
           throw new Error("This route targets another follower. Choose Two tabletop followers in Start here.");
         }
         const {joint} = target;
@@ -465,8 +468,8 @@ const hostedArm = (() => {
       if (failed) throw failed.reason;
       return {arms: snapshots()};
     }
-    if (!follower) throw new Error("Select and connect a follower in USB connection.");
-    const arm = follower;
+    const arm = data.label ? followers.get(data.label) : follower;
+    if (!arm) throw new Error("Connect this arm in Robot first.");
     switch (action) {
       case "disconnect":
         try { await arm.close(); }
@@ -493,12 +496,12 @@ const hostedArm = (() => {
           const joints = SERIAL_JOINTS.toReversed().filter(joint =>
             Math.abs(arm.current[joint] - arm.rest[joint]) * arm.scale(joint) > Math.max(0.5, arm.scale(joint)));
           const token = joints.length ? crypto.randomUUID() : null;
-          offer = token ? {token, joints, pose: arm.current} : undefined;
+          offer = token ? {token, joints, pose: arm.current, label: arm.label} : undefined;
           return {token, joints, arm: arm.snapshot()};
         }
         return arm.snapshot();
       case "return-rest": {
-        if (replay || !offer || offer.token !== data.token) throw new Error("Review the return to rest again.");
+        if (replay || !offer || offer.token !== data.token || offer.label !== arm.label) throw new Error("Review the return to rest again.");
         const reviewed = offer;
         offer = preview = undefined;
         arm.stopped = false;

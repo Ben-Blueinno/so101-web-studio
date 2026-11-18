@@ -94,3 +94,9 @@
   background: var(--selection);
   color: var(--accent);
 }
+
+.motor-row-controls { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+.motor-key-list { display: grid; gap: 2px; }
+.motor-key-list > div { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.motor-key-list code { overflow-wrap: anywhere; font-size: .7rem; }
+.motor-key-list .icon-action { flex: none; }
