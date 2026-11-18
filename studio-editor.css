@@ -27,9 +27,12 @@
 }
 .CodeMirror-hints { background: var(--panel); color: var(--ink); border-color: var(--control-edge); }
 .CodeMirror-hint { color: var(--ink); }
-.CodeMirror-hint-active { background: #255e50; color: white; }
 .python-api-hint { color: var(--accent); }
 #studio:has(#program.editor-expanded:not([hidden])) { max-width: none; }
 #program.editor-expanded { grid-template-columns: minmax(0, 1fr); }
 #program.editor-expanded #code { min-height: 65vh; }
 #program.editor-expanded .CodeMirror { height: 65vh; }
+.cm-s-material-darker.CodeMirror .CodeMirror-linenumber { color: #a4a8b0; }
+.CodeMirror-hint-active { background: var(--selection); color: var(--ink); }
+.cm-s-material-darker.CodeMirror .python-api-hint { color: #b5d2ff; }
+#program.editor-expanded { grid-template-areas: "editor" "preview"; }

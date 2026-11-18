@@ -6,9 +6,25 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=panel-switch">
-<link rel="stylesheet" href="studio-editor.css?v=workbench">
-<link rel="stylesheet" href="codebook.css?v=side-panel">
+<link rel="stylesheet" href="studio.css?v=workspace">
+<link rel="stylesheet" href="studio-editor.css?v=workspace">
+<link rel="stylesheet" href="codebook.css?v=workspace">
+<svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
+  <symbol id="glyph-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.6 0c0 2-2.8 2.1-2.8 4.2m0 3.2h.01"/></symbol>
+  <symbol id="glyph-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="glyph-expand" viewBox="0 0 24 24"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></symbol>
+  <symbol id="glyph-collapse" viewBox="0 0 24 24"><path d="M4 8h4V4m12 4h-4V4M4 16h4v4m12-4h-4v4"/></symbol>
+  <symbol id="glyph-play" viewBox="0 0 24 24"><path d="m8 5 12 7-12 7z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="glyph-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="glyph-reset" viewBox="0 0 24 24"><path d="M3 4v5h5M3.5 9a8.5 8.5 0 1 1 .6 7"/></symbol>
+  <symbol id="glyph-sidebar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M14 5v14m3-10h1m-1 3h1"/></symbol>
+  <symbol id="glyph-next" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="glyph-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></symbol>
+  <symbol id="glyph-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M4 16v4h16v-4"/></symbol>
+  <symbol id="glyph-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 4H6a2 2 0 0 0-2 2v10"/></symbol>
+  <symbol id="glyph-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="glyph-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></symbol>
+</svg>
 <main id="studio">
 <header><h1>SO-101 Web Studio</h1><p id="connection" class="status" role="status">Browser simulator</p></header>
 <nav aria-label="Studio workspace" role="tablist" class="workspace-tabs">
@@ -18,124 +34,70 @@
   <button type="button" id="tab-program" role="tab" aria-selected="false" aria-controls="program" tabindex="-1" data-view="program">Simulation</button>
   <button type="button" id="tab-deployment" role="tab" aria-selected="false" aria-controls="deployment" tabindex="-1" data-view="deployment">Deployment</button>
   <button type="button" id="tab-settings" role="tab" aria-selected="false" aria-controls="settings" tabindex="-1" data-view="settings">Settings</button>
+  <button type="button" id="tab-roadmap" role="tab" aria-selected="false" aria-controls="roadmap" tabindex="-1" data-view="roadmap">Coming soon</button>
+  <button type="button" id="tab-about" role="tab" aria-selected="false" aria-controls="about" tabindex="-1" data-view="about">About</button>
 </nav>
-<section id="getting-started" role="tabpanel" aria-labelledby="tab-getting-started" class="guide">
-  <div class="guide-intro">
-    <div>
-      <h2>Write your first arm route</h2>
-      <p>Use Python to move the 3D arm. When your route looks right, try it on your SO-101 with your teacher.</p>
-      <button type="button" class="primary" data-open-tab="program">Try the simulator</button>
-      <p>You can start coding without an arm.</p>
+<div class="workspace-tools" aria-label="Workspace tools">
+  <button id="codebook-switch" type="button" class="icon-action" role="switch" aria-label="Codebook" aria-checked="false" aria-controls="codebook-panel" hidden><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-sidebar"/></svg></button>
+  <button id="show-help" type="button" class="help-action" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-help"/></svg><span>Show me how</span></button>
+</div>
+<section id="getting-started" role="tabpanel" aria-labelledby="tab-getting-started">
+  <div class="start-layout">
+    <div class="start-steps">
+      <h2>First route</h2>
+      <ol aria-label="First route steps">
+        <li><button type="button" data-open-tab="hardware"><span><strong>Connect</strong><small>Plug in USB and motor power.</small></span><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></li>
+        <li><button type="button" data-open-tab="calibration"><span><strong>Calibrate</strong><small>Set ranges for this arm.</small></span><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></li>
+        <li><button type="button" data-open-tab="program"><span><strong>Simulate</strong><small>Write Python. Preview in 3D.</small></span><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></li>
+        <li><button type="button" data-open-tab="deployment"><span><strong>Deploy</strong><small>Review targets. Run with your teacher.</small></span><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></li>
+      </ol>
     </div>
-    <figure class="guide-video">
-      <video controls playsinline preload="none" width="1440" height="976" poster="media/studio-walkthrough.jpg?v=workbench-tour" aria-label="SO-101 Web Studio walkthrough">
-        <source src="media/studio-walkthrough.mp4?v=workbench-tour" type="video/mp4">
-        <track kind="captions" label="English" srclang="en" src="media/studio-walkthrough.vtt?v=workbench-tour" default>
-        <a href="media/studio-walkthrough.mp4?v=workbench-tour">Download the walkthrough</a>
-      </video>
-      <figcaption>36-second walkthrough with captions.</figcaption>
-    </figure>
-  </div>
-  <ol class="guide-steps" aria-label="Setup and first run">
-    <li>
-      <div>
-        <h3>USB connection</h3>
-        <p>Secure the arm to the bench. Plug in motor power and USB. Open Studio in desktop Chrome or Edge on Mac or Windows.</p>
-        <p>In <strong>USB connection</strong>, select your follower, click <strong>Scan ports</strong>, and pick the SO-101 adapter. If the arm is already calibrated, click <strong>Connect by USB</strong>, then <strong>Read current pose</strong>. Check for six readings. For a new arm, go to Calibration first.</p>
-        <button type="button" class="text-button" data-open-tab="hardware">Open USB connection</button>
+    <section class="panel start-demo" aria-labelledby="guide-example">
+      <div class="rail"><h3 id="guide-example">Wrist and gripper</h3>
+        <button id="guide-play" type="button" class="icon-action primary" aria-label="Play 3D example" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-play"/></svg></button>
       </div>
-    </li>
-    <li>
-      <div>
-        <h3>Calibration</h3>
-        <p>For a new arm, select <strong>Calibrate new</strong>. Support the arm as torque releases. Place the joints near the middle of their travel and choose <strong>Capture midpoint</strong>. Gently move each joint through its range by hand, skipping wrist roll. Choose <strong>Save range</strong>.</p>
-        <details><summary>Restore a file for this arm</summary>
-          <p>In <strong>Settings</strong>, click <strong>Import JSON</strong>, <strong>Save calibration</strong>, <strong>Use for profile</strong>, then <strong>Save profile</strong>. Use only a file saved for this same arm. Select the follower in <strong>USB connection</strong>, then choose <strong>Restore saved calibration</strong> in Calibration. After Studio verifies the settings, return to USB connection and click <strong>Connect by USB</strong>.</p>
-        </details>
-        <button type="button" class="text-button" data-open-tab="calibration">Open Calibration</button>
+      <div class="preview-stage">
+        <canvas id="guide-model" width="480" height="360" tabindex="0" aria-label="Wrist and gripper example. Drag or use arrow keys to orbit."></canvas>
+        <button id="guide-camera" type="button" class="icon-action preview-reset" aria-label="Reset demo view"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-reset"/></svg></button>
       </div>
-    </li>
-    <li>
-      <div>
-        <h3>Simulation</h3>
-        <p>Click <strong>Preview in 3D</strong>. The starter turns the wrist to −5°, then back to 0°. Change −5 to −10 and preview again. Find the range and Python key for each motor with the <strong>Codebook</strong> switch above the 3D preview.</p>
-        <button type="button" class="text-button" data-open-tab="program">Open Simulation</button>
-      </div>
-    </li>
-    <li>
-      <div>
-        <h3>Deployment</h3>
-        <p>Start with the current pose. For your first move, pick a wrist roll target a few degrees away and within the arm’s calibrated range. Preview it, open <strong>Deployment</strong>, and choose <strong>Prepare deployment</strong>.</p>
-        <p>Review every target and check the full path with your teacher. With hands clear, click <strong>Confirm and run route</strong> once. Watch the 3D view follow the arm’s readings. Click <strong>Stop route</strong> if the arm moves unexpectedly.</p>
-        <button type="button" class="text-button" data-open-tab="deployment">Open Deployment</button>
-      </div>
-    </li>
-  </ol>
-  <section class="guide-demo" aria-labelledby="guide-example">
-    <canvas id="guide-model" width="480" height="360" tabindex="0" aria-label="Simulator example. Drag or use the arrow keys to rotate the model."></canvas>
-    <div>
-      <h3 id="guide-example">Move two joints together</h3>
-      <p>Put both targets in one call. Play the example and watch the wrist and gripper.</p>
-      <pre class="code-sample"><code>def route(robot):
-    robot.send_action({
-        "wrist_roll.pos": -15,
-        "gripper.pos": 55,
-    })</code></pre>
-      <div class="actions"><button id="guide-play" type="button" disabled>Play example</button><button id="guide-camera" type="button">Reset view</button></div>
       <p id="guide-status" class="status" role="status"></p>
-    </div>
-  </section>
-  <details class="guide-help">
-    <summary>Can’t find the adapter or read the joints?</summary>
-    <p>Try a USB data cable and close other apps that may be using the port. If the adapter shows up but the joints don’t, check the arm’s motor power and the cable to the first servo.</p>
-  </details>
+    </section>
+  </div>
 </section>
 <div id="program" role="tabpanel" aria-labelledby="tab-program" class="grid" hidden>
-  <section class="panel">
-    <div class="rail"><h2><label for="code">Python editor</label></h2><button id="expand-editor" type="button" aria-pressed="false">Expand editor</button></div>
-    <div class="editor-frame" id="editor-frame"><div class="editor-gutter" aria-hidden="true" id="code-lines">1</div><textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Python program" aria-describedby="editor-help"></textarea></div>
-    <p id="editor-help">Type <code>robot.</code> for method and type hints, or use Ctrl+Space. Ctrl+Enter or ⌘+Enter previews the route. Esc exits the editor.</p>
-    <div class="actions"><button id="preview" class="primary">Preview in 3D</button><button id="stop-preview" disabled>Stop preview</button><button type="button" data-open-tab="deployment">Go to Deployment</button></div>
+  <section class="panel" id="program-editor">
+    <div class="rail"><h2><label for="code">Python editor</label></h2><div class="panel-tools"><button id="preview" type="button" class="icon-action primary" aria-label="Preview in 3D"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-play"/></svg></button><button id="stop-preview" type="button" class="icon-action" aria-label="Stop preview" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-stop"/></svg></button><button id="expand-editor" type="button" class="icon-action" aria-pressed="false" aria-label="Expand editor"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-expand"/></svg></button></div></div>
+    <div class="editor-frame" id="editor-frame"><div class="editor-gutter" aria-hidden="true" id="code-lines">1</div><textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Python program"></textarea></div>
     <p id="program-status" class="status" role="status"></p>
     <details><summary>Saved programs and files</summary>
       <label for="program-name">Program name</label><input id="program-name" maxlength="60" value="my-route">
-      <div class="actions"><button id="program-save">Save in browser</button><select id="program-library" aria-label="Saved programs"></select><button id="program-open">Open saved</button><button id="program-delete">Delete saved</button></div>
-      <div class="actions"><button id="program-import">Import .py or route JSON</button><button id="program-download">Download editor source</button><input type="file" id="program-file" accept=".py,.json" hidden></div>
+      <div class="actions"><button id="program-save">Save in browser</button><select id="program-library" aria-label="Saved programs"></select><button id="program-open" class="icon-action" aria-label="Open saved program"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-folder"/></svg></button><button id="program-delete" class="icon-action" aria-label="Delete saved program"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-trash"/></svg></button></div>
+      <div class="actions"><button id="program-import" class="icon-action" aria-label="Import Python or route JSON"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-upload"/></svg></button><button id="program-download" class="icon-action" aria-label="Download editor source"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-download"/></svg></button><input type="file" id="program-file" accept=".py,.json" hidden></div>
     </details>
     <details id="export-section"><summary>Export to a LeRobot project</summary>
-      <p>The exported function takes an existing connected SO101Follower.</p>
-      <div class="actions"><button id="generate-function">Generate LeRobot function</button><button id="copy-function" disabled>Copy function</button><button id="download-function" disabled>Download function</button></div>
+      <div class="actions"><button id="generate-function">Generate LeRobot function</button><button id="copy-function" disabled class="icon-action" aria-label="Copy function"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button><button id="download-function" disabled class="icon-action" aria-label="Download function"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-download"/></svg></button></div>
       <p id="export-status" class="status" role="status"></p>
       <textarea id="export-code" aria-label="Generated LeRobot function" readonly hidden></textarea>
     </details>
   </section>
   <section id="simulation-side-panel" class="panel" aria-labelledby="side-panel-heading">
-    <div class="rail simulation-panel-header">
-      <h2 id="side-panel-heading">3D preview</h2>
-      <button id="codebook-switch" type="button" role="switch" aria-checked="false" aria-controls="codebook-panel">
-        Codebook <span class="switch-track" aria-hidden="true"></span>
-      </button>
-    </div>
+    <div class="rail"><h2 id="side-panel-heading">3D preview</h2></div>
     <div id="viewer-panel">
       <div class="preview-stage">
         <canvas id="viewer" width="720" height="540" tabindex="0" aria-label="SO-101 arm model. Drag or use arrow keys to orbit."></canvas>
-        <button id="camera" type="button" class="preview-reset" aria-label="Reset view" title="Reset view">
-          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="M3 4v5h5M3.5 9a8.5 8.5 0 1 1 .6 7"/>
-          </svg>
-        </button>
+        <button id="camera" type="button" class="icon-action preview-reset" aria-label="Reset view"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-reset"/></svg></button>
       </div>
       <p id="live-pose-status" class="status" role="status" hidden></p>
       <p id="active-motor" role="status" hidden></p>
       <p id="preview-status" class="status" role="status">Run your Python program to preview the route.</p>
-      <p>The live model uses the joint positions read from the arm.</p>
     </div>
-    <div id="codebook-panel" hidden>
+  </section>
+  <section id="codebook-panel" class="panel" aria-labelledby="codebook-title" hidden>
+    <div class="rail"><h2 id="codebook-title" tabindex="-1">Python Codebook</h2>
+      <button id="close-codebook" class="icon-action" type="button" aria-label="Close Codebook"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-close"/></svg></button>
+    </div>
       <div class="codebook-body" tabindex="0" role="region" aria-label="Python examples and motor reference">
-        <p>A route is a set of moves the arm follows in order. Try each example in the Python editor and choose <strong>Preview in 3D</strong>.</p>
-
-        <h3>Find the six motors</h3>
-        <p>Pick a motor to highlight it in gold. Drag the model or use the arrow keys to turn it.</p>
+        <h3>Motor ranges</h3>
         <p id="range-note">These are the simulator’s default ranges. A USB-connected arm uses its own calibration.</p>
         <div class="motor-guide">
           <div class="motor-figure">
@@ -148,7 +110,7 @@
             </figure>
             <p id="motor-motion"></p>
             <p id="motor-view-error" role="status" hidden>The 3D view is unavailable. You can still select a motor and read its range.</p>
-            <button id="motor-camera" type="button">Reset view</button>
+            <button id="motor-camera" type="button" class="icon-action" aria-label="Reset motor view"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-reset"/></svg></button>
           </div>
           <table aria-label="SO-101 motor ranges and Python keys" aria-describedby="range-note">
             <thead><tr><th scope="col">Motor and Python key</th><th scope="col">Default range</th></tr></thead>
@@ -213,7 +175,6 @@
 run_route(robot)</code></pre>
         <p>In Web Studio, select <strong>Start here</strong> for connection and calibration instructions. After previewing, choose <strong>Prepare deployment</strong> and review the full route with your teacher. Select <strong>Confirm and run route</strong> once to run the moves in order.</p>
       </div>
-    </div>
   </section>
 </div>
 <div id="deployment" role="tabpanel" aria-labelledby="tab-deployment" class="grid" hidden>
@@ -233,7 +194,7 @@ run_route(robot)</code></pre>
 </div>
 <section id="hardware" role="tabpanel" aria-labelledby="tab-hardware" class="panel setup-panel" hidden>
   <h2>Connect the SO-101</h2>
-  <p id="usb-help">For a calibrated SO-101, choose its USB serial port in desktop Chrome or Edge. Close any other app using the port first.</p>
+  <p id="usb-help" class="status" role="status"></p>
   <label for="arm-profile">Follower profile</label><select id="arm-profile"><option>A</option><option>B</option></select>
   <div class="actions">
     <button id="scan">Scan ports</button><button id="connect-usb" class="primary">Connect by USB</button>
@@ -246,7 +207,6 @@ run_route(robot)</code></pre>
 </section>
 <section id="calibration" role="tabpanel" aria-labelledby="tab-calibration" class="panel setup-panel" hidden>
   <div class="rail"><h2>Calibrate the arm</h2><p id="cal-follower">Follower A</p></div>
-  <p>For a new arm, capture the midpoint and usable travel. To restore this arm’s settings, first assign its calibration file in Settings.</p>
   <div class="actions">
     <button id="cal-start" class="primary">Calibrate new</button>
     <button id="cal-apply">Restore saved calibration</button>
@@ -271,7 +231,7 @@ run_route(robot)</code></pre>
 <div id="settings" role="tabpanel" aria-labelledby="tab-settings" class="grid" hidden>
   <section class="panel">
     <h2>Follower profiles</h2>
-    <p id="settings-scope">USB profiles and calibration copies are saved in this browser. Use Scan ports in USB connection to choose a serial adapter.</p>
+    <p id="settings-scope" class="status" role="status"></p>
     <label for="settings-profile">Profile</label><select id="settings-profile"><option>A</option><option>B</option></select>
     <div class="fields">
       <label id="profile-port-label" for="profile-port" hidden>Serial port</label><input id="profile-port" list="ports" hidden><datalist id="ports"></datalist>
@@ -279,18 +239,107 @@ run_route(robot)</code></pre>
       <label for="profile-calibration">Calibration file</label><input id="profile-calibration" placeholder="LeRobot default if empty">
       <div id="joint-fields" style="display:contents"></div>
     </div>
-    <p>Set each joint direction to +1 or −1 after comparing it with the model.</p>
     <div class="actions"><button id="scan-settings">Scan ports</button><button id="profile-save" class="primary">Save profile</button><button id="profile-remove">Remove profile</button></div>
     <p id="settings-status" class="status" role="status"></p>
   </section>
   <section class="panel">
     <h2>Calibration files</h2>
-    <div class="actions"><select id="cal-library" aria-label="Saved calibration files"></select><button id="cal-view">View file</button><button id="cal-import">Import JSON</button><button id="cal-new">New file</button><input id="cal-file" type="file" accept=".json" hidden></div>
+    <div class="actions"><select id="cal-library" aria-label="Saved calibration files"></select><button id="cal-view">View file</button><button id="cal-import" class="icon-action" aria-label="Import JSON"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-upload"/></svg></button><button id="cal-new">New file</button><input id="cal-file" type="file" accept=".json" hidden></div>
     <label for="cal-name">File name</label><input id="cal-name" maxlength="60" placeholder="follower-a">
     <label for="cal-text">Calibration JSON</label><textarea id="cal-text" spellcheck="false"></textarea>
     <div class="actions"><button id="cal-save" class="primary">Save calibration</button><button id="cal-use">Use for profile</button><button id="cal-archive">Archive selected file</button></div>
   </section>
 </div>
+<section id="roadmap" class="workspace-page" role="tabpanel" aria-labelledby="tab-roadmap" hidden>
+  <h2>From SO-101 to XLeRobot</h2>
+  <ol class="roadmap-list">
+    <li><h3>One tabletop follower</h3><span class="stage-status">Available now</span><p>Write a Python route, preview it in 3D, then replay it over USB on one SO-101.</p></li>
+    <li><h3>Two tabletop followers</h3><span class="stage-status">Classroom hardware now</span><p>Calibrate each arm and practise separate routes. Work with one follower at a time in Studio. No cameras needed.</p></li>
+    <li><h3>One webcam per arm</h3><p>Use basic computer vision to find an object. Let each arm move to its own target.</p></li>
+    <li><h3>Shared depth camera</h3><p>Locate objects in 3D and coordinate the arms for tasks such as holding with one arm and picking with the other.</p></li>
+    <li><h3>Cart and mobile base</h3><p>Mount both arms on the base. Practise driving, turning, and stopping with the arms parked.</p></li>
+    <li><h3>Depth-based navigation</h3><p>Use the depth camera to see obstacles and navigate to a target.</p></li>
+    <li><h3>Navigate, then grab</h3><p>Drive to an object, stop and line up, then use the arms to pick it up.</p></li>
+    <li><h3>Onboard XLeRobot</h3><p>Move control from the laptop to a Raspberry Pi or similar onboard computer. Run navigation, vision, and arm control together.</p></li>
+  </ol>
+</section>
+<section id="about" class="workspace-page" role="tabpanel" aria-labelledby="tab-about" hidden>
+  <h2>About Web Studio</h2>
+  <p>Built for Grade 10 robotics. Students write Python, test routes on a 3D SO-101, and run reviewed routes on a real follower over USB.</p>
+  <dl class="about-list">
+    <div><dt>Simulation</dt><dd>Runs in the browser. No arm required.</dd></div>
+    <div><dt>USB control</dt><dd>Use desktop Chrome or Edge on Mac or Windows. Studio connects to one calibrated follower at a time.</dd></div>
+    <div><dt>LeRobot projects</dt><dd>Export a Python function for a connected <code>SO101Follower</code>.</dd></div>
+  </dl>
+  <p>Model and editor credits are in the footer.</p>
+</section>
+<dialog id="help-dialog" class="help-sheet" aria-labelledby="help-title">
+  <form method="dialog">
+    <div class="rail">
+      <h2 id="help-title"></h2>
+      <button type="submit" class="icon-action" aria-label="Close guide" autofocus><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><use href="#glyph-close"/></svg></button>
+    </div>
+    <div id="help-content"></div>
+  </form>
+</dialog>
+<template id="help-getting-started">
+  <ol>
+    <li>Open <strong>Simulation</strong> to practise without an arm.</li>
+    <li>To use a real arm, work through <strong>USB connection</strong> and <strong>Calibration</strong> first.</li>
+    <li>Open <strong>Show me how</strong> in any tab for its steps.</li>
+  </ol>
+</template>
+<template id="help-hardware">
+  <ol>
+    <li>Secure the arm to the bench. Plug in motor power and USB. Use desktop Chrome or Edge and close other apps using the port.</li>
+    <li>Choose your follower. Select <strong>Scan ports</strong> and pick the SO-101 adapter.</li>
+    <li>For a calibrated arm, select <strong>Connect by USB</strong>, then <strong>Read current pose</strong>. Check for six readings. For a new arm, open <strong>Calibration</strong>.</li>
+  </ol>
+  <p>No adapter? Check the USB data cable. Adapter but no joints? Check motor power and the cable to the first servo.</p>
+</template>
+<template id="help-calibration">
+  <h3>New arm</h3>
+  <ol>
+    <li>Support the arm before selecting <strong>Calibrate new</strong>. The joints can move freely when motor torque releases.</li>
+    <li>Put the joints near the middle of their travel. Select <strong>Capture midpoint</strong>.</li>
+    <li>Gently move each joint through its usable range by hand, skipping wrist roll. Select <strong>Save range</strong>.</li>
+  </ol>
+  <h3>Restore a saved file</h3>
+  <ol>
+    <li>In <strong>Settings</strong>, import and save the calibration file for this same arm. Choose <strong>Use for profile</strong> and <strong>Save profile</strong>.</li>
+    <li>Select the follower in <strong>USB connection</strong>. In Calibration, select <strong>Restore saved calibration</strong>.</li>
+    <li>After Studio verifies the settings, return to <strong>USB connection</strong> and connect the arm.</li>
+  </ol>
+</template>
+<template id="help-program">
+  <ol>
+    <li>Select the <strong>Play</strong> icon to preview. The starter turns wrist roll to −5°, then back to 0°.</li>
+    <li>Change −5 to −10. Preview again and watch the wrist.</li>
+    <li>Open <strong>Codebook</strong> with the split-panel icon for Python keys, motor ranges, and examples.</li>
+  </ol>
+  <p>Type <code>robot.</code> for suggestions, or press Ctrl+Space. Use Ctrl+Enter or ⌘+Enter to preview. Press Esc to leave the editor.</p>
+</template>
+<template id="help-deployment">
+  <ol>
+    <li>Read the current pose. For a first test, pick a wrist target a few degrees away and within its calibrated range.</li>
+    <li>Preview the route in Simulation, then select <strong>Prepare deployment</strong>.</li>
+    <li>Review each target and check the full path with your teacher. Keep hands clear. Select <strong>Confirm and run route</strong> once.</li>
+    <li>Watch the 3D preview follow the arm’s readings. Select <strong>Stop route</strong> if the arm moves unexpectedly.</li>
+  </ol>
+</template>
+<template id="help-settings">
+  <ol>
+    <li>Choose the follower profile before changing its settings.</li>
+    <li>For an existing calibration, use the <strong>Import JSON</strong> icon. Select <strong>Save calibration</strong>, then <strong>Use for profile</strong> and <strong>Save profile</strong>.</li>
+    <li>Change joint direction only after comparing the real movement with the model. Studio keeps profiles and calibration copies in this browser.</li>
+  </ol>
+</template>
+<template id="help-roadmap">
+  <p>Start with tabletop routes. The roadmap marks the current classroom hardware and shows what gets added at each stage.</p>
+</template>
+<template id="help-about">
+  <p>Use <strong>Simulation</strong> to try Web Studio without plugging in an arm. Hardware and browser requirements are listed on this page.</p>
+</template>
 <dialog id="confirm-dialog" aria-labelledby="confirm-title">
   <form method="dialog">
     <h2 id="confirm-title">Confirm action</h2>
@@ -323,7 +372,6 @@ run_route(robot)</code></pre>
 <footer class="studio-footer">
   <div class="studio-footer-inner">
     <p>SO-101 Web Studio <span class="studio-version">v2026.11.18</span></p>
-    <p>&copy; 2026</p>
     <ul aria-label="Third-party credits and licenses">
       <li><a href="LICENSE-so101-ros2.txt">SO-101 ROS 2 model</a></li>
       <li><a href="LICENSE-meshes.txt">Mesh license</a></li>
@@ -342,5 +390,5 @@ run_route(robot)</code></pre>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=20261118-simultaneous"></script>
 <script src="codebook.js?v=side-panel"></script>
-<script src="studio.js?v=panel-switch"></script>
+<script src="studio.js?v=workspace"></script>
 </html>

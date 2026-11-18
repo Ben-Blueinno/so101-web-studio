@@ -53,9 +53,9 @@ function selectView(view) {
     tab.setAttribute("aria-selected", current);
     tab.tabIndex = current ? 0 : -1;
   }
+  get("codebook-switch").hidden = view !== "program";
   if (view === "deployment") setCodebook(false);
   if (view === "program" || view === "deployment") {
-    get("codebook-switch").hidden = view === "deployment";
     get(view).append(get("simulation-side-panel"));
   }
   if (view === "calibration") get("cal-follower").textContent = "Follower " + get("arm-profile").value;
@@ -87,16 +87,32 @@ for (const button of document.querySelectorAll("[data-open-tab]")) {
 
 function setCodebook(open) {
   get("codebook-switch").setAttribute("aria-checked", open);
-  get("side-panel-heading").textContent = open ? "Python Codebook" : "3D preview";
+  get("program").classList.toggle("has-codebook", open);
   get("codebook-panel").hidden = !open;
-  get("viewer-panel").hidden = open;
   if (open) {
     expandEditor(false);
     initCodebookModel();
+  } else {
+    pythonEditor?.refresh();
   }
 }
 
-get("codebook-switch").onclick = () => setCodebook(get("codebook-panel").hidden);
+get("codebook-switch").onclick = () => {
+  const opening = get("codebook-panel").hidden;
+  setCodebook(opening);
+  if (opening && matchMedia("(max-width: 820px)").matches) get("codebook-title").focus();
+};
+get("close-codebook").onclick = () => {
+  setCodebook(false);
+  get("codebook-switch").focus();
+};
+
+get("show-help").onclick = () => {
+  const tab = tabs.find(item => item.getAttribute("aria-selected") === "true");
+  get("help-title").textContent = tab.textContent;
+  get("help-content").replaceChildren(get("help-" + tab.dataset.view).content.cloneNode(true));
+  get("help-dialog").showModal();
+};
 
 let guideReady = false;
 function initGuideDemo() {
@@ -200,7 +216,8 @@ function expandEditor(expanded) {
   get("program").classList.toggle("editor-expanded", expanded);
   const button = get("expand-editor");
   button.setAttribute("aria-pressed", expanded);
-  button.textContent = expanded ? "Collapse editor" : "Expand editor";
+  button.setAttribute("aria-label", expanded ? "Collapse editor" : "Expand editor");
+  button.querySelector("use").setAttribute("href", expanded ? "#glyph-collapse" : "#glyph-expand");
   pythonEditor?.refresh();
 }
 hook("expand-editor", () => {
@@ -298,7 +315,6 @@ function animate(route, id) {
 
 hook("preview", async () => {
   if (currentStep) return;
-  setCodebook(false);
   expandEditor(false);
   resetPreview();
   compiling = true;
@@ -309,6 +325,9 @@ hook("preview", async () => {
     const result = await api("compile", {source: code.value, label: get("arm-profile").value});
     if (version !== animation) return;
     programStatus.textContent = `Validated ${result.route.steps.length} moves.`;
+    if (!get("program").hidden && (!get("codebook-panel").hidden || matchMedia("(max-width: 820px)").matches)) {
+      get("side-panel-heading").scrollIntoView({block: "nearest"});
+    }
     animate(result.route, result.preview_id);
   } finally {
     compiling = false;
@@ -821,9 +840,9 @@ async function boot() {
     programStatus.textContent = "Browser storage is unavailable. You can download your program.";
   }
   render = createViewer(get("viewer"), SO101_MODEL);
-  const openCodebook = location.hash === "#codebook";
-  selectView(openCodebook || location.hash === "#simulation" ? "program" : "getting-started");
-  if (openCodebook) setCodebook(true);
+  const views = {"#codebook": "program", "#simulation": "program", "#coming-soon": "roadmap", "#about": "about"};
+  selectView(views[location.hash] ?? "getting-started");
+  if (location.hash === "#codebook") setCodebook(true);
   pollLivePose();
   if (!hostedArm.supportsUSB) get("usb-help").textContent = "USB connection requires desktop Chrome or Edge and browser permission.";
   if (!hostedArm.supportsUSB) get("settings-scope").textContent = "Open this page in desktop Chrome or Edge to scan for USB serial ports.";
