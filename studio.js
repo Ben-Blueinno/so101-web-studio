@@ -855,7 +855,7 @@ function createArmCards(label, data) {
     armStatus.textContent = "Read all six joints and updated the 3D starting pose.";
   });
   armAction("save-rest", async () => {
-    if (!await confirmAction("Save the current arm position as the rest pose for this follower?")) return;
+    if (!await confirmAction(`Save the current position of ${armName()} as its rest pose?`)) return;
     connected(await armApi("save-rest"));
     armStatus.textContent = "Saved the current position as rest for this follower.";
   });
@@ -867,7 +867,7 @@ function createArmCards(label, data) {
       return;
     }
     const order = plan.joints.map(joint => JOINTS[joint]).join(", ");
-    if (!await confirmAction(`The arm will move to its rest pose, one joint at a time: ${order}. Confirm the entire path is clear before continuing.`)) {
+    if (!await confirmAction(`${armName()} will move to its rest pose, one joint at a time: ${order}. Confirm the entire path is clear before continuing.`)) {
       armStatus.textContent = "Return to rest cancelled.";
       return;
     }
@@ -887,7 +887,7 @@ function createArmCards(label, data) {
     armStatus.textContent = "Stop requested.";
   }, armStatus);
   armAction("disconnect", async () => {
-    if (!await confirmAction("Support the arm before disconnecting. Continue?")) return;
+    if (!await confirmAction(`Support ${armName()} before disconnecting. Continue?`)) return;
     const result = await armApi("disconnect");
     if (result?.arms) acceptArms(result.arms);
     else connected();
@@ -905,11 +905,11 @@ function createArmCards(label, data) {
     get("cal-text").focus();
   }, calStatusMessage);
   armAction("cal-apply", async () => {
-    if (!await confirmAction("Restore calibration to this same arm from the selected follower profile? Support the arm before continuing because torque will be released.")) return;
+    if (!await confirmAction(`Restore the assigned calibration file to ${armName()}? Support this arm before continuing because torque will be released.`)) return;
     calStatusMessage.textContent = (await armApi("cal-apply", {...armLabel(), confirmed: true})).message;
   }, calStatusMessage);
   armAction("cal-start", async () => {
-    if (!await confirmAction("Support the arm. Calibration releases torque and requires moving the joints by hand. Proceed?")) return;
+    if (!await confirmAction(`Calibrate ${armName()}? Support this arm. Calibration releases torque and requires moving its joints by hand.`)) return;
     await armApi("cal-start", {...armLabel(), confirmed: true});
     calibrating = true;
     updateControls();
