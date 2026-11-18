@@ -47,6 +47,7 @@ function confirmAction(message) {
 const tabs = [...document.querySelectorAll('[role="tab"]')];
 function selectView(view) {
   if (moving && !returningToRest && view !== "deployment") return;
+  closeStudioDropdown();
   for (const tab of tabs) {
     const current = tab.dataset.view === view;
     get(tab.dataset.view).hidden = !current;
@@ -182,7 +183,7 @@ function updateControls() {
   get("cal-start").disabled ||= !bridge && !hostedArm.supportsUSB;
   get("scan").disabled = get("scan-settings").disabled =
     calibrating || actionPending || (!bridge && (!hostedArm.supportsUSB || Boolean(initialized)));
-  get("profile-port").hidden = get("profile-port-label").hidden = !bridge;
+  get("profile-port-tools").hidden = get("profile-port-label").hidden = !bridge;
 }
 
 function drawPose(pose, joints, mode) {
@@ -477,9 +478,11 @@ function migrateSavedMoveSets() {
 }
 
 function listPrograms(selected = "") {
-  programLibrary.replaceChildren(new Option("Saved programs…", ""));
-  for (const item of listing()) programLibrary.add(new Option(item.name, item.name));
-  programLibrary.value = selected;
+  const programs = listing();
+  programLibrary.replaceChildren(new Option(programs.length ? "Choose a program…" : "No saved programs", ""));
+  for (const item of programs) programLibrary.add(new Option(item.name, item.name));
+  selectStudioValue(programLibrary, selected);
+  updateSavedProgramActions();
 }
 hook("program-save", async () => {
   const name = get("program-name").value.trim();
@@ -503,17 +506,34 @@ function openCode(text, name) {
   get("program-name").value = name.slice(0, 60);
 }
 
+const savedProgramsDialog = get("saved-programs-dialog");
+const savedProgramsStatus = get("saved-programs-status");
+function updateSavedProgramActions() {
+  get("program-open").disabled = get("program-delete").disabled = !programLibrary.value;
+}
+programLibrary.onchange = updateSavedProgramActions;
+get("saved-programs").onclick = () => {
+  savedProgramsStatus.textContent = "";
+  try {
+    listPrograms(programLibrary.value);
+  } catch {
+    savedProgramsStatus.textContent = "Could not read saved programs.";
+  }
+  savedProgramsDialog.showModal();
+};
 hook("program-open", () => {
   const saved = listing().find(item => item.name === programLibrary.value);
   if (!saved) throw new Error("Choose a saved program.");
   openCode(saved.text, saved.name);
-});
+  savedProgramsDialog.close();
+}, savedProgramsStatus);
 hook("program-delete", async () => {
   const name = programLibrary.value;
   if (!name || !await confirmAction(`Delete “${name}” from this browser?`)) return;
   localStorage.setItem(key, JSON.stringify(listing().filter(item => item.name !== name)));
   listPrograms();
-});
+  savedProgramsStatus.textContent = `Deleted “${name}”.`;
+}, savedProgramsStatus);
 function downloadPython(source, filename) {
   const url = URL.createObjectURL(new Blob([source], {type: "text/plain"}));
   const link = document.createElement("a");
@@ -569,7 +589,7 @@ get("program-file").onchange = async event => {
 function connected(arm) {
   initialized = arm;
   get("connection").textContent = arm ? `Follower ${arm.label} initialized` : "Browser simulator";
-  if (arm) get("arm-profile").value = arm.label;
+  if (arm) selectStudioValue(get("arm-profile"), arm.label);
   get("pose-sample").textContent = arm ? Object.entries(arm.pose).map(([name, value]) =>
     `${JOINTS[name.replace(".pos", "")]}: ${value.toFixed(2)}${name === "gripper.pos" ? "%" : "°"}`).join("\n") : "";
   updateControls();
@@ -674,7 +694,7 @@ armAction("cal-read", async () => {
   const result = await api("cal-read", armLabel());
   get("cal-name").value = result.name;
   get("cal-text").value = result.text;
-  get("settings-profile").value = get("arm-profile").value;
+  selectStudioValue(get("settings-profile"), get("arm-profile").value);
   populateProfile();
   selectView("settings");
   settingsStatus.textContent = "Review the readback, then save it as a calibration copy if desired.";
@@ -737,15 +757,15 @@ for (const [joint, name] of Object.entries(JOINTS)) {
 function populateProfile() {
   if (!settings) return;
   const profile = settings.profiles[get("settings-profile").value];
-  for (const [fieldName, id] of Object.entries(profileFields)) get(id).value = profile[fieldName];
+  for (const [fieldName, id] of Object.entries(profileFields)) selectStudioValue(get(id), profile[fieldName]);
 }
 get("settings-profile").onchange = populateProfile;
 function showSettings(data, selection = "") {
   settings = data;
-  get("ports").replaceChildren(...data.ports.map(port => new Option(port)));
+  get("ports").replaceChildren(new Option("Scanned ports…", ""), ...data.ports.map(port => new Option(port)));
   calibrationLibrary.replaceChildren(new Option("Select calibration…", ""));
   for (const name of data.files) calibrationLibrary.add(new Option(name, name));
-  calibrationLibrary.value = selection;
+  selectStudioValue(calibrationLibrary, selection || "");
 }
 async function scanPorts(status, label) {
   actionPending = true;
@@ -757,7 +777,7 @@ async function scanPorts(status, label) {
       return;
     }
     await api("scan-usb", {label});
-    get("arm-profile").value = label;
+    selectStudioValue(get("arm-profile"), label);
     status.textContent = `USB port selected for follower ${label}. Choose Connect by USB, or open Calibration for a new arm.`;
   } finally {
     actionPending = false;
@@ -770,7 +790,7 @@ hook("profile-save", async () => {
   const label = get("settings-profile").value;
   const values = Object.fromEntries(Object.entries(profileFields).map(([f, id]) => [f, get(id).value]));
   showSettings(await api("profile-save", {label, values}), calibrationLibrary.value);
-  get("arm-profile").value = label;
+  selectStudioValue(get("arm-profile"), label);
   settingsStatus.textContent = `Follower ${label} saved.`;
 }, settingsStatus);
 hook("profile-remove", async () => {
@@ -964,6 +984,14 @@ function startLimitPreview(payload) {
   stop.onclick = () => reset("Preview stopped at saved rest.");
   reset("Ready at the saved rest pose.");
 }
+
+get("ports").onchange = () => {
+  const port = get("ports").value;
+  if (port) get("profile-port").value = port;
+  selectStudioValue(get("ports"), "");
+};
+attachStudioDropdown(get("program-files"), get("program-menu"));
+for (const select of document.querySelectorAll("select")) attachStudioSelect(select);
 
 const limitPayload = new URLSearchParams(location.hash.slice(1)).get("limit-preview");
 if (limitPayload !== null) {

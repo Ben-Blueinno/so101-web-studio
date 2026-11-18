@@ -6,8 +6,8 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=workspace">
-<link rel="stylesheet" href="studio-editor.css?v=code-colors">
+<link rel="stylesheet" href="studio.css?v=menus">
+<link rel="stylesheet" href="studio-editor.css?v=menus">
 <link rel="stylesheet" href="codebook.css?v=code-colors">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
   <symbol id="glyph-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.6 0c0 2-2.8 2.1-2.8 4.2m0 3.2h.01"/></symbol>
@@ -24,6 +24,10 @@
   <symbol id="glyph-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 4H6a2 2 0 0 0-2 2v10"/></symbol>
   <symbol id="glyph-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
   <symbol id="glyph-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></symbol>
+  <symbol id="glyph-save" viewBox="0 0 24 24"><path d="M5 3h12l4 4v14H3V3h2m3 0v6h8V3M7 21v-8h10v8"/></symbol>
+  <symbol id="glyph-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="glyph-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="glyph-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16"/></symbol>
 </svg>
 <main id="studio">
 <header><h1>SO-101 Web Studio</h1><p id="connection" class="status" role="status">Browser simulator</p></header>
@@ -66,19 +70,34 @@
 </section>
 <div id="program" role="tabpanel" aria-labelledby="tab-program" class="grid" hidden>
   <section class="panel" id="program-editor">
-    <div class="rail"><h2><label for="code">Python editor</label></h2><div class="panel-tools"><button id="preview" type="button" class="icon-action primary" aria-label="Preview in 3D"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-play"/></svg></button><button id="stop-preview" type="button" class="icon-action" aria-label="Stop preview" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-stop"/></svg></button><button id="expand-editor" type="button" class="icon-action" aria-pressed="false" aria-label="Expand editor"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-expand"/></svg></button></div></div>
+    <div class="rail editor-header">
+      <h2><label for="code">Python editor</label></h2>
+      <div class="editor-file-tools">
+        <input id="program-name" aria-label="Program name" title="Program name" placeholder="Program name" maxlength="60" value="my-route" autocomplete="off" spellcheck="false">
+        <button id="program-save" type="button" class="icon-action" aria-label="Save in browser"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-save"/></svg></button>
+        <button id="program-files" type="button" class="dropdown-trigger file-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="program-menu"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-folder"/></svg><span>Files</span><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-chevron"/></svg></button>
+      </div>
+    </div>
+    <div class="panel-tools editor-run-tools"><button id="preview" type="button" class="icon-action primary" aria-label="Preview in 3D"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-play"/></svg></button><button id="stop-preview" type="button" class="icon-action" aria-label="Stop preview" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-stop"/></svg></button><button id="expand-editor" type="button" class="icon-action" aria-pressed="false" aria-label="Expand editor"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-expand"/></svg></button></div>
     <div class="editor-frame" id="editor-frame"><div class="editor-gutter" aria-hidden="true" id="code-lines">1</div><textarea id="code" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Python program"></textarea></div>
     <p id="program-status" class="status" role="status"></p>
-    <details><summary>Saved programs and files</summary>
-      <label for="program-name">Program name</label><input id="program-name" maxlength="60" value="my-route">
-      <div class="actions"><button id="program-save">Save in browser</button><select id="program-library" aria-label="Saved programs"></select><button id="program-open" class="icon-action" aria-label="Open saved program"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-folder"/></svg></button><button id="program-delete" class="icon-action" aria-label="Delete saved program"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-trash"/></svg></button></div>
-      <div class="actions"><button id="program-import" class="icon-action" aria-label="Import Python or route JSON"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-upload"/></svg></button><button id="program-download" class="icon-action" aria-label="Download editor source"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-download"/></svg></button><input type="file" id="program-file" accept=".py,.json" hidden></div>
-    </details>
-    <details id="export-section"><summary>Export to a LeRobot project</summary>
-      <div class="actions"><button id="generate-function">Generate LeRobot function</button><button id="copy-function" disabled class="icon-action" aria-label="Copy function"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button><button id="download-function" disabled class="icon-action" aria-label="Download function"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-download"/></svg></button></div>
-      <p id="export-status" class="status" role="status"></p>
-      <textarea id="export-code" aria-label="Generated LeRobot function" readonly hidden></textarea>
-    </details>
+    <input type="file" id="program-file" accept=".py,.json" hidden>
+    <div id="program-menu" class="studio-dropdown file-menu" role="menu" aria-labelledby="program-files" popover="auto">
+      <div role="group" aria-label="Saved programs and files">
+        <div class="menu-heading" aria-hidden="true">Programs and files</div>
+        <button id="saved-programs" type="button" role="menuitem" tabindex="-1" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-folder"/></svg><span>Saved programs…</span></button>
+        <button id="program-import" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-upload"/></svg><span>Import Python or route JSON…</span></button>
+        <button id="program-download" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-download"/></svg><span>Download Python source</span></button>
+      </div>
+      <div role="group" aria-label="LeRobot export">
+        <div class="menu-heading" aria-hidden="true">LeRobot export</div>
+        <button id="generate-function" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-code"/></svg><span>Generate LeRobot function</span></button>
+        <button id="copy-function" type="button" role="menuitem" tabindex="-1" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg><span>Copy function</span></button>
+        <button id="download-function" type="button" role="menuitem" tabindex="-1" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-download"/></svg><span>Download function</span></button>
+      </div>
+    </div>
+    <p id="export-status" class="status" role="status"></p>
+    <textarea id="export-code" aria-label="Generated LeRobot function" readonly hidden></textarea>
   </section>
   <section id="simulation-side-panel" class="panel" aria-labelledby="side-panel-heading">
     <div class="rail"><h2 id="side-panel-heading">3D preview</h2></div>
@@ -169,7 +188,7 @@
         <p><code>range(2)</code> repeats the indented lines twice. Python starts counting at 0, so the first turn adds 6° and the second adds 8°. Change <code>turn</code> to 3 and predict both turns before previewing. Keep each route to 32 moves or fewer.</p>
 
         <h3>Export to your project</h3>
-        <p>Open <strong>Export to a LeRobot project</strong> and generate the function. The downloaded module uses your connected, calibrated <code>SO101Follower</code> with <code>use_degrees=True</code> and reads position feedback while moving.</p>
+        <p>Open <strong>Files</strong> and choose <strong>Generate LeRobot function</strong>. The downloaded module uses your connected, calibrated <code>SO101Follower</code> with <code>use_degrees=True</code> and reads position feedback while moving.</p>
         <pre><code>from my_route_lerobot import run_route
 
 run_route(robot)</code></pre>
@@ -234,7 +253,7 @@ run_route(robot)</code></pre>
     <p id="settings-scope" class="status" role="status"></p>
     <label for="settings-profile">Profile</label><select id="settings-profile"><option>A</option><option>B</option></select>
     <div class="fields">
-      <label id="profile-port-label" for="profile-port" hidden>Serial port</label><input id="profile-port" list="ports" hidden><datalist id="ports"></datalist>
+      <label id="profile-port-label" for="profile-port" hidden>Serial port</label><div id="profile-port-tools" class="port-tools" hidden><input id="profile-port" autocomplete="off"><select id="ports" aria-label="Scanned ports"><option value="">Scanned ports…</option></select></div>
       <label for="profile-id">LeRobot ID</label><input id="profile-id">
       <label for="profile-calibration">Calibration file</label><input id="profile-calibration" placeholder="LeRobot default if empty">
       <div id="joint-fields" style="display:contents"></div>
@@ -273,6 +292,19 @@ run_route(robot)</code></pre>
   </dl>
   <p>Model and editor credits are in the footer.</p>
 </section>
+<dialog id="saved-programs-dialog" aria-labelledby="saved-programs-title">
+  <div class="rail">
+    <h2 id="saved-programs-title">Saved programs</h2>
+    <form method="dialog"><button type="submit" class="icon-action" aria-label="Close saved programs"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-close"/></svg></button></form>
+  </div>
+  <label for="program-library">Program</label>
+  <select id="program-library"></select>
+  <p id="saved-programs-status" class="status" role="status"></p>
+  <div class="actions">
+    <button id="program-open" type="button" class="primary" disabled>Open program</button>
+    <button id="program-delete" type="button" disabled>Delete program</button>
+  </div>
+</dialog>
 <dialog id="help-dialog" class="help-sheet" aria-labelledby="help-title">
   <form method="dialog">
     <div class="rail">
@@ -316,6 +348,7 @@ run_route(robot)</code></pre>
     <li>Select the <strong>Play</strong> icon to preview. The starter turns wrist roll to −5°, then back to 0°.</li>
     <li>Change −5 to −10. Preview again and watch the wrist.</li>
     <li>Open <strong>Codebook</strong> with the split-panel icon for Python keys, motor ranges, and examples.</li>
+    <li>Name your program and select the save icon. Open <strong>Files</strong> to find saved programs, import files, or export a LeRobot function.</li>
   </ol>
   <p>Type <code>robot.</code> for suggestions, or press Ctrl+Space. Use Ctrl+Enter or ⌘+Enter to preview. Press Esc to leave the editor.</p>
 </template>
@@ -390,5 +423,6 @@ run_route(robot)</code></pre>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=code-colors"></script>
 <script src="codebook.js?v=code-colors"></script>
-<script src="studio.js?v=workspace"></script>
+<script src="studio-dropdowns.js?v=menus"></script>
+<script src="studio.js?v=menus"></script>
 </html>
