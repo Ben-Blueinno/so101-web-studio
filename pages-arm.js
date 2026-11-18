@@ -1,8 +1,8 @@
 "use strict";
 
 const STUDIO_RELEASE = Object.freeze({
-  channel: "main",
-  modes: Object.freeze(["single"]),
+  channel: "dev",
+  modes: Object.freeze(["single", "dual"]),
 });
 
 const hostedArm = (() => {
