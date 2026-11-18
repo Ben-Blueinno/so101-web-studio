@@ -435,6 +435,7 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 .component-card .panel-tools { margin-inline-start: auto; }
 .card-help { flex: none; }
 .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+#robot-components { grid-template-columns: minmax(0, 1fr); }
 .component-card { padding: 20px; border: 1px solid var(--edge); border-radius: 16px; background: var(--panel); min-width: 0; }
 .component-card .rail { margin-bottom: 0; }
 .component-state { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .9rem; }
