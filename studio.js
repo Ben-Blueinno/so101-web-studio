@@ -1136,8 +1136,10 @@ function showMode() {
     ? "Two SO-101 arms in the XLeRobot layout. Drag or use arrow keys to orbit."
     : "One SO-101 arm. Drag or use arrow keys to orbit.");
   get("viewer").setAttribute("aria-label", get("guide-model").getAttribute("aria-label"));
-  get("guide-connect-step").textContent = dual ? "Connect both followers by USB." : "Plug in USB and motor power.";
-  get("guide-calibrate-step").textContent = dual ? "Set ranges for each arm." : "Set ranges for this arm.";
+  get("guide-connect-step").textContent = dual ? "Connect A and B. Open Pose and rest." : "Connect A. Open Pose and rest.";
+  get("guide-calibrate-step").textContent = dual ? "Set up each arm and its Files." : "Set up A and its Files.";
+  get("guide-simulate-step").textContent = dual ? "Use A. and B. keys. Preview and save." : "Use A. keys. Preview and save.";
+  get("development-status").hidden = STUDIO_RELEASE.channel !== "dev";
   get("component-B").hidden = !dual;
   get("codebook-dual-example").hidden = !dual;
   for (const section of get("codebook-panel").querySelectorAll("[data-mode]")) section.hidden = section.dataset.mode !== activeMode;
@@ -1191,6 +1193,15 @@ async function chooseMode(id) {
 }
 
 for (const [id, stage] of taskStages) {
+  if (id === "dual") {
+    if (STUDIO_RELEASE.modes.includes("dual")) {
+      delete stage.dataset.requires;
+      stage.querySelector(".stage-status").textContent = "Development preview";
+    } else {
+      stage.dataset.requires = "Two-arm mode is being tested on the dev branch. It is Coming soon on the main site.";
+      stage.querySelector(".stage-status").textContent = "Coming soon";
+    }
+  }
   const title = taskTitle(stage) + (stage.dataset.requires ? " · Coming soon" : "");
   const option = new Option(title, id);
   option.disabled = Boolean(stage.dataset.requires);

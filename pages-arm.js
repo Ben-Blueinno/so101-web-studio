@@ -1,5 +1,10 @@
 "use strict";
 
+const STUDIO_RELEASE = Object.freeze({
+  channel: "main",
+  modes: Object.freeze(["single"]),
+});
+
 const hostedArm = (() => {
   const address = "http://127.0.0.1:8765";
   const storageKey = "so101-web-studio:usb-setup:v1";
@@ -100,6 +105,10 @@ const hostedArm = (() => {
   }
 
   async function connectUSB(label, mode) {
+    if ((mode && !STUDIO_RELEASE.modes.includes(mode)) ||
+        (label !== "A" && !STUDIO_RELEASE.modes.includes("dual"))) {
+      throw new Error("Two-arm mode is Coming soon in this release.");
+    }
     if (mode === "single" && followers.size) throw new Error("Disconnect the current follower before connecting another in this mode.");
     if (code || followers.has(label) || busy || replay || calibrationSession) throw new Error("Finish calibration or disconnect the active arm first.");
     busy = true;
@@ -153,6 +162,9 @@ const hostedArm = (() => {
   }
 
   async function compile(data) {
+    if (data.mode && !STUDIO_RELEASE.modes.includes(data.mode)) {
+      throw new Error("This mode is Coming soon in this release.");
+    }
     if (replay) throw new Error("Finish or discard the active replay first.");
     const original = await hostedPython.parse(data.source);
     const labels = new Set();
@@ -168,6 +180,9 @@ const hostedArm = (() => {
           throw new Error(`Step ${index + 1}: specify the arm in every action key, for example "A.wrist_roll.pos".`);
         }
         const label = explicit ?? data.label;
+        if (label !== "A" && !STUDIO_RELEASE.modes.includes("dual")) {
+          throw new Error("Two-arm mode is Coming soon in this release.");
+        }
         if (data.mode === "single" && label !== "A") {
           throw new Error("This route targets another follower. Choose Two tabletop followers in Start here.");
         }
@@ -357,6 +372,9 @@ const hostedArm = (() => {
   }
 
   async function dispatch(action, data) {
+    if (data.label && data.label !== "A" && !STUDIO_RELEASE.modes.includes("dual")) {
+      throw new Error("Two-arm mode is Coming soon in this release.");
+    }
     if (action === "settings") return settings();
     if (action === "compile") return compile(data);
     if (action === "export-lerobot") return {code: await hostedPython.exportFunction(data.source)};
