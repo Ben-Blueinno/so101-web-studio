@@ -1,5 +1,8 @@
+#codebook-panel { padding: clamp(12px, 1.6vw, 20px); }
 .codebook-body { min-width: 0; container-type: inline-size; }
-.codebook-body h3 { margin-top: 24px; font-size: 1.13rem; }
+.codebook-body h3 { margin-top: 22px; font-size: 1.05rem; }
+.codebook-body h3:first-child { margin-top: 2px; }
+#range-note { font-size: .875rem; }
 .codebook-body pre {
   background: var(--input);
   border: 1px solid var(--edge);
@@ -11,32 +14,57 @@
   background: var(--python-surface);
   color: var(--python-text);
 }
-.motor-guide { margin-block: 12px; }
-.motor-stage canvas { max-height: 230px; object-fit: contain; }
-#motor-motion { font-size: .875rem; }
-.motor-figure button { margin-top: 8px; }
-.motor-stage { position: relative; }
-.motor-stage canvas { border: 1px solid var(--edge); }
-.motor-caption {
-  margin-top: 6px;
-  color: var(--gold);
+.motor-guide { margin-block: 10px; }
+.motor-stage {
+  display: grid;
+  grid-template-columns: minmax(84px, 42%) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
 }
+.motor-stage canvas { border: 1px solid var(--edge); }
+.motor-caption { margin: 0; color: var(--gold); overflow-wrap: anywhere; }
 .motor-caption strong { display: block; color: inherit; }
-.motor-guide table { width: 100%; text-align: left; border-collapse: collapse; }
-.motor-guide th, .motor-guide td { padding: 4px 6px; border-bottom: 1px solid var(--edge); }
+#motor-motion { margin-block: 4px 0; font-size: .78rem; }
+.motor-figure {
+  position: relative;
+  margin-bottom: 10px;
+}
+.motor-figure > button {
+  position: absolute;
+  inset: 3px auto auto 3px;
+  background: #15191f;
+  color: #fff;
+  border-color: #78818e;
+}
+.motor-figure > button svg { width: 16px; height: 16px; }
+.motor-guide table { width: 100%; text-align: start; border-collapse: collapse; table-layout: fixed; }
+.motor-guide th, .motor-guide td { padding: 2px 4px; border-bottom: 1px solid var(--edge); }
+.motor-guide thead th { font-size: .78rem; font-weight: 600; color: var(--muted); padding-bottom: 5px; }
+.motor-guide thead th:first-child { width: 56%; }
 .motor-guide tbody th { font-weight: 400; }
-.motor-guide tbody code { display: block; margin-top: 4px; font-size: .79rem; overflow-wrap: anywhere; color: var(--muted); }
-.motor-guide button { text-align: left; }
-.default-range { font-size: .9rem; font-variant-numeric: tabular-nums; }
+.motor-guide button[data-motor] {
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: transparent;
+  text-align: start;
+  line-height: 1.15;
+}
+.motor-guide button[data-motor]:hover,
+.motor-guide button[data-motor][aria-pressed="true"] { background: var(--selection); }
+.motor-guide tbody button:focus-visible { outline-offset: -2px; }
+.motor-label { font-size: .85rem; overflow-wrap: anywhere; }
+.motor-guide tbody code { font-size: .72rem; overflow-wrap: anywhere; color: var(--muted); }
+.default-range { font-size: .8rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
-@container (min-width: 450px) {
-  .motor-guide {
-    display: grid;
-    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
-    gap: 12px;
-    align-items: start;
-  }
-  .motor-figure { position: sticky; top: 2px; }
+@container (min-width: 540px) {
+  .motor-guide { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); gap: 12px; align-items: start; }
+  .motor-figure { position: sticky; top: 2px; margin-bottom: 0; }
+  .motor-stage { grid-template-columns: minmax(0, 1fr); }
 }
 @media (min-width: 821px) {
   .codebook-body {
@@ -45,8 +73,4 @@
     padding: 2px 8px 2px 2px;
     scrollbar-gutter: stable;
   }
-}
-@media (max-width: 380px) {
-  .motor-guide button { padding-inline: 6px; }
-  .motor-guide th, .motor-guide td { padding-inline: 4px; }
 }

@@ -24,7 +24,7 @@ function defaultRange(joint) {
 function selectMotor(button) {
   const joint = button.dataset.motor;
   for (const choice of motorButtons) choice.setAttribute("aria-pressed", choice === button);
-  motorName.textContent = button.textContent;
+  motorName.textContent = button.querySelector(".motor-label").textContent;
   motorRange.textContent = defaultRange(joint);
   get("motor-motion").textContent = button.dataset.motion;
   drawMotor?.({}, {joint, mode: "simulation"});

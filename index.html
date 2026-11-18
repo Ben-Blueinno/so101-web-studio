@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
 <link rel="stylesheet" href="studio.css?v=two-followers">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
-<link rel="stylesheet" href="codebook.css?v=code-colors">
+<link rel="stylesheet" href="codebook.css?v=compact-motors">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
   <symbol id="glyph-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.6 0c0 2-2.8 2.1-2.8 4.2m0 3.2h.01"/></symbol>
   <symbol id="glyph-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
@@ -145,21 +145,21 @@
               <figcaption class="motor-caption" role="status">
                 <strong id="motor-name">Shoulder pan</strong>
                 <span id="motor-range"></span>
+                <p id="motor-motion"></p>
               </figcaption>
             </figure>
-            <p id="motor-motion"></p>
             <p id="motor-view-error" role="status" hidden>The 3D view is unavailable. You can still select a motor and read its range.</p>
             <button id="motor-camera" type="button" class="icon-action" aria-label="Reset motor view"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-reset"/></svg></button>
           </div>
           <table aria-label="SO-101 motor ranges and Python keys" aria-describedby="range-note">
             <thead><tr><th scope="col">Motor and Python key</th><th scope="col">Default range</th></tr></thead>
             <tbody>
-              <tr><th scope="row"><button type="button" data-motor="shoulder_pan" data-motion="Turns the base left or right." aria-pressed="true">Shoulder pan</button><code>shoulder_pan.pos</code></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="shoulder_lift" data-motion="Raises or lowers the upper arm." aria-pressed="false">Shoulder lift</button><code>shoulder_lift.pos</code></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="elbow_flex" data-motion="Bends or straightens the elbow." aria-pressed="false">Elbow flex</button><code>elbow_flex.pos</code></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="wrist_flex" data-motion="Tilts the gripper up or down." aria-pressed="false">Wrist flex</button><code>wrist_flex.pos</code></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="wrist_roll" data-motion="Twists the gripper like a doorknob." aria-pressed="false">Wrist roll</button><code>wrist_roll.pos</code></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="gripper" data-motion="Opens or closes the jaws." aria-pressed="false">Gripper</button><code>gripper.pos</code></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><button type="button" data-motor="shoulder_pan" data-motion="Turns the base left or right." aria-pressed="true"><span class="motor-label">Shoulder pan</span><code>shoulder_pan.pos</code></button></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><button type="button" data-motor="shoulder_lift" data-motion="Raises or lowers the upper arm." aria-pressed="false"><span class="motor-label">Shoulder lift</span><code>shoulder_lift.pos</code></button></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><button type="button" data-motor="elbow_flex" data-motion="Bends or straightens the elbow." aria-pressed="false"><span class="motor-label">Elbow flex</span><code>elbow_flex.pos</code></button></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><button type="button" data-motor="wrist_flex" data-motion="Tilts the gripper up or down." aria-pressed="false"><span class="motor-label">Wrist flex</span><code>wrist_flex.pos</code></button></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><button type="button" data-motor="wrist_roll" data-motion="Twists the gripper like a doorknob." aria-pressed="false"><span class="motor-label">Wrist roll</span><code>wrist_roll.pos</code></button></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><button type="button" data-motor="gripper" data-motion="Opens or closes the jaws." aria-pressed="false"><span class="motor-label">Gripper</span><code>gripper.pos</code></button></th><td class="default-range"></td></tr>
             </tbody>
           </table>
         </div>
@@ -520,7 +520,7 @@ run_route(robot)</code></pre>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=two-followers"></script>
-<script src="codebook.js?v=code-colors"></script>
+<script src="codebook.js?v=compact-motors"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
 <script src="studio.js?v=two-followers"></script>
 </html>
