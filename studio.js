@@ -272,7 +272,14 @@ hook("expand-editor", () => {
 
 code.oninput = () => {
   updateLineNumbers();
-  resetPreview();
+  const wasSimulating = simulating;
+  resetPreview(false);
+  if (wasSimulating) {
+    const live = liveModels();
+    drawScene({...simulatedPoses, ...live});
+    get("live-pose-status").hidden = !Object.keys(live).length;
+  }
+  programStatus.textContent = "";
   previewStatus.textContent = "Program changed. Preview the current version.";
 };
 code.onkeydown = event => {
@@ -318,6 +325,7 @@ function animate(route, id, missing) {
   const labels = new Set([...Object.keys(armSnapshots), ...routedLabels]);
   const starts = Object.fromEntries([...labels].map(label => [label, armSnapshots[label]?.preview_start ?? {}]));
   const poses = Object.fromEntries([...labels].map(label => [label, {...starts[label]}]));
+  simulatedPoses = Object.fromEntries(Object.entries(poses).filter(([label]) => !armSnapshots[label]));
   simulating = true;
   get("live-pose-status").hidden = true;
   drawScene(poses);
@@ -326,7 +334,6 @@ function animate(route, id, missing) {
     if (generation !== animation) return;
     simulating = false;
     const live = liveModels();
-    simulatedPoses = Object.fromEntries(Object.entries(poses).filter(([label]) => !armSnapshots[label]));
     drawScene({...simulatedPoses, ...live});
     previewId = id;
     missingFollowers = missing;
