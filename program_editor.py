@@ -37,6 +37,7 @@ def compile_program(source):
     steps, variables = [], {}
     budget = 512
     native = len(tree.body) == 1 and isinstance(tree.body[0], ast.FunctionDef)
+    has_start = False
 
     def fail(node, message):
         raise ValueError(f"Line {node.lineno}: {message}")
@@ -73,9 +74,13 @@ def compile_program(source):
                 and call.func.attr == method and not call.keywords)
 
     def baseline(node, key):
-        return (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
+        if not (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
                 and node.value.id == "start" and isinstance(node.slice, ast.Constant)
-                and node.slice.value == key)
+                and node.slice.value == key):
+            return False
+        if not has_start:
+            fail(node, "Put start = robot.get_observation() first to use a relative target.")
+        return True
 
     def send_action(call):
         if len(call.args) != 1 or not isinstance(call.args[0], ast.Dict) or len(call.args[0].keys) != 1:
@@ -96,7 +101,7 @@ def compile_program(source):
             delta = value(target.right)
             add(call, joint, "offset_deg", -delta if isinstance(target.op, ast.Sub) else delta)
         else:
-            fail(call, f'Use start[{key.value!r}] plus or minus an offset in degrees.')
+            add(call, joint, "position_deg", value(target))
 
     def visit(body):
         nonlocal budget
@@ -150,11 +155,10 @@ def compile_program(source):
                 or arguments.vararg or arguments.kwarg):
             fail(function, "Define one function with the argument robot.")
         first, *body = function.body
-        if (not isinstance(first, ast.Assign) or len(first.targets) != 1
-                or not isinstance(first.targets[0], ast.Name) or first.targets[0].id != "start"
-                or not method_call(first.value, "get_observation") or first.value.args):
-            fail(first, "Start the function with start = robot.get_observation().")
-        visit(body)
+        has_start = (isinstance(first, ast.Assign) and len(first.targets) == 1
+                     and isinstance(first.targets[0], ast.Name) and first.targets[0].id == "start"
+                     and method_call(first.value, "get_observation") and not first.value.args)
+        visit(body if has_start else function.body)
     else:
         visit(tree.body)
     if not steps:

@@ -20,7 +20,7 @@ RUNNER = dedent('''
         directions = {**_EXPORTED_DIRECTIONS, **(joint_directions or {})}
         start = robot.get_observation()
         targets = []
-        for joint, value in _ROUTE:
+        for joint, field, value in _ROUTE:
             direction = directions.get(joint)
             if type(direction) is not int or direction not in (-1, 1):
                 raise ValueError(f"Set the verified sign for {joint} to 1 or -1.")
@@ -38,7 +38,9 @@ RUNNER = dedent('''
                 # The SO-101 STS3215 encoder uses 4096 positions per turn.
                 limit = span * 180 / 4095
                 low, high = -limit, limit
-                target = origin + direction * value
+                target = direction * value
+                if field == "offset_deg":
+                    target += origin
                 tolerance = 0.5
             if not (isfinite(origin) and low - tolerance <= origin <= high + tolerance
                     and low <= target <= high):
@@ -87,11 +89,12 @@ RUNNER = dedent('''
 
 def export_lerobot(source, directions):
     route = compile_program(source)
-    rows = [(step["joint"], step.get("offset_deg", step.get("position_pct"))) for step in route["steps"]]
+    rows = [(step["joint"], key, value) for step in route["steps"]
+            for key, value in step.items() if key != "joint"]
     if route.get("coordinates") == "lerobot":
-        signs = {joint: 1 for joint, _ in rows}
+        signs = {joint: 1 for joint, _, _ in rows}
     else:
-        signs = {joint: directions[joint] for joint, _ in rows if joint in directions}
+        signs = {joint: directions[joint] for joint, _, _ in rows if joint in directions}
     entries = indent("".join(f"{row!r},\n" for row in rows), "    ")
     return (
         '"""Generated SO-101 route. Import run_route and pass your existing follower."""\n\n'

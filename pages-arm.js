@@ -116,13 +116,38 @@ const hostedArm = (() => {
     const directions = follower?.directions ?? Object.fromEntries(SERIAL_JOINTS.map(joint =>
       [joint, stored.profiles[data.label]?.[joint] === "-1" ? -1 : 1]));
     const route = {...original, steps: original.steps.map(step => {
-      if (original.coordinates !== "lerobot" || directions[step.joint] === 1) return step;
-      return step.joint === "gripper" ? {...step, position_pct: 100 - step.position_pct}
+      if (original.coordinates !== "lerobot") return step;
+      const {joint, position_deg} = step;
+      const sign = directions[joint];
+      if (position_deg !== undefined) {
+        return {joint, offset_deg: sign * position_deg};
+      }
+      if (sign === 1) return step;
+      return joint === "gripper" ? {...step, position_pct: 100 - step.position_pct}
         : {...step, offset_deg: -step.offset_deg};
     })};
-    validateRoute(route);
+    if (!follower || original.coordinates !== "lerobot") validateRoute(route);
+    route.fixed_angles = original.steps.map(step => step.position_deg ?? null);
+    if (follower) {
+      route.steps = route.steps.map((step, index) => {
+        const {joint} = step;
+        const fixedAngle = route.fixed_angles[index];
+        follower.target(joint, hardwareGoal(follower, step, fixedAngle));
+        if (fixedAngle === null) return step;
+        const start = follower.units(joint, follower.initial[joint]);
+        return {joint, offset_deg: directions[joint] * (fixedAngle - start)};
+      });
+    }
     preview = {route, id: crypto.randomUUID()};
     return {route, preview_id: preview.id};
+  }
+
+  function hardwareGoal(arm, step, fixedAngle) {
+    if (fixedAngle != null) return fixedAngle;
+    const {joint} = step;
+    const sign = arm.directions[joint];
+    if (joint === "gripper") return sign === 1 ? step.position_pct : 100 - step.position_pct;
+    return arm.units(joint, arm.initial[joint]) + sign * step.offset_deg;
   }
 
   async function dispatch(action, data) {
@@ -223,10 +248,9 @@ const hostedArm = (() => {
         if (replay || !preview || preview.id !== data.preview_id) throw new Error("Preview the current program first.");
         arm.current = await arm.bus.positions();
         arm.verifyStartingPose(arm.initial, arm.current);
-        const targets = preview.route.steps.map(step => {
-          const {joint} = step, sign = arm.directions[joint];
-          const goal = joint === "gripper" ? (sign === 1 ? step.position_pct : 100 - step.position_pct)
-            : arm.units(joint, arm.initial[joint]) + sign * step.offset_deg;
+        const targets = preview.route.steps.map((step, index) => {
+          const {joint} = step;
+          const goal = hardwareGoal(arm, step, preview.route.fixed_angles[index]);
           return {joint, raw: arm.target(joint, goal)};
         });
         replay = {id: crypto.randomUUID(), index: 0, targets, expected: {...arm.initial}};

@@ -13,17 +13,22 @@ pre{background:#182b28;padding:14px 17px;border-radius:8px;overflow:auto}
 <h1>SO-101 Python Codebook</h1>
 <p>Edit a route in Web Studio and select <strong>Preview in 3D</strong>. The examples use the standard SO-101 LeRobot API.</p>
 
-<h2>Move one joint and return</h2>
+<h2>Move to fixed positions</h2>
+<pre><code>def route(robot):
+    robot.send_action({"wrist_roll.pos": -5})
+    robot.send_action({"wrist_roll.pos": 0})</code></pre>
+<p>Fixed targets use degrees for the five arm joints. The simulator uses default SO-101 limits when no arm is connected. With direct USB, Studio checks the connected arm’s calibrated limits before it prepares a move.</p>
+
+<h2>Move relative to the starting pose</h2>
 <pre><code>def route(robot):
     start = robot.get_observation()
     robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + 8})
     robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
-<p><code>get_observation()</code> reads calibrated joint positions. <code>send_action()</code> takes a joint key and a target position. Each body joint target uses the corresponding starting position plus or minus a degree offset.</p>
+<p>Add <code>start = robot.get_observation()</code> at the beginning when the route needs to reuse the starting position. Add or subtract degrees to move relative to it.</p>
 <p>Body joint keys are <code>shoulder_pan.pos</code>, <code>shoulder_lift.pos</code>, <code>elbow_flex.pos</code>, <code>wrist_flex.pos</code>, and <code>wrist_roll.pos</code>.</p>
 
 <h2>Use the gripper</h2>
 <pre><code>def route(robot):
-    start = robot.get_observation()
     robot.send_action({"gripper.pos": 45})
     robot.send_action({"gripper.pos": 33})</code></pre>
 <p>The gripper target is an absolute percentage of its calibrated travel. The Studio preview supports one joint per action.</p>

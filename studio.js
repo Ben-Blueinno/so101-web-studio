@@ -135,7 +135,8 @@ function animate(route, id) {
     const duration = Math.max(550, Math.min(2700, Math.abs(end - from) * 85));
     let started;
     drawPose(pose, joint, "simulation");
-    previewStatus.textContent = `Step ${index + 1}/${route.steps.length} · ${JOINTS[joint]} to ${target}${isGripper ? "%" : "°"}`;
+    const shownTarget = route.fixed_angles?.[index] ?? target;
+    previewStatus.textContent = `Step ${index + 1}/${route.steps.length} · ${JOINTS[joint]} to ${shownTarget}${isGripper ? "%" : "°"}`;
     function frame(now) {
       if (generation !== animation) return;
       started ??= now;

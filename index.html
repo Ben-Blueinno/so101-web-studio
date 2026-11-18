@@ -44,8 +44,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
     </details>
     <details><summary>Python Codebook</summary>
       <pre>def route(robot):
-    start = robot.get_observation()
-    robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + 8})
+    robot.send_action({"wrist_roll.pos": -5})
     robot.send_action({"gripper.pos": 40})</pre>
       <a href="codebook.html" target="_blank" rel="noopener">Read the full Codebook</a>
     </details>
@@ -141,11 +140,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
     </section>
   </div>
 </main>
-<script src="so101-tabletop-model.js?v=20261118-usb"></script>
-<script src="so101-route-settings.js?v=20261118-usb"></script>
-<script src="so101-route-lab.js?v=20261118-usb"></script>
-<script src="pages-compiler.js?v=20261118-usb"></script>
-<script src="pages-serial.js?v=20261118-usb"></script>
-<script src="pages-arm.js?v=20261118-usb"></script>
-<script src="studio.js?v=20261118-usb"></script>
+<script src="so101-tabletop-model.js?v=20261118-fixed-targets"></script>
+<script src="so101-route-settings.js?v=20261118-fixed-targets"></script>
+<script src="so101-route-lab.js?v=20261118-fixed-targets"></script>
+<script src="pages-compiler.js?v=20261118-fixed-targets"></script>
+<script src="pages-serial.js?v=20261118-fixed-targets"></script>
+<script src="pages-arm.js?v=20261118-fixed-targets"></script>
+<script src="studio.js?v=20261118-fixed-targets"></script>
 </html>

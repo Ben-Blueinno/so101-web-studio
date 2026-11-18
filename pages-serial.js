@@ -212,8 +212,11 @@ class BrowserFollower {
   }
 
   target(joint, goal) {
+    const {range_min, range_max} = this.calibration[joint];
+    if (!(this.units(joint, range_min) <= goal && goal <= this.units(joint, range_max))) {
+      throw new Error(`${JOINTS[joint]} target is outside its calibrated limits.`);
+    }
     const raw = Math.round(this.origin(joint) + goal / this.scale(joint));
-    this.validatePositions({[joint]: raw});
     return raw;
   }
 
