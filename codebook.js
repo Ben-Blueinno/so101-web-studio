@@ -4,7 +4,7 @@ const motorButtons = [...document.querySelectorAll("[data-motor]")];
 const motorName = document.getElementById("motor-name");
 const motorRange = document.getElementById("motor-range");
 const motorCamera = get("motor-camera");
-const motorCopyStatus = get("motor-copy-status");
+const codebookCopyStatus = get("codebook-copy-status");
 let drawMotor;
 function initCodebookModel() {
   if (drawMotor || motorCamera.disabled) return;
@@ -33,18 +33,32 @@ function selectMotor(button) {
 
 for (const button of motorButtons) {
   button.closest("tr").querySelector(".default-range").textContent = defaultRange(button.dataset.motor);
+  button.onclick = () => selectMotor(button);
+}
+selectMotor(motorButtons[0]);
+
+for (const button of document.querySelectorAll(".copy-codebook")) {
+  const example = button.dataset.copyExample ? get(button.dataset.copyExample) : undefined;
+  const key = button.dataset.copyKey;
+  const icon = button.querySelector("use");
+  let feedbackTimer;
   button.onclick = async () => {
-    selectMotor(button);
-    const key = button.querySelector("code").textContent;
     try {
-      await navigator.clipboard.writeText(key);
-      motorCopyStatus.textContent = `Copied ${key}`;
+      await navigator.clipboard.writeText(example?.textContent ?? key);
+      codebookCopyStatus.textContent = example ? "Python example copied." : `Copied ${key}`;
+      icon.setAttribute("href", "#glyph-check");
+      clearTimeout(feedbackTimer);
+      feedbackTimer = setTimeout(() => icon.setAttribute("href", "#glyph-copy"), 1400);
     } catch {
-      motorCopyStatus.textContent = `Clipboard unavailable. Copy this key manually: ${key}`;
+      if (example) {
+        window.getSelection()?.selectAllChildren(example);
+        codebookCopyStatus.textContent = "Code selected. Press Ctrl+C or Command+C to copy.";
+      } else {
+        codebookCopyStatus.textContent = `Clipboard unavailable. Copy this key manually: ${key}`;
+      }
     }
   };
 }
-selectMotor(motorButtons[0]);
 
 function highlightCodebookExamples() {
   const mirror = window.CodeMirror;

@@ -2,7 +2,7 @@
 .codebook-body { min-width: 0; container-type: inline-size; }
 .codebook-body h3 { margin-top: 22px; font-size: 1.05rem; }
 .codebook-body h3:first-child { margin-top: 2px; }
-#range-note, #motor-copy-status { font-size: .875rem; }
+#range-note, #codebook-copy-status { font-size: .875rem; }
 .codebook-body pre {
   background: var(--input);
   border: 1px solid var(--edge);
@@ -40,7 +40,8 @@
 .motor-guide table { width: 100%; text-align: start; border-collapse: collapse; table-layout: fixed; }
 .motor-guide th, .motor-guide td { padding: 2px 4px; border-bottom: 1px solid var(--edge); }
 .motor-guide thead th { font-size: .78rem; font-weight: 600; color: var(--muted); padding-bottom: 5px; }
-.motor-guide thead th:first-child { width: 56%; }
+.motor-guide thead th:first-child { width: 61%; }
+.motor-row-controls { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; }
 .motor-guide tbody th { font-weight: 400; }
 .motor-guide button[data-motor] {
   display: grid;
@@ -73,4 +74,23 @@
     padding: 2px 8px 2px 2px;
     scrollbar-gutter: stable;
   }
+}
+
+.code-example-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+}
+.code-example-title h3 { margin: 0; }
+.codebook-body .copy-codebook {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.codebook-body .copy-codebook:hover,
+.codebook-body .copy-codebook:focus-visible {
+  background: var(--selection);
+  color: var(--accent);
 }

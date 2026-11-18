@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
 <link rel="stylesheet" href="studio.css?v=two-followers">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
-<link rel="stylesheet" href="codebook.css?v=copy-motors">
+<link rel="stylesheet" href="codebook.css?v=copy-icons">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
   <symbol id="glyph-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.6 0c0 2-2.8 2.1-2.8 4.2m0 3.2h.01"/></symbol>
   <symbol id="glyph-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
@@ -137,7 +137,7 @@
     </div>
       <div class="codebook-body" tabindex="0" role="region" aria-label="Python examples and motor reference">
         <h3>Motor ranges</h3>
-        <p id="range-note">Select a motor to copy its Python key. Ranges shown are simulator defaults. A connected arm uses its own calibration.</p>
+        <p id="range-note">Select a motor to highlight it. Use the copy icon for its Python key. A connected arm uses its own calibration.</p>
         <div class="motor-guide">
           <div class="motor-figure">
             <figure class="motor-stage">
@@ -154,19 +154,19 @@
           <table aria-label="SO-101 motor ranges and Python keys" aria-describedby="range-note">
             <thead><tr><th scope="col">Motor and Python key</th><th scope="col">Default range</th></tr></thead>
             <tbody>
-              <tr><th scope="row"><button type="button" data-motor="shoulder_pan" data-motion="Turns the base left or right." aria-pressed="true"><span class="motor-label">Shoulder pan</span><code>shoulder_pan.pos</code></button></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="shoulder_lift" data-motion="Raises or lowers the upper arm." aria-pressed="false"><span class="motor-label">Shoulder lift</span><code>shoulder_lift.pos</code></button></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="elbow_flex" data-motion="Bends or straightens the elbow." aria-pressed="false"><span class="motor-label">Elbow flex</span><code>elbow_flex.pos</code></button></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="wrist_flex" data-motion="Tilts the gripper up or down." aria-pressed="false"><span class="motor-label">Wrist flex</span><code>wrist_flex.pos</code></button></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="wrist_roll" data-motion="Twists the gripper like a doorknob." aria-pressed="false"><span class="motor-label">Wrist roll</span><code>wrist_roll.pos</code></button></th><td class="default-range"></td></tr>
-              <tr><th scope="row"><button type="button" data-motor="gripper" data-motion="Opens or closes the jaws." aria-pressed="false"><span class="motor-label">Gripper</span><code>gripper.pos</code></button></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="shoulder_pan" data-motion="Turns the base left or right." aria-pressed="true"><span class="motor-label">Shoulder pan</span><code>shoulder_pan.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="shoulder_pan.pos" aria-label="Copy shoulder_pan.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="shoulder_lift" data-motion="Raises or lowers the upper arm." aria-pressed="false"><span class="motor-label">Shoulder lift</span><code>shoulder_lift.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="shoulder_lift.pos" aria-label="Copy shoulder_lift.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="elbow_flex" data-motion="Bends or straightens the elbow." aria-pressed="false"><span class="motor-label">Elbow flex</span><code>elbow_flex.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="elbow_flex.pos" aria-label="Copy elbow_flex.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="wrist_flex" data-motion="Tilts the gripper up or down." aria-pressed="false"><span class="motor-label">Wrist flex</span><code>wrist_flex.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="wrist_flex.pos" aria-label="Copy wrist_flex.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="wrist_roll" data-motion="Twists the gripper like a doorknob." aria-pressed="false"><span class="motor-label">Wrist roll</span><code>wrist_roll.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="wrist_roll.pos" aria-label="Copy wrist_roll.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
+              <tr><th scope="row"><div class="motor-row-controls"><button type="button" data-motor="gripper" data-motion="Opens or closes the jaws." aria-pressed="false"><span class="motor-label">Gripper</span><code>gripper.pos</code></button><button type="button" class="icon-action copy-codebook" data-copy-key="gripper.pos" aria-label="Copy gripper.pos"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div></th><td class="default-range"></td></tr>
             </tbody>
           </table>
         </div>
-        <p id="motor-copy-status" class="status" role="status"></p>
+        <p id="codebook-copy-status" class="status" role="status"></p>
 
-        <h3>1. Give a motor a target angle</h3>
-        <pre><code>def route(robot):
+        <div class="code-example-title"><h3>1. Give a motor a target angle</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-1" aria-label="Copy example — 1. Give a motor a target angle"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
+        <pre><code id="codebook-example-1">def route(robot):
     robot.send_action({"wrist_roll.pos": -5})
     robot.send_action({"wrist_roll.pos": 0})</code></pre>
         <ol>
@@ -175,21 +175,21 @@
           <li>The wrist goes to −5° first and then 0°. Change −5 to −10 and preview again to see the difference.</li>
         </ol>
 
-        <h3>2. Move a few degrees from where you start</h3>
-        <pre><code>def route(robot):
+        <div class="code-example-title"><h3>2. Move a few degrees from where you start</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-2" aria-label="Copy example — 2. Move a few degrees from where you start"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
+        <pre><code id="codebook-example-2">def route(robot):
     start = robot.get_observation()
     robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + 8})
     robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
         <p><code>get_observation()</code> reads all six starting positions. <code>start["shoulder_pan.pos"]</code> picks the base angle from those readings. If it starts at 10°, adding 8 sends it to 18°. The last line sends it back to 10°. You can skip the observation line when all targets are fixed numbers.</p>
 
-        <h3>3. Open and close the gripper</h3>
-        <pre><code>def route(robot):
+        <div class="code-example-title"><h3>3. Open and close the gripper</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-3" aria-label="Copy example — 3. Open and close the gripper"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
+        <pre><code id="codebook-example-3">def route(robot):
     robot.send_action({"gripper.pos": 45})
     robot.send_action({"gripper.pos": 33})</code></pre>
         <p>The gripper uses a percentage of its travel, from 0 to 100.</p>
 
-        <h3>4. Move two joints together</h3>
-        <pre><code>def route(robot):
+        <div class="code-example-title"><h3>4. Move two joints together</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-4" aria-label="Copy example — 4. Move two joints together"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
+        <pre><code id="codebook-example-4">def route(robot):
     wrist_angle: float = -5.0
     robot.send_action({
         "wrist_roll.pos": wrist_angle,
@@ -199,8 +199,8 @@
         <p>Targets inside the same <code>send_action()</code> move together. Studio waits for both targets before starting the next call. The optional <code>: float</code> type hint tells readers that the variable can contain a decimal. Use <code>: int</code> for a whole number. Type <code>robot.</code> or start typing a quoted joint key for suggestions.</p>
         <p>Try grouped moves in the 3D preview first. For a physical run, connect a calibrated arm by USB and check the path of all moving joints together before confirming.</p>
 
-        <h3>Move both followers together</h3>
-        <pre><code>def route(robot):
+        <div class="code-example-title"><h3>Move both followers together</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-5" aria-label="Copy example — Move both followers together"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
+        <pre><code id="codebook-example-5">def route(robot):
     robot.send_action({
         "A.wrist_roll.pos": -5,
         "B.wrist_roll.pos": 5,
@@ -210,8 +210,8 @@
         "B.wrist_roll.pos": 0,
     })</code></pre>
         <p>Use A. and B. to choose a follower. Unprefixed keys use the selected follower. Targets in one call share a step. Check clearance between the real arms before running.</p>
-        <h3>5. Repeat a move with a loop</h3>
-        <pre><code>def route(robot):
+        <div class="code-example-title"><h3>5. Repeat a move with a loop</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-6" aria-label="Copy example — 5. Repeat a move with a loop"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
+        <pre><code id="codebook-example-6">def route(robot):
     start = robot.get_observation()
     turn = 6
     for attempt in range(2):
@@ -219,9 +219,9 @@
         robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
         <p><code>range(2)</code> repeats the indented lines twice. Python starts counting at 0, so the first turn adds 6° and the second adds 8°. Change <code>turn</code> to 3 and predict both turns before previewing. Keep each route to 32 moves or fewer.</p>
 
-        <h3>Export to your project</h3>
+        <div class="code-example-title"><h3>Export to your project</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-7" aria-label="Copy example — Export to your project"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <p>Open <strong>Files</strong> and choose <strong>Generate LeRobot function</strong>. The downloaded module uses your connected, calibrated <code>SO101Follower</code> with <code>use_degrees=True</code> and reads position feedback while moving.</p>
-        <pre><code>from my_route_lerobot import run_route
+        <pre><code id="codebook-example-7">from my_route_lerobot import run_route
 
 run_route(robot)</code></pre>
         <p>In Web Studio, select <strong>Start here</strong> for connection and calibration instructions. After previewing, choose <strong>Prepare deployment</strong> and review the full route with your teacher. Select <strong>Confirm and run route</strong> once to run the moves in order.</p>
@@ -521,7 +521,7 @@ run_route(robot)</code></pre>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=two-followers"></script>
-<script src="codebook.js?v=copy-motors"></script>
+<script src="codebook.js?v=copy-icons"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
 <script src="studio.js?v=two-followers"></script>
 </html>
