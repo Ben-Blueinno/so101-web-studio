@@ -219,7 +219,7 @@ const hostedArm = (() => {
       let wanted;
       if (action === "cal-apply") {
         const name = stored.profiles[data.label].calibration_file;
-        if (!name) throw new Error("In Settings, import or select a calibration, choose Use for profile, then Save profile.");
+        if (!name) throw new Error("In Calibration, select a saved file and choose Use for this follower.");
         const saved = validateCalibration(getCalibration(name));
         wanted = Object.fromEntries(SERIAL_JOINTS.map(joint => {
           const {drive_mode, ...motor} = saved[joint];

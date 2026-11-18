@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=usb-setup">
+<link rel="stylesheet" href="studio.css?v=setup-flow">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
 <link rel="stylesheet" href="codebook.css?v=code-colors">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
@@ -235,17 +235,6 @@ run_route(robot)</code></pre>
   </div>
   <p id="arm-status" class="status" role="status">Choose a follower, then connect its arm over USB.</p>
   <pre id="pose-sample"></pre>
-</section>
-<section id="calibration" role="tabpanel" aria-labelledby="tab-calibration" class="panel setup-panel" hidden>
-  <div class="rail"><h2>Calibrate the arm</h2><p id="cal-follower">Follower A</p></div>
-  <div class="actions">
-    <button id="cal-start" class="primary">Calibrate new</button>
-    <button id="cal-apply">Restore saved calibration</button>
-    <button id="cal-read" type="button" class="icon-action" aria-label="Read motor calibration"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-eye"/></svg></button>
-  </div>
-  <div class="actions" id="cal-controls" hidden><button id="cal-next" class="primary">Capture midpoint</button><button id="cal-cancel">Cancel calibration</button></div>
-  <p id="cal-status-message" class="status" role="status"></p>
-  <pre id="arm-sample"></pre>
   <details id="bridge-option">
     <summary>Local bridge (legacy)</summary>
     <p>Use the <a href="SO101-Studio-Bridge.zip?v=20261118-route-review">local bridge</a> to access existing local Studio profiles.</p>
@@ -257,36 +246,32 @@ run_route(robot)</code></pre>
     <div class="actions">
       <button id="init">Initialize arm through bridge</button>
     </div>
+    <div id="bridge-port-options" hidden>
+      <div class="fields">
+        <label for="profile-port">Serial port</label><div class="port-tools"><input id="profile-port" autocomplete="off"><select id="ports" aria-label="Scanned ports"><option value="">Scanned ports…</option></select></div>
+      </div>
+      <div class="actions">
+        <button id="scan-ports" type="button">Scan ports</button>
+        <button id="save-port" type="button">Save port</button>
+      </div>
+    </div>
   </details>
 </section>
-<div id="settings" role="tabpanel" aria-labelledby="tab-settings" class="grid" hidden>
-  <section class="panel settings-panel">
-    <h2>Follower profile</h2>
-    <p>Select a follower, then save its calibration assignment.</p>
-    <p id="settings-scope" class="status" role="status"></p>
-    <div class="fields">
-      <label for="settings-profile">Follower</label>
-      <select id="settings-profile"><option>A</option><option>B</option></select>
-      <label for="profile-id">LeRobot ID</label>
-      <input id="profile-id">
-      <label for="profile-calibration">Calibration file</label>
-      <input id="profile-calibration" placeholder="Default" aria-describedby="calibration-source">
+<div id="calibration" role="tabpanel" aria-labelledby="tab-calibration" class="grid" hidden>
+  <section class="panel">
+    <div class="rail"><h2>Calibrate the arm</h2><p id="cal-follower">Follower A</p></div>
+    <div class="calibration-assignment">
+      <div><strong>Calibration source</strong><p id="profile-calibration"></p></div>
+      <button id="cal-default" type="button" hidden>Use default</button>
     </div>
-    <p id="calibration-source" class="field-hint"></p>
     <div class="actions">
-      <button id="profile-save" class="primary">Save profile</button>
-      <button id="scan-settings" type="button">Scan ports</button>
-      <button id="profile-remove" type="button">Remove profile</button>
+      <button id="cal-start" class="primary">Calibrate new</button>
+      <button id="cal-apply">Restore saved calibration</button>
+      <button id="cal-read" type="button" class="icon-action" aria-label="Read motor calibration"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-eye"/></svg></button>
     </div>
-    <p id="settings-status" class="status" role="status"></p>
-    <details class="settings-advanced">
-      <summary>Advanced settings</summary>
-      <p>Set each direction after comparing the physical joint with the 3D model.</p>
-      <div class="fields">
-        <label id="profile-port-label" for="profile-port" hidden>Serial port</label><div id="profile-port-tools" class="port-tools" hidden><input id="profile-port" autocomplete="off"><select id="ports" aria-label="Scanned ports"><option value="">Scanned ports…</option></select></div>
-        <div id="joint-fields" style="display:contents"></div>
-      </div>
-    </details>
+    <div class="actions" id="cal-controls" hidden><button id="cal-next" class="primary">Capture midpoint</button><button id="cal-cancel">Cancel calibration</button></div>
+    <p id="cal-status-message" class="status" role="status"></p>
+    <pre id="arm-sample"></pre>
   </section>
   <section class="panel settings-panel">
     <h2>Calibration files</h2>
@@ -306,11 +291,36 @@ run_route(robot)</code></pre>
       <button id="cal-save" class="primary">Save calibration</button>
       <button id="cal-file-options" type="button" class="icon-action" aria-label="Calibration file actions" aria-haspopup="menu" aria-expanded="false" aria-controls="cal-file-menu" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-more"/></svg></button>
       <div id="cal-file-menu" class="studio-dropdown action-menu" role="menu" aria-label="Calibration file actions" popover="auto">
-        <button id="cal-use" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-attach"/></svg><span>Use for profile</span></button>
+        <button id="cal-use" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-attach"/></svg><span>Use for this follower</span></button>
         <button id="cal-archive" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-archive"/></svg><span>Archive selected file</span></button>
       </div>
     </div>
     <p id="cal-files-status" class="status" role="status"></p>
+  </section>
+</div>
+<div id="settings" role="tabpanel" aria-labelledby="tab-settings" class="setup-panel" hidden>
+  <section class="panel settings-panel">
+    <h2>Follower profile</h2>
+    <p>Choose a follower to edit its LeRobot ID or joint directions.</p>
+    <p id="settings-scope" class="status" role="status"></p>
+    <div class="fields">
+      <label for="settings-profile">Follower</label>
+      <select id="settings-profile"><option>A</option><option>B</option></select>
+      <label for="profile-id">LeRobot ID</label>
+      <input id="profile-id">
+    </div>
+    <div class="actions">
+      <button id="profile-save" class="primary">Save profile</button>
+      <button id="profile-remove" type="button">Remove profile</button>
+    </div>
+    <p id="settings-status" class="status" role="status"></p>
+    <details class="settings-advanced">
+      <summary>Advanced settings</summary>
+      <p>Set each direction after comparing the physical joint with the 3D model.</p>
+      <div class="fields">
+        <div id="joint-fields" style="display:contents"></div>
+      </div>
+    </details>
   </section>
 </div>
 <section id="roadmap" class="workspace-page" role="tabpanel" aria-labelledby="tab-roadmap" hidden>
@@ -397,7 +407,7 @@ run_route(robot)</code></pre>
   </ol>
   <h3>Restore a saved file</h3>
   <ol>
-    <li>In <strong>Settings</strong>, import and save the calibration file for this same arm. Open <strong>Calibration file actions</strong>, choose <strong>Use for profile</strong>, then select <strong>Save profile</strong>.</li>
+    <li>In <strong>Calibration</strong>, import and save a file for this same arm. Open <strong>Calibration file actions</strong> and choose <strong>Use for this follower</strong>.</li>
     <li>Select the follower in <strong>USB connection</strong>. In Calibration, select <strong>Restore saved calibration</strong>.</li>
     <li>After Studio verifies the settings, return to <strong>USB connection</strong> and connect the arm.</li>
   </ol>
@@ -421,9 +431,9 @@ run_route(robot)</code></pre>
 </template>
 <template id="help-settings">
   <ol>
-    <li>Choose the follower profile. Studio assigns a file after successful calibration. If the field shows Default, Studio reads the connected arm’s calibration over USB.</li>
-    <li>For an existing calibration, use the <strong>Import JSON</strong> icon. Select <strong>Save calibration</strong>. Open the options beside it and choose <strong>Use for profile</strong>, then select <strong>Save profile</strong>.</li>
-    <li>Change joint direction only after comparing the real movement with the model. Studio keeps profiles and calibration copies in this browser.</li>
+    <li>Choose the follower profile to edit. Set its <strong>LeRobot ID</strong> if you use it in a LeRobot project.</li>
+    <li>Open <strong>Advanced settings</strong> to set joint directions after comparing the real movement with the model.</li>
+    <li>Select <strong>Save profile</strong>.</li>
   </ol>
 </template>
 <template id="help-roadmap">
@@ -476,12 +486,12 @@ run_route(robot)</code></pre>
 <script src="so101-viewer.js?v=side-panel"></script>
 <script src="pages-compiler.js?v=20261118-simultaneous"></script>
 <script src="pages-serial.js?v=usb-setup"></script>
-<script src="pages-arm.js?v=usb-setup"></script>
+<script src="pages-arm.js?v=setup-flow"></script>
 <script src="vendor/codemirror.js"></script>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=export-editor"></script>
 <script src="codebook.js?v=code-colors"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=usb-setup"></script>
+<script src="studio.js?v=setup-flow"></script>
 </html>

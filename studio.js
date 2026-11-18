@@ -59,7 +59,7 @@ function selectView(view) {
   if (view === "program" || view === "deployment") {
     get(view).append(get("simulation-side-panel"));
   }
-  if (view === "calibration") get("cal-follower").textContent = "Follower " + get("arm-profile").value;
+  if (view === "calibration") showArmSetup();
   if (view === "program") pythonEditor?.refresh();
   if (view === "getting-started") initGuideDemo();
 }
@@ -180,11 +180,13 @@ function updateControls() {
   get("pair-bridge").disabled = blocked;
   get("init").disabled ||= !bridge;
   get("cal-read").disabled ||= !paired && !hostedArm.supportsUSB;
-  get("cal-apply").disabled ||= !bridge && !hostedArm.supportsUSB;
+  get("cal-apply").disabled ||= !bridge && (!hostedArm.supportsUSB || !assignedCalibration());
   get("cal-start").disabled ||= !bridge && !hostedArm.supportsUSB;
-  get("scan-settings").disabled =
-    calibrating || actionPending || (!bridge && (!hostedArm.supportsUSB || Boolean(initialized)));
-  get("profile-port-tools").hidden = get("profile-port-label").hidden = !bridge;
+  get("cal-default").disabled = Boolean(initialized) || calibrating || actionPending;
+  get("cal-use").disabled = get("cal-default").disabled;
+  get("bridge-port-options").hidden = !bridge;
+  get("scan-ports").disabled = calibrating || actionPending || Boolean(initialized);
+  get("save-port").disabled = get("scan-ports").disabled;
 }
 
 function drawPose(pose, joints, mode) {
@@ -729,10 +731,8 @@ armAction("cal-read", async () => {
   const result = await api("cal-read", armLabel());
   get("cal-name").value = result.name;
   get("cal-text").value = result.text;
-  selectStudioValue(get("settings-profile"), get("arm-profile").value);
-  populateProfile();
-  selectView("settings");
   calFilesStatus.textContent = "Review the readback, then save a copy if needed.";
+  get("cal-text").focus();
 }, calStatusMessage);
 armAction("cal-apply", async () => {
   if (!await confirmAction("Restore calibration to this same arm from the selected follower profile? Support the arm before continuing because torque will be released.")) return;
@@ -756,7 +756,7 @@ hook("cal-cancel", async () => {
 
 async function pollCalibration() {
   try {
-    const {phase, message, sample, label, file} = await api("cal-status");
+    const {phase, message, sample, file} = await api("cal-status");
     calStatusMessage.textContent = message;
     get("arm-sample").textContent = sample;
     calibrating = !["done", "error", "idle"].includes(phase);
@@ -767,8 +767,7 @@ async function pollCalibration() {
     updateControls();
     if (phase === "done" && hostedArm.mode !== "bridge") {
       showSettings(await api("settings"), file ?? calibrationLibrary.value);
-      if (label) selectStudioValue(get("settings-profile"), label);
-      populateProfile();
+      updateControls();
     }
   } catch (error) {
     calStatusMessage.textContent = error.message;
@@ -776,7 +775,7 @@ async function pollCalibration() {
   if (calibrating) setTimeout(pollCalibration, 400);
 }
 
-const profileFields = {port: "profile-port", id: "profile-id", calibration_file: "profile-calibration"};
+const profileFields = {id: "profile-id"};
 for (const [joint, name] of Object.entries(JOINTS)) {
   const id = "direction-" + joint;
   const label = document.createElement("label");
@@ -794,46 +793,55 @@ function populateProfile() {
   if (!settings) return;
   const profile = settings.profiles[get("settings-profile").value];
   for (const [fieldName, id] of Object.entries(profileFields)) selectStudioValue(get(id), profile[fieldName]);
-  showCalibrationSource();
 }
 get("settings-profile").onchange = populateProfile;
-function showCalibrationSource() {
-  const assigned = get("profile-calibration").value.trim();
-  get("calibration-source").textContent = assigned ? "Named calibration for this follower."
-    : hostedArm.mode === "bridge" ? "Default uses LeRobot’s calibration."
-    : "Default reads calibration from the arm’s motors.";
+function assignedCalibration() {
+  return settings?.profiles[get("arm-profile").value]?.calibration_file ?? "";
 }
-get("profile-calibration").oninput = showCalibrationSource;
+function showArmSetup() {
+  const label = get("arm-profile").value;
+  const assigned = assignedCalibration();
+  get("cal-follower").textContent = "Follower " + label;
+  const source = get("profile-calibration");
+  source.textContent = assigned.split(/[/\\]/).at(-1) || (hostedArm.mode === "bridge"
+    ? "Default · LeRobot calibration" : "Default · calibration stored on the arm");
+  source.title = assigned;
+  get("cal-default").hidden = !assigned;
+  get("profile-port").value = settings?.profiles[label]?.port ?? "";
+}
+get("arm-profile").onchange = () => {
+  showArmSetup();
+  updateControls();
+};
+
+async function saveFollowerFields(label, fields) {
+  const values = {...settings.profiles[label], ...fields};
+  showSettings(await api("profile-save", {label, values}), calibrationLibrary.value);
+  updateControls();
+}
 function showSettings(data, selection = "") {
   settings = data;
   get("ports").replaceChildren(new Option("Scanned ports…", ""), ...data.ports.map(port => new Option(port)));
   calibrationLibrary.replaceChildren(new Option("Select calibration…", ""));
   for (const name of data.files) calibrationLibrary.add(new Option(name, name));
   selectStudioValue(calibrationLibrary, selection || "");
+  showArmSetup();
 }
-async function scanPorts(status, label) {
-  actionPending = true;
-  updateControls();
-  try {
-    if (hostedArm.mode === "bridge") {
-      showSettings(await api("settings"), calibrationLibrary.value);
-      status.textContent = settings.ports.length ? settings.ports.join(" · ") : "No serial ports found. You can enter a port manually.";
-      return;
-    }
-    await api("scan-usb", {label});
-    selectStudioValue(get("arm-profile"), label);
-    status.textContent = `USB port selected for follower ${label}. Choose Connect by USB, or open Calibration for a new arm.`;
-  } finally {
-    actionPending = false;
-    updateControls();
-  }
-}
-hook("scan-settings", () => scanPorts(settingsStatus, get("settings-profile").value), settingsStatus);
+armAction("scan-ports", async () => {
+  showSettings(await api("settings"), calibrationLibrary.value);
+  get("bridge-status").textContent = settings.ports.length
+    ? "Choose a scanned port, then select Save port."
+    : "No serial ports found. You can enter a port manually.";
+}, get("bridge-status"));
+armAction("save-port", async () => {
+  const label = get("arm-profile").value;
+  await saveFollowerFields(label, {port: get("profile-port").value});
+  get("bridge-status").textContent = `Port saved for follower ${label}.`;
+}, get("bridge-status"));
 hook("profile-save", async () => {
   const label = get("settings-profile").value;
   const values = Object.fromEntries(Object.entries(profileFields).map(([f, id]) => [f, get(id).value]));
-  showSettings(await api("profile-save", {label, values}), calibrationLibrary.value);
-  selectStudioValue(get("arm-profile"), label);
+  await saveFollowerFields(label, values);
   settingsStatus.textContent = `Follower ${label} saved.`;
 }, settingsStatus);
 hook("profile-remove", async () => {
@@ -841,6 +849,7 @@ hook("profile-remove", async () => {
   if (!await confirmAction(`Remove follower ${label}'s saved profile?`)) return;
   showSettings(await api("profile-remove", {label}), calibrationLibrary.value);
   populateProfile();
+  updateControls();
   settingsStatus.textContent = `Follower ${label} removed.`;
 }, settingsStatus);
 const calFilesStatus = get("cal-files-status");
@@ -876,12 +885,17 @@ hook("cal-save", async () => {
   showSettings(await api("cal-save", {name, text: get("cal-text").value, replace}), name + ".json");
   calFilesStatus.textContent = "Calibration copy saved.";
 }, calFilesStatus);
-hook("cal-use", () => {
-  if (!calibrationLibrary.value) throw new Error("Select a saved calibration file.");
-  get("profile-calibration").value = "calibrations/" + calibrationLibrary.value;
-  showCalibrationSource();
-  calFilesStatus.textContent = "Select Save profile to assign this calibration.";
+armAction("cal-use", async () => {
+  const file = calibrationLibrary.value;
+  if (!file) throw new Error("Select a saved calibration file.");
+  const label = get("arm-profile").value;
+  await saveFollowerFields(label, {calibration_file: "calibrations/" + file});
+  calFilesStatus.textContent = `Assigned to follower ${label}. Use Restore saved calibration to write it to the arm.`;
 }, calFilesStatus);
+armAction("cal-default", async () => {
+  await saveFollowerFields(get("arm-profile").value, {calibration_file: ""});
+  calStatusMessage.textContent = "Default calibration selected.";
+}, calStatusMessage);
 hook("cal-archive", async () => {
   const name = calibrationLibrary.value;
   if (!name || !await confirmAction(`Archive ${name}?`)) return;
@@ -915,7 +929,6 @@ async function boot() {
   if (location.hash === "#codebook") setCodebook(true);
   pollLivePose();
   if (!hostedArm.supportsUSB) get("usb-help").textContent = "USB connection requires desktop Chrome or Edge and browser permission.";
-  if (!hostedArm.supportsUSB) get("settings-scope").textContent = "Open this page in desktop Chrome or Edge to scan for USB serial ports.";
   updateControls();
 }
 
@@ -942,7 +955,7 @@ get("bridge-form").onsubmit = event => {
     if (session.step) showStep(session.step);
     resetPreview();
     get("bridge-status").textContent = "Bridge connected. Local profiles and calibration settings are available.";
-    get("settings-scope").textContent = "Changes apply to profiles and calibration copies on the connected computer.";
+    get("settings-scope").textContent = "Profile changes apply on the connected computer.";
     const calibration = await api("cal-status");
     if (["working", "midpoint", "range"].includes(calibration.phase)) {
       calibrating = true;

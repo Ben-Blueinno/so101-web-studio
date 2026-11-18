@@ -382,4 +382,15 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 .rest-actions { border-top: 1px solid var(--edge); margin-top: 18px; padding-top: 12px; }
 .rest-actions > span { color: var(--muted); font-size: .875rem; font-weight: 600; margin-inline-end: 4px; }
 
-.field-hint { font-size: .875rem; }
+.calibration-assignment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: var(--input);
+}
+.calibration-assignment p { margin: 2px 0 0; overflow-wrap: anywhere; }
