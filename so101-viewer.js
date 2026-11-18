@@ -78,7 +78,7 @@ function cameraMatrix(yaw, pitch, aspect, {target, distance}) {
 }
 
 const singleView = {yaw: -1.05, target: [0.13, 0, 0.10], distance: 0.64};
-const dualView = {yaw: 0.6, target: [0, 0, 0.12], distance: 0.90};
+const dualView = {yaw: 0.6, target: [0, 0, 0.12], distance: 0.78};
 // XLeRobot de51ed34cfe29ba1ca6d910a8e656fff6fd949ae
 // simulation/Maniskill/assets/xlerobot/xlerobot.urdf, arm_base_joint[_2].
 // Bring the common 0.760 m mounting plane to tabletop height. The reference

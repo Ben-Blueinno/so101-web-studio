@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=robot-mode">
+<link rel="stylesheet" href="studio.css?v=mode-workspaces">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
 <link rel="stylesheet" href="codebook.css?v=copy-icons">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
@@ -55,6 +55,9 @@
   <button type="button" id="tab-about" role="tab" aria-selected="false" aria-controls="about" tabindex="-1" data-view="about">About</button>
 </nav>
 <div class="workspace-tools" aria-label="Workspace tools">
+  <div id="follower-picker" class="follower-picker" hidden>
+    <label for="arm-profile">Active follower</label><select id="arm-profile"><option value="A">A · Right</option><option value="B">B · Left</option></select>
+  </div>
   <button id="codebook-switch" type="button" class="icon-action" role="switch" aria-label="Codebook" aria-checked="false" aria-controls="codebook-panel" hidden><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-sidebar"/></svg></button>
   <button id="show-help" type="button" class="help-action" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-help"/></svg><span>Show me how</span></button>
 </div>
@@ -239,7 +242,7 @@ run_route(robot)</code></pre>
     <p id="deployment-status" class="status" role="status">Connect a calibrated arm and preview your code to prepare a route.</p>
     <div class="actions"><button id="deploy" class="primary" disabled>Prepare deployment</button></div>
     <section id="replay" hidden>
-      <h3>Physical arm</h3>
+      <h3 id="physical-title">Follower A</h3>
       <p id="step-status" class="status" role="status"></p>
       <p id="route-feedback" hidden></p>
       <ol id="route-targets" aria-label="Reviewed movement targets" hidden></ol>
@@ -249,13 +252,13 @@ run_route(robot)</code></pre>
   </section>
 </div>
 <section id="hardware" role="tabpanel" aria-labelledby="tab-hardware" class="panel setup-panel" hidden>
-  <h2>Connect the SO-101</h2>
+  <h2 id="hardware-title">Connect follower A</h2>
+  <p id="connection-instructions"></p>
   <p id="usb-help" class="status" role="status"></p>
   <div id="follower-connections" class="connection-list" aria-label="Follower connection status" hidden>
-    <div><strong>Follower A</strong><span id="usb-status-A">Disconnected</span></div>
-    <div><strong>Follower B</strong><span id="usb-status-B">Disconnected</span></div>
+    <div><button type="button" data-select-follower="A" aria-pressed="true">A · Right</button><span id="usb-status-A">Disconnected</span></div>
+    <div><button type="button" data-select-follower="B" aria-pressed="false">B · Left</button><span id="usb-status-B">Disconnected</span></div>
   </div>
-  <label for="arm-profile">Selected follower</label><select id="arm-profile"><option>A</option><option>B</option></select>
   <div class="actions" role="group" aria-label="Connection">
     <button id="connect-usb" class="primary">Connect by USB</button>
     <button id="read-pose" type="button" class="icon-action" aria-label="Read current pose" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-position"/></svg></button>
@@ -293,7 +296,8 @@ run_route(robot)</code></pre>
 </section>
 <div id="calibration" role="tabpanel" aria-labelledby="tab-calibration" class="grid" hidden>
   <section class="panel">
-    <div class="rail"><h2>Calibrate the arm</h2><p id="cal-follower">Follower A</p></div>
+    <div class="rail"><h2 id="calibration-title">Calibrate follower A</h2><p id="cal-follower">Follower A</p></div>
+    <p id="calibration-instructions"></p>
     <div class="calibration-assignment">
       <div><strong>Calibration source</strong><p id="profile-calibration"></p></div>
       <button id="cal-default" type="button" hidden>Use default</button>
@@ -334,12 +338,13 @@ run_route(robot)</code></pre>
 </div>
 <div id="settings" role="tabpanel" aria-labelledby="tab-settings" class="setup-panel" hidden>
   <section class="panel settings-panel">
-    <h2>Follower profile</h2>
-    <p>Choose a follower to edit its LeRobot ID or joint directions.</p>
+    <h2 id="settings-title">Follower A profile</h2>
     <p id="settings-scope" class="status" role="status"></p>
     <div class="fields">
-      <label for="settings-profile">Follower</label>
-      <select id="settings-profile"><option>A</option><option>B</option></select>
+      <div id="settings-follower-field" hidden>
+        <label for="settings-profile">Follower</label>
+        <select id="settings-profile"><option value="A">A · Right</option><option value="B">B · Left</option></select>
+      </div>
       <label for="profile-id">LeRobot ID</label>
       <input id="profile-id">
     </div>
@@ -438,8 +443,8 @@ run_route(robot)</code></pre>
 <template id="help-hardware">
   <ol>
     <li>Secure the arm to the bench. Plug in motor power and USB. Use desktop Chrome or Edge and close other apps using the port.</li>
-    <li>Choose your follower. For a calibrated arm, select <strong>Connect by USB</strong> and pick its adapter when Chrome or Edge asks. For a new arm, open <strong>Calibration</strong> first.</li>
-    <li data-dual-only hidden>To connect the second arm, change the selected follower and pick the other adapter.</li>
+    <li>Use the connection button and pick the arm’s adapter when Chrome or Edge asks. For a new arm, open <strong>Calibration</strong> first.</li>
+    <li data-dual-only hidden>Choose A · Right or B · Left above the tabs or on its connection card. Connect each arm’s own adapter.</li>
     <li>Once connected, use the crosshair to <strong>Read current pose</strong> for the selected follower.</li>
   </ol>
   <p>No adapter? Check the USB data cable. Adapter but no joints? Check motor power and the cable to the first servo.</p>
@@ -447,7 +452,7 @@ run_route(robot)</code></pre>
 <template id="help-calibration">
   <h3>New arm</h3>
   <ol>
-    <li data-dual-only hidden>Disconnect both followers in Studio. Calibrate each arm separately.</li>
+    <li data-dual-only hidden>Disconnect both followers in Studio. Choose A · Right or B · Left above the tabs. Calibrate each arm separately using its own adapter and file.</li>
     <li>Support the arm before selecting <strong>Calibrate new</strong>. The joints can move freely when motor torque releases.</li>
     <li>Put the joints near the middle of their travel. Select <strong>Capture midpoint</strong>.</li>
     <li>Gently move each joint through its usable range by hand, skipping wrist roll. Select <strong>Save range</strong>. Studio assigns the verified file to this follower in Settings.</li>
@@ -455,13 +460,13 @@ run_route(robot)</code></pre>
   <h3>Restore a saved file</h3>
   <ol>
     <li>In <strong>Calibration</strong>, import and save a file for this same arm. Open <strong>Calibration file actions</strong> and choose <strong>Use for this follower</strong>.</li>
-    <li>Select the follower in <strong>USB connection</strong>. In Calibration, select <strong>Restore saved calibration</strong>.</li>
+    <li>Check the active follower above the tabs. Select <strong>Restore saved calibration</strong>.</li>
     <li>After Studio verifies the settings, return to <strong>USB connection</strong> and connect the arm.</li>
   </ol>
 </template>
 <template id="help-program">
   <ol>
-    <li>Select the <strong>Play</strong> icon to preview. The starter turns wrist roll to −5°, then back to 0°.</li>
+    <li>Select the <strong>Play</strong> icon to preview the loaded starter and its return.</li>
     <li>Change −5 to −10. Preview again and watch the wrist.</li>
     <li>Open <strong>Codebook</strong> with the split-panel icon for Python keys, motor ranges, and examples.</li>
     <li data-dual-only hidden>Use A. and B. prefixes for two-arm targets, such as <code>"A.wrist_roll.pos"</code>. Targets in one call move together.</li>
@@ -473,13 +478,15 @@ run_route(robot)</code></pre>
   <ol>
     <li>Read the current pose. For a first test, pick a wrist target a few degrees away and within its calibrated range.</li>
     <li>Preview the route in Simulation, then select <strong>Prepare deployment</strong>.</li>
-    <li>Review each follower’s targets and check the full paths and clearance between arms with your teacher. The 3D preview shows separate models. Check real bench clearance. Keep hands clear and select <strong>Confirm and run route</strong> once.</li>
+    <li>Review the targets and full movement paths with your teacher. Keep hands clear and select <strong>Confirm and run route</strong> once.</li>
+    <li data-dual-only hidden>Check A and B targets and the space between both arms. The shared preview uses the XLeRobot layout. Match the real mounting positions and check clearance.</li>
     <li>Watch the 3D preview follow the arm’s readings. Select <strong>Stop route</strong> if the arm moves unexpectedly.</li>
   </ol>
 </template>
 <template id="help-settings">
   <ol>
-    <li>Choose the follower profile to edit. Set its <strong>LeRobot ID</strong> if you use it in a LeRobot project.</li>
+    <li>Set the active follower’s <strong>LeRobot ID</strong> if you use it in a LeRobot project.</li>
+    <li data-dual-only hidden>Choose A · Right or B · Left to edit each profile independently. The selection also applies in USB connection and Calibration.</li>
     <li>Open <strong>Advanced settings</strong> to set joint directions after comparing the real movement with the model.</li>
     <li>Select <strong>Save profile</strong>.</li>
   </ol>
@@ -531,15 +538,15 @@ run_route(robot)</code></pre>
 </footer>
 <script src="so101-tabletop-model.js?v=20261118-simultaneous"></script>
 <script src="so101-route-settings.js?v=20261118-simultaneous"></script>
-<script src="so101-viewer.js?v=forward-mounts"></script>
+<script src="so101-viewer.js?v=mode-workspaces"></script>
 <script src="pages-compiler.js?v=two-followers"></script>
 <script src="pages-serial.js?v=two-followers"></script>
-<script src="pages-arm.js?v=robot-mode"></script>
+<script src="pages-arm.js?v=mode-workspaces"></script>
 <script src="vendor/codemirror.js"></script>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=robot-mode"></script>
 <script src="codebook.js?v=copy-icons"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=forward-mounts"></script>
+<script src="studio.js?v=mode-workspaces"></script>
 </html>

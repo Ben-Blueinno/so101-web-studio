@@ -4,7 +4,7 @@ The browser simulator supports Python routes, browser-local saves, and downloads
 
 Web Studio uses CodeMirror 5.65.21 for Python syntax highlighting and completion. Use several joint keys in the same `robot.send_action({...})` call to move them together in the simulator or through direct USB. The local bridge supports calibration and single-joint moves. After calibrating, reconnect by USB to deploy grouped moves.
 
-Open **Start here** for the four steps. Use **Show me how** on each tab for its guide. In desktop Chrome or Edge, open **USB connection**, select follower A, then choose **Connect by USB** and pick its adapter. Repeat for follower B with the other adapter. Both connected arms appear in **Simulation** and **Deployment**. Calibrate one arm at a time with both disconnected in Studio.
+Open **Start here** for the four steps. Use **Show me how** on each tab for its guide. In desktop Chrome or Edge, open **USB connection**, select follower A, then choose **Connect by USB** and pick its adapter. In two-follower mode, use **Active follower** above the tabs or the USB connection cards to select A · Right or B · Left, then connect each arm’s own adapter. The selection also applies to calibration, settings, pose and rest controls, and unprefixed Python keys. Single-follower mode uses A throughout. Both connected arms appear in **Simulation** and **Deployment**. Calibrate one arm at a time with both disconnected in Studio. Each follower keeps its own calibration draft, profile, and saved rest pose.
 
 Unprefixed targets use the selected follower. Prefix keys with `A.` or `B.` to choose an arm in code. Targets in the same call run in one step.
 

@@ -26,6 +26,8 @@ const taskStages = new Map([...document.querySelectorAll("[data-task-stage]")].m
 ]));
 let activeMode = "single";
 let cleanProgram, guideDraw, guideFrame;
+let setupFollower = "A";
+const calibrationDrafts = new Map();
 
 async function api(action, data = {}) {
   return hostedArm.request(action, data);
@@ -63,6 +65,7 @@ function selectView(view) {
     tab.tabIndex = current ? 0 : -1;
   }
   get("codebook-switch").hidden = view !== "program";
+  get("follower-picker").hidden = activeMode !== "dual" || !["hardware", "calibration", "settings", "program", "deployment"].includes(view);
   if (view === "deployment") setCodebook(false);
   if (view === "program" || view === "deployment") {
     get(view).append(get("simulation-side-panel"));
@@ -214,8 +217,13 @@ function updateControls() {
   if (pythonEditor && pythonEditor.getOption("readOnly") !== code.readOnly) {
     pythonEditor.setOption("readOnly", code.readOnly);
   }
+  get("settings-profile").disabled = get("arm-profile").disabled;
+  for (const button of document.querySelectorAll("[data-select-follower]")) {
+    button.disabled = get("arm-profile").disabled;
+    button.setAttribute("aria-pressed", button.dataset.selectFollower === get("arm-profile").value);
+  }
   const bridge = hostedArm.mode === "bridge";
-  if (activeMode === "single" && anyConnected) get("arm-profile").disabled = true;
+  if (activeMode === "single") get("arm-profile").disabled = get("settings-profile").disabled = true;
   const paired = Boolean(hostedArm.mode);
   const blocked = paired || calibrating || actionPending || compiling || simulating;
   get("connect-usb").disabled = bridge || (activeMode === "dual" ? Boolean(initialized) : anyConnected) || calibrating || actionPending
@@ -919,14 +927,43 @@ function populateProfile() {
   const profile = settings.profiles[get("settings-profile").value];
   for (const [fieldName, id] of Object.entries(profileFields)) selectStudioValue(get(id), profile[fieldName]);
 }
-get("settings-profile").onchange = populateProfile;
+get("settings-profile").onchange = () => {
+  selectStudioValue(get("arm-profile"), get("settings-profile").value);
+  get("arm-profile").onchange();
+};
 function assignedCalibration() {
   return settings?.profiles[get("arm-profile").value]?.calibration_file ?? "";
 }
 function showArmSetup() {
   const label = get("arm-profile").value;
+  if (setupFollower !== label) {
+    calibrationDrafts.set(setupFollower, {name: get("cal-name").value, text: get("cal-text").value});
+    const draft = calibrationDrafts.get(label);
+    get("cal-name").value = draft?.name ?? "";
+    get("cal-text").value = draft?.text ?? "";
+    for (const id of ["arm-sample", "cal-status-message", "cal-files-status", "settings-status"]) get(id).textContent = "";
+    selectStudioValue(calibrationLibrary, assignedCalibration().split(/[/\\]/).at(-1) ?? "");
+    setupFollower = label;
+  }
   const assigned = assignedCalibration();
-  get("cal-follower").textContent = "Follower " + label;
+  const title = "Follower " + label + (activeMode === "dual" ? (label === "A" ? " · Right" : " · Left") : "");
+  get("cal-follower").textContent = title;
+  get("hardware-title").textContent = activeMode === "dual" ? "Connect both followers" : "Connect follower A";
+  get("calibration-title").textContent = "Calibrate follower " + label;
+  get("settings-title").textContent = title + " profile";
+  get("connect-usb").textContent = "Connect follower " + label;
+  get("disconnect").textContent = "Disconnect follower " + label;
+  get("return-rest").textContent = "Return " + label + " to rest";
+  get("save-rest").setAttribute("aria-label", "Save follower " + label + " pose as rest");
+  get("read-pose").setAttribute("aria-label", "Read follower " + label + " current pose");
+  get("cal-use").querySelector("span").textContent = "Use for follower " + label;
+  get("cal-name").placeholder = "follower-" + label.toLowerCase();
+  get("connection-instructions").textContent = activeMode === "dual"
+    ? "Connect A · Right and B · Left with separate USB adapters. Select a follower for pose and rest controls."
+    : "Plug in follower A’s USB cable and motor power, then choose its adapter.";
+  get("calibration-instructions").textContent = activeMode === "dual"
+    ? "Choose the follower above. Disconnect both arms in Studio before calibrating. Each arm uses its own adapter and calibration."
+    : "Use follower A’s adapter and calibration file. Disconnect it in Studio before calibrating.";
   const source = get("profile-calibration");
   source.textContent = assigned.split(/[/\\]/).at(-1) || (hostedArm.mode === "bridge"
     ? "Default · LeRobot calibration" : "Default · calibration stored on the arm");
@@ -934,10 +971,21 @@ function showArmSetup() {
   get("cal-default").hidden = !assigned;
   get("profile-port").value = settings?.profiles[label]?.port ?? "";
 }
+for (const button of document.querySelectorAll("[data-select-follower]")) {
+  button.onclick = () => {
+    selectStudioValue(get("arm-profile"), button.dataset.selectFollower);
+    get("arm-profile").onchange();
+  };
+}
 get("arm-profile").onchange = () => {
+  if (activeMode === "single") selectStudioValue(get("arm-profile"), "A");
   if (hostedArm.mode !== "bridge") hostedArm.selectUSB(get("arm-profile").value);
   acceptArms(armSnapshots);
+  selectStudioValue(get("settings-profile"), get("arm-profile").value);
+  populateProfile();
   showArmSetup();
+  selectStudioValue(calibrationLibrary, assignedCalibration().split(/[/\\]/).at(-1) ?? "");
+  resetGuideDemo();
   resetPreview();
 };
 
@@ -1051,6 +1099,22 @@ function showMode() {
   get("follower-connections").hidden = !dual;
   get("codebook-dual-example").hidden = !dual;
   get("bridge-option").hidden = dual;
+  get("settings-follower-field").hidden = true;
+  const labels = dual ? ["A", "B"] : ["A"];
+  const selected = dual ? get("arm-profile").value : "A";
+  for (const id of ["arm-profile", "settings-profile"]) {
+    const select = get(id);
+    select.replaceChildren(...labels.map(label => new Option(
+      dual ? label + (label === "A" ? " · Right" : " · Left") : "A", label)));
+    selectStudioValue(select, selected);
+  }
+  if (hostedArm.mode !== "bridge") hostedArm.selectUSB(selected);
+  acceptArms(armSnapshots);
+  populateProfile();
+  showArmSetup();
+  get("physical-title").textContent = dual ? "Follower targets · A and B" : "Follower A";
+  const view = tabs.find(tab => tab.getAttribute("aria-selected") === "true").dataset.view;
+  get("follower-picker").hidden = !dual || !["hardware", "calibration", "settings", "program", "deployment"].includes(view);
   resetGuideDemo();
 }
 
@@ -1067,8 +1131,8 @@ async function chooseMode(id) {
     return;
   }
   if (modeSelector.disabled) return;
-  if (id === "single" && Object.keys(armSnapshots).length > 1) {
-    get("mode-message").textContent = "Disconnect one follower in USB connection before switching.";
+  if (id === "single" && armSnapshots.B) {
+    get("mode-message").textContent = "Disconnect follower B in USB connection before switching to follower A only.";
     return;
   }
   if (id === "dual" && hostedArm.mode === "bridge") {
@@ -1084,11 +1148,6 @@ async function chooseMode(id) {
   }
   activeMode = id;
   selectStudioValue(modeSelector, id);
-  const [connectedLabel] = Object.keys(armSnapshots);
-  if (id === "single" && connectedLabel) {
-    selectStudioValue(get("arm-profile"), connectedLabel);
-    get("arm-profile").onchange();
-  }
   const dual = id === "dual";
   openCode(dual ? dualStarter : hostedPython.example, dual ? "two-followers" : "one-follower");
   markProgramClean();
@@ -1161,12 +1220,12 @@ get("bridge-form").onsubmit = event => {
   if (actionPending || hostedArm.mode || activeMode !== "single") return;
   actionPending = true;
   updateControls();
-  hostedArm.pair(get("bridge-code").value.trim()).then(async session => {
+  hostedArm.pair(get("bridge-code").value.trim(), "A").then(async session => {
     get("bridge-code").value = "";
     const bridgeSettings = await api("settings");
     showSettings(bridgeSettings);
     populateProfile();
-    if (session.arm) selectStudioValue(get("arm-profile"), session.arm.label);
+
     connected(session.arm);
     if (session.step) showStep(session.step);
     resetPreview();

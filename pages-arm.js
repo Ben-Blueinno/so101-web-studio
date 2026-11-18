@@ -570,11 +570,14 @@ const hostedArm = (() => {
     get mode() { return code ? "bridge" : followers.size ? "usb" : null; },
     supportsUSB: "serial" in navigator,
     selectUSB,
-    async pair(pairingCode) {
+    async pair(pairingCode, expectedLabel) {
       if (followers.size || code || !pairingCode) throw new Error("Enter the bridge’s pairing code with USB disconnected.");
       code = pairingCode;
       try {
         const session = await bridge("session");
+        if (expectedLabel && session.arm && session.arm.label !== expectedLabel) {
+          throw new Error("Select follower A in the legacy Studio before pairing in single-follower mode.");
+        }
         await bridge("settings");
         return session;
       } catch (error) {

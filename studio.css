@@ -445,3 +445,13 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 }
 .roadmap-task svg { flex: none; width: 15px; height: 15px; color: var(--muted); }
 .roadmap-task:hover:not(:disabled) { background: var(--selection); }
+
+.follower-picker { display: flex; align-items: center; gap: 8px; margin-inline-end: auto; }
+.follower-picker label { margin: 0; font-size: .875rem; }
+.connection-list > div { flex: 1 1 180px; justify-content: space-between; }
+.connection-list button { min-height: 38px; font-size: .875rem; }
+@media (max-width: 500px) {
+  .workspace-tools { gap: 8px; }
+  .follower-picker { flex-wrap: wrap; }
+  .follower-picker label { flex-basis: 100%; }
+}
