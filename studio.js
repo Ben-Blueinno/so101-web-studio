@@ -15,6 +15,7 @@ let animation = 0, settings, moving = false, calibrating = false, actionPending 
 let compiling = false;
 let simulating = false;
 let returningToRest = false;
+let routeStopped = false;
 
 async function api(action, data = {}) {
   return hostedArm.request(action, data);
@@ -55,8 +56,8 @@ for (const button of document.querySelectorAll("[data-view]")) {
 function updateControls() {
   get("deploy").disabled = !initialized || !previewId || Boolean(currentStep) || moving || actionPending;
   get("preview").disabled = !render || compiling || moving || Boolean(currentStep) || actionPending;
-  get("move").disabled = moving || !currentStep;
-  get("stop-motion").disabled = !moving;
+  get("move").disabled = moving || !currentStep || get("route-targets").hidden;
+  get("stop-motion").disabled = !moving || !currentStep;
   get("discard").disabled = moving || !currentStep;
   get("init").disabled = Boolean(initialized) || calibrating || actionPending;
   get("read-pose").disabled = !initialized || moving || Boolean(currentStep) || actionPending;
@@ -97,16 +98,63 @@ function resetPreview(resetModel = true) {
   updateControls();
 }
 
+const codeLines = get("code-lines");
+function updateLineNumbers() {
+  codeLines.textContent = Array.from({length: code.value.split("\n").length}, (_, i) => i + 1).join("\n");
+  codeLines.scrollTop = code.scrollTop;
+}
+code.onscroll = () => { codeLines.scrollTop = code.scrollTop; };
+
+function expandEditor(expanded) {
+  get("program").classList.toggle("editor-expanded", expanded);
+  const button = get("expand-editor");
+  button.setAttribute("aria-pressed", expanded);
+  button.textContent = expanded ? "Collapse editor" : "Expand editor";
+}
+hook("expand-editor", () => {
+  expandEditor(get("expand-editor").getAttribute("aria-pressed") !== "true");
+  code.focus();
+});
+
 code.oninput = () => {
+  updateLineNumbers();
   resetPreview();
   get("export-code").hidden = true;
   get("copy-function").disabled = get("download-function").disabled = true;
   previewStatus.textContent = "Program changed. Preview the current version.";
 };
 code.onkeydown = event => {
-  if (event.key !== "Tab" || event.shiftKey || code.readOnly) return;
-  event.preventDefault();
-  code.setRangeText("    ", code.selectionStart, code.selectionEnd, "end");
+  if (event.key === "Escape") {
+    event.preventDefault();
+    get("expand-editor").focus();
+    return;
+  }
+  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault();
+    get("preview").click();
+    return;
+  }
+  if (code.readOnly || event.altKey || event.isComposing || event.ctrlKey || event.metaKey) return;
+  const {value, selectionStart: start, selectionEnd: end} = code;
+  const lineStart = value.slice(0, start).lastIndexOf("\n") + 1;
+  if (event.key === "Enter" && !event.shiftKey) {
+    const before = value.slice(lineStart, start);
+    const indent = before.match(/^[ \t]*/)[0];
+    const more = before.trimEnd().endsWith(":") ? "    " : "";
+    event.preventDefault();
+    code.setRangeText("\n" + indent + more, start, end, "end");
+  } else if (event.key === "Tab" && (event.shiftKey || start !== end)) {
+    event.preventDefault();
+    const block = value.slice(lineStart, end);
+    const contents = block.replace(/^[^\n]+/gm, line =>
+      event.shiftKey ? line.replace(/^(?: {1,4}|\t)/, "") : "    " + line);
+    code.setRangeText(contents, lineStart, end, start === end ? "end" : "select");
+  } else if (event.key === "Tab") {
+    event.preventDefault();
+    code.setRangeText("    ", start, end, "end");
+  } else {
+    return;
+  }
   code.dispatchEvent(new Event("input"));
 };
 
@@ -153,6 +201,7 @@ function animate(route, id) {
 
 hook("preview", async () => {
   if (currentStep) return;
+  expandEditor(false);
   resetPreview();
   compiling = true;
   updateControls();
@@ -176,9 +225,25 @@ hook("stop-preview", () => {
 function showStep(step) {
   currentStep = step?.plan_id ? step : undefined;
   get("replay").hidden = !step;
+  const list = get("route-targets");
+  if (!currentStep) {
+    list.replaceChildren();
+    list.hidden = true;
+  } else if (step.targets) {
+    const items = step.targets.slice(step.index).map(({joint, target}) => {
+      const item = document.createElement("li");
+      item.textContent = `${JOINTS[joint]} → ${target.toFixed(2)}${joint === "gripper" ? "%" : "°"}`;
+      return item;
+    });
+    list.replaceChildren(...items);
+    list.start = step.index + 1;
+    list.hidden = moving;
+  }
   if (currentStep) {
-    const unit = step.joint === "gripper" ? "%" : "°";
-    stepStatus.textContent = `Step ${step.index + 1}/${step.count} · ${JOINTS[step.joint]} → ${step.target.toFixed(2)}${unit} on follower ${initialized.label}. Select Confirm and move this step to send the command.`;
+    stepStatus.textContent = moving
+      ? `Running step ${step.index + 1}/${step.count} · ${JOINTS[step.joint]}.`
+      : `Follower ${initialized.label} will move through the targets below. Check the entire path and keep hands clear before confirming.`;
+    if (list.hidden && !moving) stepStatus.textContent = "Update and reconnect the Studio bridge to review and run a full route.";
   } else if (step?.done) {
     stepStatus.textContent = "Deployment complete.";
   }
@@ -198,28 +263,36 @@ hook("deploy", async () => {
 });
 
 hook("move", async () => {
-  const reviewed = currentStep;
-  if (!reviewed) return;
+  if (!currentStep || moving || get("route-targets").hidden) return;
   actionPending = true;
+  moving = true;
+  routeStopped = false;
+  get("route-targets").hidden = true;
+  get("move-result").textContent = "";
   updateControls();
   try {
-    const {plan_id, index, joint, target} = reviewed;
-    const unit = joint === "gripper" ? "%" : "°";
-    if (!await confirmAction(`Follower ${initialized.label} will move ${JOINTS[joint]} to ${target.toFixed(2)}${unit}. Confirm the path is clear.`)) return;
-    moving = true;
-    updateControls();
-    drawPose(initialized.model_pose, joint, "physical");
-    const response = await api("move", {plan_id, index});
-    connected(response.arm);
-    drawPose(response.arm.model_pose);
-    const result = response.result;
-    const moved = Math.abs(result.measured - result.before) > 0.001;
-    get("move-result").textContent = `Step ${result.index + 1} · ${JOINTS[result.joint]} · measured ${result.before.toFixed(2)}${unit} → ${result.measured.toFixed(2)}${unit}. Target ${result.target.toFixed(2)}${unit}.`
-      + (moved ? "" : " No change in the encoder reading. The joint was within tolerance.");
-    showStep(response);
+    while (currentStep && !routeStopped) {
+      const {plan_id, index, joint, count} = currentStep;
+      stepStatus.textContent = `Running step ${index + 1}/${count} · ${JOINTS[joint]}.`;
+      drawPose(initialized.model_pose, joint, "physical");
+      const response = await api("move", {plan_id, index});
+      connected(response.arm);
+      drawPose(response.arm.model_pose);
+      const {result} = response;
+      const unit = result.joint === "gripper" ? "%" : "°";
+      get("move-result").textContent += `Step ${result.index + 1} · ${JOINTS[result.joint]} · measured ${result.measured.toFixed(2)}${unit}, target ${result.target.toFixed(2)}${unit}.\n`;
+      showStep(response);
+    }
+    if (routeStopped) {
+      await api("discard");
+      showStep({});
+      resetPreview();
+      stepStatus.textContent = "Route stopped. Read the arm pose before preparing another route.";
+    }
   } catch (error) {
     drawPose(initialized?.model_pose ?? {});
     showStep({});
+    resetPreview();
     stepStatus.textContent = error.message;
   } finally {
     moving = false;
@@ -229,8 +302,9 @@ hook("move", async () => {
 }, stepStatus);
 
 hook("stop-motion", async () => {
+  routeStopped = true;
+  stepStatus.textContent = "Stopping route…";
   await api("stop");
-  stepStatus.textContent = "Stop requested. The arm can retain torque.";
 }, stepStatus);
 
 hook("discard", async () => {
@@ -570,6 +644,7 @@ hook("cal-archive", async () => {
 
 async function boot() {
   code.value = hostedPython.example;
+  updateLineNumbers();
   showSettings(await api("settings"));
   populateProfile();
   try {

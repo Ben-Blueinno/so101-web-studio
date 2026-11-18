@@ -254,12 +254,13 @@ const hostedArm = (() => {
           return {joint, raw: arm.target(joint, goal)};
         });
         replay = {id: crypto.randomUUID(), index: 0, targets, expected: {...arm.initial}};
-        return nextStep();
+        arm.stopped = false;
+        return {...nextStep(), targets: targets.map(({joint, raw}) =>
+          ({joint, target: arm.units(joint, raw)}))};
       }
       case "move": {
         if (!replay || replay.id !== data.plan_id || replay.index !== data.index) throw new Error("This step is no longer current.");
         const {joint, raw} = replay.targets[replay.index];
-        arm.stopped = false;
         try {
           const result = await arm.moveTo(joint, raw, replay.expected);
           replay.expected[joint] = raw;
