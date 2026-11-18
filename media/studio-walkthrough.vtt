@@ -15,10 +15,6 @@ One send_action call can move several joints.
 Select Preview in 3D.
 Gold highlights show which motors are moving.
 
-00:00:19.400 --> 00:00:24.000
+00:00:19.400 --> 00:00:23.700
 For a calibrated arm, open Arm setup and choose
 Connect by USB. Then read the current pose.
-
-00:00:24.000 --> 00:00:28.650
-Need to calibrate? Open Use the local bridge.
-Follow the calibration steps in Start here.

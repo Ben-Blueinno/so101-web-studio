@@ -116,7 +116,8 @@ function updateControls() {
   get("cal-read").disabled ||= !paired && !hostedArm.supportsUSB;
   get("cal-apply").disabled ||= !bridge;
   get("cal-start").disabled ||= !bridge;
-  get("scan").disabled = !bridge;
+  get("scan").disabled = actionPending || (!bridge && (!hostedArm.supportsUSB || Boolean(initialized)));
+  get("profile-port").hidden = get("profile-port-label").hidden = !bridge;
 }
 
 function drawPose(pose, joints, mode) {
@@ -649,8 +650,22 @@ function showSettings(data, selection = "") {
   calibrationLibrary.value = selection;
 }
 hook("scan", async () => {
-  showSettings(await api("settings"), calibrationLibrary.value);
-  settingsStatus.textContent = settings.ports.length ? settings.ports.join(" · ") : "No serial ports found. You can enter a port manually.";
+  actionPending = true;
+  updateControls();
+  try {
+    if (hostedArm.mode === "bridge") {
+      showSettings(await api("settings"), calibrationLibrary.value);
+      settingsStatus.textContent = settings.ports.length ? settings.ports.join(" · ") : "No serial ports found. You can enter a port manually.";
+      return;
+    }
+    const label = get("settings-profile").value;
+    await api("scan-usb", {label});
+    get("arm-profile").value = label;
+    settingsStatus.textContent = `USB port selected for follower ${label}. Open Arm setup and choose Connect by USB.`;
+  } finally {
+    actionPending = false;
+    updateControls();
+  }
 }, settingsStatus);
 hook("profile-save", async () => {
   const label = get("settings-profile").value;
@@ -723,6 +738,7 @@ async function boot() {
   render = createViewer(get("viewer"), SO101_MODEL);
   pollLivePose();
   if (!hostedArm.supportsUSB) get("usb-help").textContent = "USB connection requires desktop Chrome or Edge and browser permission.";
+  if (!hostedArm.supportsUSB) get("settings-scope").textContent = "Open this page in desktop Chrome or Edge to scan for USB serial ports.";
   updateControls();
 }
 
@@ -732,7 +748,7 @@ armAction("connect-usb", async () => {
   populateProfile();
   connected(result);
   resetPreview();
-  get("bridge-status").textContent = "USB connected. Preview your route to prepare a move.";
+  armStatus.textContent = "USB connected. Preview your route to prepare a move.";
 });
 
 get("bridge-form").onsubmit = event => {

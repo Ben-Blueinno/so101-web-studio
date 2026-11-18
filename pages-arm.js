@@ -12,7 +12,7 @@ const hostedArm = (() => {
     if (previous) stored = JSON.parse(previous);
   } catch { /* A new profile can still be used for this session. */ }
 
-  let code, follower, preview, replay, offer, scan, busy = false;
+  let code, follower, preview, replay, offer, scan, selectedUSB, busy = false;
 
   function save() {
     localStorage.setItem(storageKey, JSON.stringify(stored));
@@ -38,9 +38,15 @@ const hostedArm = (() => {
     return result;
   }
 
-  async function openUSB() {
-    const port = await navigator.serial.requestPort();
-    return ServoSerial.open(port);
+  async function chooseUSB() {
+    try {
+      const port = await navigator.serial.requestPort();
+      if (!port.getInfo().usbVendorId) throw new Error("Choose the SO-101 USB serial adapter.");
+      return port;
+    } catch (error) {
+      if (error.name === "NotFoundError") throw new Error("No USB port was selected.");
+      throw error;
+    }
   }
 
   function restKey(arm) {
@@ -75,12 +81,14 @@ const hostedArm = (() => {
     busy = true;
     let bus;
     try {
-      bus = await openUSB();
+      const port = selectedUSB?.label === label ? selectedUSB.port : undefined;
+      selectedUSB = undefined;
+      bus = await ServoSerial.open(port && port.connected !== false ? port : await chooseUSB());
       const calibration = await bus.calibration();
       const profile = stored.profiles[label];
       if (profile.calibration_file &&
           JSON.stringify(getCalibration(profile.calibration_file)) !== JSON.stringify(calibration)) {
-        throw new Error("The servo calibration differs from the selected copy. Choose the correct follower or use the bridge.");
+        throw new Error("The servo calibration differs from the selected copy. Check the follower and its calibration file in Settings.");
       }
       const directions = Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, profile[joint] === "-1" ? -1 : 1]));
       const arm = new BrowserFollower(bus, label, calibration, directions, await bus.positions());
@@ -168,6 +176,12 @@ const hostedArm = (() => {
     if (action === "export-lerobot") return {code: await hostedPython.exportFunction(data.source)};
     if (action === "cal-view") return {text: JSON.stringify(getCalibration(data.name), null, 2)};
     if (action === "cal-status") return {phase: "idle"};
+    if (action === "scan-usb") {
+      if (follower) throw new Error("Disconnect the active arm before selecting another USB port.");
+      selectedUSB = undefined;
+      selectedUSB = {label: data.label, port: await chooseUSB()};
+      return {};
+    }
     if (["profile-save", "profile-remove", "cal-save", "cal-archive"].includes(action) && follower) {
       throw new Error("Support and disconnect the arm before changing its profile or calibration copies.");
     }
@@ -204,7 +218,7 @@ const hostedArm = (() => {
     }
     if (action === "cal-read") {
       if (follower) throw new Error("Support and disconnect the arm before reading calibration.");
-      const bus = await openUSB();
+      const bus = await ServoSerial.open(await chooseUSB());
       try {
         return {text: JSON.stringify(await bus.calibration(), null, 2), name: `follower-${data.label}-readback`};
       } finally {

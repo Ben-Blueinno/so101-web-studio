@@ -53,17 +53,16 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
   <h2>Your first SO-101 route</h2>
   <figure class="guide-video">
     <video controls playsinline preload="none" width="1260" height="832" poster="media/studio-walkthrough.jpg" aria-label="SO-101 Web Studio walkthrough">
-      <source src="media/studio-walkthrough.mp4" type="video/mp4">
-      <track kind="captions" label="English" srclang="en" src="media/studio-walkthrough.vtt" default>
-      <a href="media/studio-walkthrough.mp4">Download the walkthrough</a>
+      <source src="media/studio-walkthrough.mp4?v=usb" type="video/mp4">
+      <track kind="captions" label="English" srclang="en" src="media/studio-walkthrough.vtt?v=usb" default>
+      <a href="media/studio-walkthrough.mp4?v=usb">Download the walkthrough</a>
     </video>
-    <figcaption>Watch how to preview a Python route and find the USB and calibration controls. The steps below show how to run a reviewed route on the real arm.</figcaption>
+    <figcaption>Watch how to preview a Python route and find Connect by USB. The steps below show how to run a reviewed route on the real arm.</figcaption>
   </figure>
   <nav aria-label="Visual walkthrough">
     <ol class="guide-flow">
       <li><a href="#guide-preview">Preview in 3D</a><span>Run the starter in the simulator.</span></li>
       <li><a href="#guide-connect">Connect by USB</a><span>Pick your controller and read all six joints.</span></li>
-      <li><a href="#guide-calibrate">Calibrate if needed</a><span>Pair the bridge for a new or saved calibration.</span></li>
       <li><a href="#guide-run">Review and run</a><span>Check the targets and watch the live readings.</span></li>
     </ol>
   </nav>
@@ -89,16 +88,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
       <h3 id="guide-connect">Connect an already calibrated arm</h3>
       <p>Use desktop Chrome or Edge on Mac or Windows. Secure the arm to the bench, connect its motor power and USB cable, and close any other app using its serial port. In <strong>Arm setup</strong>, select the follower profile for that arm, then choose <strong>Connect by USB</strong> and select the controller in the browser’s port picker.</p>
       <p>Choose <strong>Read current pose</strong>. Look for all six joint readings, then check that <strong>Python &amp; 3D</strong> shows <strong>Live encoder pose</strong>. A calibrated arm can connect directly through the browser with its existing settings.</p>
-    </li>
-    <li>
-      <h3 id="guide-calibrate">Set up calibration if the arm needs it</h3>
-      <p>With your teacher, download and unzip the <a href="SO101-Studio-Bridge.zip?v=20261118-route-review">Studio bridge</a>. Follow <strong>START HERE.txt</strong> to set up Python and LeRobot and launch the Mac or Windows bridge. Leave its terminal open. In <strong>Arm setup</strong>, expand <strong>Use the local bridge</strong>, paste the pairing code, and choose <strong>Connect bridge</strong>. Allow local access if prompted.</p>
-      <p>In <strong>Settings</strong>, choose the follower profile, select the arm’s serial port and <strong>Save profile</strong>. On Windows the port usually starts with <code>COM</code>. On Mac it usually starts with <code>/dev/cu.usb</code>.</p>
-      <ul>
-        <li><strong>Restore a calibration for this same arm.</strong> In <strong>Settings</strong>, choose <strong>Import JSON</strong>, <strong>Save calibration</strong>, <strong>Use for profile</strong>, then <strong>Save profile</strong>. In <strong>Arm setup</strong>, select the same follower and choose <strong>Apply saved calibration</strong>. Support the arm before confirming because this releases torque.</li>
-        <li><strong>Calibrate a new arm.</strong> Select the follower in <strong>Arm setup</strong> and choose <strong>Calibrate new</strong>. Support the arm when torque releases. Follow the prompts to place the joints near the middle of their travel and select <strong>Capture midpoint</strong>. Gently move each joint through its usable travel, skipping wrist roll as instructed. Select <strong>Save range</strong>.</li>
-      </ul>
-      <p>Once calibration succeeds, close the bridge and reload Web Studio to use <strong>Connect by USB</strong>. If you initialized the arm through the bridge, support it and choose <strong>Disconnect arm</strong> before closing the bridge.</p>
+      <p>To find the USB port first, open <strong>Settings</strong>, choose the follower, and select <strong>Scan ports</strong>. Chrome or Edge lists the available ports. After selecting one, return to <strong>Arm setup</strong> and choose <strong>Connect by USB</strong>.</p>
     </li>
     <li>
       <h3 id="guide-run">Preview and deploy your route</h3>
@@ -154,25 +144,28 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 <section id="hardware" class="panel" hidden>
   <h2>Arm setup</h2>
   <p id="usb-help">For a calibrated SO-101, choose its USB serial port in desktop Chrome or Edge. Close any other app using the port first.</p>
+  <label for="arm-profile">Follower profile</label><select id="arm-profile"><option>A</option><option>B</option></select>
+  <div class="actions">
+    <button id="connect-usb" class="primary">Connect by USB</button>
+    <button id="read-pose" disabled>Read current pose</button><button id="disconnect" disabled>Disconnect arm</button>
+    <button id="save-rest" disabled>Save current pose as rest</button><button id="return-rest" disabled>Return to rest</button>
+    <button id="stop-rest" class="stop" hidden>Stop return to rest</button>
+    <button id="cal-read">Read motor calibration</button>
+  </div>
   <details id="bridge-option">
-    <summary>Use the local bridge</summary>
-    <p>The bridge supports calibration and profiles from the local Studio. <a href="SO101-Studio-Bridge.zip?v=20261118-route-review">Download the bridge</a></p>
+    <summary>Advanced calibration</summary>
+    <p>To calibrate a new arm or restore settings to its motors, download the <a href="SO101-Studio-Bridge.zip?v=20261118-route-review">local calibration bridge</a> and follow <strong>START HERE.txt</strong>. Return to <strong>Connect by USB</strong> after calibration.</p>
     <form id="bridge-form" class="actions">
       <label for="bridge-code">Pairing code</label><input id="bridge-code" type="password" required autocomplete="off" spellcheck="false">
       <button id="pair-bridge" type="submit">Connect bridge</button>
     </form>
+    <p id="bridge-status" class="status" role="status"></p>
+    <div class="actions">
+      <button id="cal-start">Calibrate new</button><button id="cal-apply">Apply saved calibration</button><button id="init">Initialize arm through bridge</button>
+    </div>
   </details>
-  <p id="bridge-status" class="status" role="status"></p>
-  <label for="arm-profile">Follower profile</label><select id="arm-profile"><option>A</option><option>B</option></select>
-  <div class="actions">
-    <button id="connect-usb" class="primary">Connect by USB</button>
-    <button id="init" class="primary">Initialize arm</button><button id="read-pose" disabled>Read current pose</button><button id="disconnect" disabled>Disconnect arm</button>
-    <button id="save-rest" disabled>Save current pose as rest</button><button id="return-rest" disabled>Return to rest</button>
-    <button id="stop-rest" class="stop" hidden>Stop return to rest</button>
-    <button id="cal-read">Read motor calibration</button><button id="cal-apply">Apply saved calibration</button><button id="cal-start">Calibrate new</button>
-  </div>
   <div class="actions" id="cal-controls" hidden><button id="cal-next">Capture midpoint</button><button id="cal-cancel">Cancel calibration</button></div>
-  <p id="arm-status" class="status" role="status">Connect an already calibrated SO-101 by USB, or pair the local bridge for calibration and setup.</p>
+  <p id="arm-status" class="status" role="status">Connect a calibrated SO-101 by USB to read its pose and run a route.</p>
   <pre id="arm-sample"></pre>
 </section>
 <div id="settings" class="grid" hidden>
@@ -181,7 +174,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
     <p id="settings-scope">USB profiles and calibration copies are saved in this browser. Use Chrome’s port picker in Arm setup.</p>
     <label for="settings-profile">Profile</label><select id="settings-profile"><option>A</option><option>B</option></select>
     <div class="fields">
-      <label for="profile-port">Serial port</label><input id="profile-port" list="ports"><datalist id="ports"></datalist>
+      <label id="profile-port-label" for="profile-port" hidden>Serial port</label><input id="profile-port" list="ports" hidden><datalist id="ports"></datalist>
       <label for="profile-id">LeRobot ID</label><input id="profile-id">
       <label for="profile-calibration">Calibration file</label><input id="profile-calibration" placeholder="LeRobot default if empty">
       <div id="joint-fields" style="display:contents"></div>
@@ -232,10 +225,10 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
 <script src="so101-route-lab.js?v=20261118-simultaneous"></script>
 <script src="pages-compiler.js?v=20261118-simultaneous"></script>
 <script src="pages-serial.js?v=20261118-simultaneous"></script>
-<script src="pages-arm.js?v=20261118-simultaneous"></script>
+<script src="pages-arm.js?v=20261118-usb-scan"></script>
 <script src="vendor/codemirror.js"></script>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=20261118-simultaneous"></script>
-<script src="studio.js?v=20261118-simultaneous"></script>
+<script src="studio.js?v=20261118-usb-scan"></script>
 </html>
