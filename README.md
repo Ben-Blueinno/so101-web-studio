@@ -1,12 +1,18 @@
 # SO-101 Web Studio
 
-The browser simulator supports Python routes, browser-local saves, and downloads. Choose **Robot mode** in **Start here**. Switching between one and two followers loads the matching starter after warning about unsaved edits. The right-hand viewer plays the starter, and the header shows the active mode and USB connection status. Future modes are disabled in the selector. Their Coming soon entries show requirements. Use the **Codebook** switch in **Simulation** to open Python examples and motor ranges. The 3D preview moves below the editor. The Python route parser runs locally in the browser using Pyodide.
+GitHub Pages publishes `main`, the stable one-arm release. Two-arm mode is Coming soon on that site. The `dev` branch enables two-arm testing and is the integration branch for future stages. Camera and base modes remain unavailable until implemented. Release a development stage to `main` only when the user explicitly asks for that release.
+
+For local development, check out `dev` and serve the folder with `python3 -m http.server 8000` on Mac or `py -m http.server 8000` on Windows. Open [localhost](http://localhost:8000/) in desktop Chrome or Edge. The development footer identifies the preview. Local browser programs and profiles belong to that browser origin.
+
+The browser simulator supports Python routes, browser-local saves, and downloads. Choose **Robot mode** in **Start here**. Changing an available mode loads its matching starter after warning about unsaved edits. The right-hand viewer plays the starter, and the header shows the active mode and USB connection status. Future modes are disabled in the selector. Their Coming soon entries show requirements. Use the **Codebook** switch in **Simulation** to open Python examples and motor ranges. The 3D preview moves below the editor. The Python route parser runs locally in the browser using Pyodide.
 
 Web Studio uses CodeMirror 5.65.21 for Python syntax highlighting and completion. Use several joint keys in the same `robot.send_action({...})` call to move them together in the simulator or through direct USB. The local bridge supports calibration and single-joint moves. After calibrating, reconnect by USB to deploy grouped moves.
 
 Open **Start here** for the four steps. **Robot** shows a card for each arm, with Connect USB and Pose and rest buttons. Calibration and Settings have their own tabs. Arm A and B are stacked vertically in Robot, Calibration, and Settings. Each arm’s calibration controls and file editor are grouped together. The Files menu offers saved calibrations, import, new files, assignment, and archive actions. Every component has separate inputs and feedback. Each operating card has a help icon in its top-right corner. Single-follower mode shows A; two-follower mode shows both A and B. Every Python action key must name its arm, for example `A.wrist_roll.pos`. Missing arm names produce an error. Calibrate one arm at a time with both disconnected. The UI distinguishes servo-register readback from the JSON calibration file saved in this browser. A disconnected arm displays Servo settings · Not checked.
 
 Prefix every target key with `A.` or `B.` to choose its arm. Targets in the same call run in one step.
+
+Two-arm example for testing on `dev`
 
 ```python
 def route(robot):
