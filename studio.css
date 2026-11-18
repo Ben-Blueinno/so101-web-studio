@@ -74,6 +74,50 @@ summary { cursor: pointer; }
 .actions { margin-top: 12px; }
 .actions label, .rail label { margin: 0; }
 .rail { justify-content: space-between; margin-bottom: 12px; }
+.simulation-panel-header { min-height: 44px; }
+#codebook-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-inline-start: auto;
+  background: var(--input);
+  font-size: .875rem;
+}
+.switch-track {
+  display: inline-flex;
+  align-items: center;
+  width: 32px;
+  height: 18px;
+  padding: 2px;
+  border: 1px solid var(--control-edge);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.switch-track::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+#codebook-switch[aria-checked="true"] .switch-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+#codebook-switch[aria-checked="true"] .switch-track::before {
+  margin-inline-start: auto;
+  background: var(--input);
+}
+.preview-stage { position: relative; }
+.preview-reset {
+  position: absolute;
+  inset: 10px 10px auto auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  padding: 0;
+}
+
 .fields { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 12px; }
 .fields label { margin: 0; }
 .fields input { min-width: 0; }
@@ -122,4 +166,39 @@ summary { cursor: pointer; }
   .grid, .guide-intro, .guide-demo { grid-template-columns: minmax(0, 1fr); }
   .guide-demo canvas { max-width: none; }
   .workspace-tabs { margin-block: 15px 20px; }
+}
+
+body:has(.studio-footer) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+body:has(.studio-footer) > main { width: 100%; margin-block: 0; }
+.studio-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--edge);
+  font-size: .875rem;
+}
+.studio-footer-inner {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 16px 28px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.studio-footer p { margin: 0; }
+.studio-version { margin-inline-start: 6px; font-variant-numeric: tabular-nums; }
+.studio-footer ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+}
+@media (max-width: 820px) {
+  .studio-footer-inner { padding-inline: 16px; }
+  .studio-footer ul { flex-basis: 100%; margin-inline-start: 0; }
 }

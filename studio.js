@@ -54,7 +54,10 @@ function selectView(view) {
     tab.tabIndex = current ? 0 : -1;
   }
   if (view === "deployment") setCodebook(false);
-  if (view === "program" || view === "deployment") get(view).append(get("viewer-panel"));
+  if (view === "program" || view === "deployment") {
+    get("codebook-switch").hidden = view === "deployment";
+    get(view).append(get("simulation-side-panel"));
+  }
   if (view === "calibration") get("cal-follower").textContent = "Follower " + get("arm-profile").value;
   if (view === "program") pythonEditor?.refresh();
   if (view === "getting-started") initGuideDemo();
@@ -83,7 +86,8 @@ for (const button of document.querySelectorAll("[data-open-tab]")) {
 }
 
 function setCodebook(open) {
-  get("open-codebook").setAttribute("aria-expanded", open);
+  get("codebook-switch").setAttribute("aria-checked", open);
+  get("side-panel-heading").textContent = open ? "Python Codebook" : "3D preview";
   get("codebook-panel").hidden = !open;
   get("viewer-panel").hidden = open;
   if (open) {
@@ -92,15 +96,7 @@ function setCodebook(open) {
   }
 }
 
-get("open-codebook").onclick = () => {
-  const opening = get("codebook-panel").hidden;
-  setCodebook(opening);
-  if (opening) get("codebook-heading").focus({preventScroll: matchMedia("(min-width: 821px)").matches});
-};
-get("close-codebook").onclick = () => {
-  setCodebook(false);
-  get("open-codebook").focus();
-};
+get("codebook-switch").onclick = () => setCodebook(get("codebook-panel").hidden);
 
 let guideReady = false;
 function initGuideDemo() {
