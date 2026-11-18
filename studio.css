@@ -95,6 +95,8 @@ summary { cursor: pointer; }
 .guide-intro p { max-width: 39ch; }
 .guide-intro .primary { margin-top: 10px; }
 .guide-video video { width: 100%; height: auto; display: block; border-radius: 8px; background: var(--input); }
+.guide-video video::cue { font-size: clamp(12px, 1.05vw, 15px); }
+.guide-video video:fullscreen::cue { font-size: clamp(15px, 1.25vw, 24px); }
 .guide-steps { margin: 28px 0 0; padding: 0; list-style: none; counter-reset: guide-step; }
 .guide-steps li {
   display: grid;

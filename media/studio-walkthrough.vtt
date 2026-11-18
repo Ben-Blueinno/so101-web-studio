@@ -1,32 +1,48 @@
 WEBVTT
 
-00:00:00.000 --> 00:00:04.133
-Start here explains each step and gives you
-a 3D example you can play without an arm.
+00:00:00.000 --> 00:00:03.900 line:76%
+Start here has the setup steps. Click
+Try the simulator to practise without an arm.
 
-00:00:04.133 --> 00:00:10.067
-USB connection. Choose your follower and Scan ports.
-For a calibrated arm, select Connect by USB.
+00:00:03.900 --> 00:00:06.900 line:76%
+In USB connection, choose your follower.
+Click Scan ports and pick the USB adapter.
 
-00:00:10.067 --> 00:00:13.500
-Calibration. Choose Calibrate new to capture
-the midpoint and usable range by hand.
+00:00:06.900 --> 00:00:09.400 line:76%
+If the arm is calibrated, click Connect by USB,
+then Read current pose.
 
-00:00:13.500 --> 00:00:16.733
-To reuse the same arm’s file, assign it in Settings,
-then choose Restore saved calibration.
+00:00:09.400 --> 00:00:12.400 line:76%
+For a new arm, choose Calibrate new.
+Support the arm as torque releases.
 
-00:00:16.733 --> 00:00:19.967
-Simulation. Write a route in the Python editor.
+00:00:12.400 --> 00:00:15.100 line:76%
+To reuse a file from this same arm,
+choose Restore saved calibration.
 
-00:00:19.967 --> 00:00:24.967
-Select Preview in 3D to check the motion.
-Gold highlights show the active motors.
+00:00:15.100 --> 00:00:17.700 line:76%
+In Simulation, the editor has a two-move route.
 
-00:00:24.967 --> 00:00:31.600
-Deployment. With a calibrated arm connected, prepare
-the route, review every target, and confirm once.
+00:00:17.700 --> 00:00:22.100 line:76%
+Click Preview in 3D. Gold marks the moving motor.
 
-00:00:31.600 --> 00:00:36.400
-Settings. Manage follower profiles
-and import or save calibration files.
+00:00:22.100 --> 00:00:23.400 line:76%
+Choose Go to Deployment.
+
+00:00:23.400 --> 00:00:26.400 line:76%
+With a calibrated arm connected,
+choose Prepare deployment.
+
+00:00:26.400 --> 00:00:29.200 line:76%
+Review each target with your teacher, confirm once,
+and watch the live 3D feedback.
+
+00:00:29.200 --> 00:00:31.900 line:76%
+In Settings, use Import JSON
+to load a saved calibration.
+
+00:00:31.900 --> 00:00:33.600 line:76%
+Save the file and assign it to your follower.
+
+00:00:33.600 --> 00:00:35.900 line:76%
+Return to Start here for the step-by-step guide.
