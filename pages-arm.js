@@ -13,6 +13,22 @@ const hostedArm = (() => {
   } catch { /* A new profile can still be used for this session. */ }
 
   let code, follower, preview, replay, offer, scan, selectedUSB, calibrationSession, busy = false;
+  const followers = new Map();
+  function snapshots() {
+    return Object.fromEntries([...followers].map(([label, arm]) => [label, arm.snapshot()]));
+  }
+  function stopFollowers() {
+    for (const arm of followers.values()) arm.stopped = true;
+  }
+  function selectUSB(label) {
+    if (busy || replay || calibrationSession) return false;
+    const next = followers.get(label);
+    if (next !== follower) {
+      follower = next;
+      preview = offer = undefined;
+    }
+    return true;
+  }
   let calibrationStatus = {phase: "idle", message: "", sample: ""}, calibrationRead;
 
   function save() {
@@ -84,16 +100,20 @@ const hostedArm = (() => {
   }
 
   async function connectUSB(label) {
-    if (code || follower || busy || calibrationSession) throw new Error("Finish calibration or disconnect the active arm first.");
+    if (code || followers.has(label) || busy || replay || calibrationSession) throw new Error("Finish calibration or disconnect the active arm first.");
     busy = true;
     let bus;
     try {
-      bus = await ServoSerial.open(await portFor(label));
+      const port = await portFor(label);
+      if ([...followers.values()].some(arm => arm.bus.port === port)) {
+        throw new Error("This adapter is already connected. Choose the other follower’s adapter.");
+      }
+      bus = await ServoSerial.open(port);
       const calibration = await bus.calibration();
       const profile = stored.profiles[label];
       if (profile.calibration_file &&
           JSON.stringify(getCalibration(profile.calibration_file)) !== JSON.stringify(calibration)) {
-        throw new Error("The servo calibration differs from the selected copy. Check the follower and its calibration file in Settings.");
+        throw new Error("The servo calibration differs from the selected copy. Check the follower and its calibration file in Calibration.");
       }
       const directions = Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, profile[joint] === "-1" ? -1 : 1]));
       const arm = new BrowserFollower(bus, label, calibration, directions, await bus.positions());
@@ -103,7 +123,9 @@ const hostedArm = (() => {
         arm.validatePositions(rest);
         arm.rest = rest;
       }
+      followers.set(label, arm);
       follower = arm;
+      preview = offer = undefined;
       return arm.snapshot();
     } catch (error) {
       if (bus) await bus.close().catch(() => {});
@@ -123,48 +145,62 @@ const hostedArm = (() => {
   }
 
   function reviewTargets(group) {
-    return {actions: Object.entries(group).map(([joint, raw]) => ({joint, target: follower.units(joint, raw)}))};
+    return {actions: Object.entries(group).flatMap(([label, targets]) =>
+      Object.entries(targets).map(([joint, raw]) => ({
+        follower: label, joint, target: followers.get(label).units(joint, raw),
+      })))};
   }
 
   async function compile(data) {
     if (replay) throw new Error("Finish or discard the active replay first.");
     const original = await hostedPython.parse(data.source);
-    const directions = follower?.directions ?? Object.fromEntries(SERIAL_JOINTS.map(joint =>
-      [joint, stored.profiles[data.label]?.[joint] === "-1" ? -1 : 1]));
-    const toModelAction = step => {
-      if (original.coordinates !== "lerobot") return step;
-      const {joint, position_deg} = step;
-      const sign = directions[joint];
-      if (position_deg !== undefined) {
-        return {joint, offset_deg: sign * position_deg};
-      }
-      if (sign === 1) return step;
-      return joint === "gripper" ? {...step, position_pct: 100 - step.position_pct}
-        : {...step, offset_deg: -step.offset_deg};
-    };
-    const route = {...original, steps: original.steps.map(step =>
-      step.actions ? {actions: step.actions.map(toModelAction)} : toModelAction(step))};
-    if (!follower || original.coordinates !== "lerobot") validateRoute(route, {grouped: true});
-    route.fixed_angles = original.steps.map(step => routeActions(step).map(action => action.position_deg ?? null));
-    let targets;
-    if (follower) {
-      targets = [];
-      route.steps = route.steps.map((step, index) => {
-        const raw = {};
-        const actions = routeActions(step).map((action, actionIndex) => {
-          const {joint} = action;
-          const fixedAngle = route.fixed_angles[index][actionIndex];
-          raw[joint] = follower.target(joint, hardwareGoal(follower, action, fixedAngle));
-          if (fixedAngle === null) return action;
-          const start = follower.units(joint, follower.initial[joint]);
-          return {joint, offset_deg: directions[joint] * (fixedAngle - start)};
-        });
-        targets.push(raw);
-        return step.actions ? {actions} : actions[0];
+    const labels = new Set();
+    const groups = [];
+    const fixedAngles = [];
+    const steps = original.steps.map((step, index) => {
+      const raw = {};
+      const keys = new Set();
+      const angles = [];
+      const actions = routeActions(step).map(action => {
+        const {follower: explicit, position_deg: fixed, ...target} = action;
+        const label = explicit ?? data.label;
+        const {joint} = target;
+        if (!stored.profiles[label]) throw new Error("Choose follower A or B.");
+        const key = label + "." + joint;
+        if (keys.has(key)) throw new Error(`Step ${index + 1}: give ${key} one target.`);
+        keys.add(key);
+        labels.add(label);
+        angles.push(fixed ?? null);
+        const arm = followers.get(label);
+        const sign = arm?.directions[joint] ?? (stored.profiles[label][joint] === "-1" ? -1 : 1);
+        let model = target;
+        if (original.coordinates === "lerobot") {
+          if (fixed !== undefined) model = {joint, offset_deg: sign * fixed};
+          else if (sign === -1) model = joint === "gripper"
+            ? {...target, position_pct: 100 - target.position_pct}
+            : {...target, offset_deg: -target.offset_deg};
+        }
+        if (!arm || original.coordinates !== "lerobot") validateRoute({...original, steps:[model]});
+        if (arm) {
+          try {
+            (raw[label] ??= {})[joint] = arm.target(joint, hardwareGoal(arm, model, fixed));
+          } catch (error) {
+            throw new Error(`Follower ${label}, step ${index + 1}: ${error.message}`);
+          }
+          if (fixed !== undefined) {
+            model = {joint, offset_deg: sign * (fixed - arm.units(joint, arm.initial[joint]))};
+          }
+        }
+        return {...model, follower: label};
       });
-    }
-    preview = {targets, id: crypto.randomUUID()};
-    return {route, preview_id: preview.id};
+      groups.push(raw);
+      fixedAngles.push(angles);
+      return step.actions ? {actions} : actions[0];
+    });
+    const missing = [...labels].filter(label => !followers.has(label));
+    preview = {targets: missing.length ? null : groups, labels: [...labels], id: crypto.randomUUID()};
+    const route = {...original, steps, fixed_angles: fixedAngles};
+    return {route, preview_id: preview.id, missing};
   }
 
   function hardwareGoal(arm, step, fixedAngle) {
@@ -213,7 +249,7 @@ const hostedArm = (() => {
       return calibrationStatus;
     }
     if (action === "cal-start" || action === "cal-apply") {
-      if (!data.confirmed || follower || calibrationSession || !stored.profiles[data.label]) {
+      if (!data.confirmed || followers.size || calibrationSession || !stored.profiles[data.label]) {
         throw new Error("Disconnect the arm, choose its follower, and confirm that it is supported.");
       }
       let wanted;
@@ -299,6 +335,20 @@ const hostedArm = (() => {
     }
   }
 
+  async function verifyFollowers(labels, expected) {
+    const results = await Promise.allSettled(labels.map(async label => {
+      const arm = followers.get(label);
+      try {
+        arm.current = await arm.bus.positions();
+        arm.verifyStartingPose(expected[label], arm.current);
+      } catch (error) {
+        throw new Error(`Follower ${label}: ${error.message}`);
+      }
+    }));
+    const failed = results.find(result => result.status === "rejected");
+    if (failed) throw failed.reason;
+  }
+
   async function dispatch(action, data) {
     if (action === "settings") return settings();
     if (action === "compile") return compile(data);
@@ -309,12 +359,12 @@ const hostedArm = (() => {
     }
     if (calibrationSession && action !== "cal-view") throw new Error("Finish or cancel USB calibration first.");
     if (action === "scan-usb") {
-      if (follower) throw new Error("Disconnect the active arm before selecting another USB port.");
+      if (followers.size) throw new Error("Disconnect both followers before scanning ports.");
       selectedUSB = undefined;
       selectedUSB = {label: data.label, port: await chooseUSB()};
       return {};
     }
-    if (["profile-save", "profile-remove", "cal-save", "cal-archive"].includes(action) && follower) {
+    if (["profile-save", "profile-remove", "cal-save", "cal-archive"].includes(action) && followers.size) {
       throw new Error("Support and disconnect the arm before changing its profile or calibration copies.");
     }
     if (action === "profile-save") {
@@ -349,7 +399,7 @@ const hostedArm = (() => {
       return settings();
     }
     if (action === "cal-read") {
-      if (follower) throw new Error("Support and disconnect the arm before reading calibration.");
+      if (followers.size) throw new Error("Support and disconnect both followers before reading calibration.");
       const bus = await ServoSerial.open(await chooseUSB());
       try {
         return {text: JSON.stringify(await bus.calibration(), null, 2), name: `follower-${data.label}-readback`};
@@ -357,13 +407,70 @@ const hostedArm = (() => {
         await bus.close();
       }
     }
-    if (!follower) throw new Error("Connect your SO-101 in Arm setup first.");
+    if (action === "deploy") {
+      if (replay || !preview?.targets || preview.id !== data.preview_id) throw new Error("Connect the route’s followers and preview again.");
+      const expected = Object.fromEntries(preview.labels.map(label => [label, {...followers.get(label).initial}]));
+      await verifyFollowers(preview.labels, expected);
+      for (const label of preview.labels) followers.get(label).stopped = false;
+      const {targets} = preview;
+      replay = {id: crypto.randomUUID(), index: 0, targets, expected};
+      return {...nextStep(), targets: targets.map(reviewTargets)};
+    }
+    if (action === "move") {
+      if (!replay || replay.id !== data.plan_id || replay.index !== data.index) throw new Error("This step is no longer current.");
+      const group = Object.entries(replay.targets[replay.index]);
+      try {
+        for (const [label, armsTargets] of group) followers.get(label).validatePositions(armsTargets);
+        await verifyFollowers(group.map(([label]) => label), replay.expected);
+        if (group.some(([label]) => followers.get(label).stopped)) throw new Error("Movement stopped. Review the arm poses.");
+        const results = await Promise.allSettled(group.map(async ([label, targets]) => {
+          try {
+            const arm = followers.get(label);
+            const readings = await arm.moveTogether(targets, replay.expected[label]);
+            Object.assign(replay.expected[label], targets);
+            return readings.map(result => ({...result, follower: label}));
+          } catch (error) {
+            stopFollowers();
+            throw new Error(`Follower ${label}: ${error.message}`);
+          }
+        }));
+        const failures = results.filter(result => result.status === "rejected");
+        if (failures.length) {
+          const failure = failures.find(result => !result.reason.message.includes("Movement stopped")) ?? failures[0];
+          throw failure.reason;
+        }
+        replay.index++;
+        return {...nextStep(), arms: snapshots(), results: results.flatMap(result => result.value)};
+      } catch (error) {
+        stopFollowers();
+        replay = preview = undefined;
+        throw error;
+      }
+    }
+    if (action === "discard") {
+      replay = preview = undefined;
+      return {};
+    }
+    if (action === "read-poses") {
+      if (replay) throw new Error("Finish or discard the active replay first.");
+      const results = await Promise.allSettled([...followers.values()].map(async arm => {
+        arm.current = arm.initial = await arm.bus.positions();
+      }));
+      preview = offer = undefined;
+      const failed = results.find(result => result.status === "rejected");
+      if (failed) throw failed.reason;
+      return {arms: snapshots()};
+    }
+    if (!follower) throw new Error("Select and connect a follower in USB connection.");
     const arm = follower;
     switch (action) {
       case "disconnect":
         try { await arm.close(); }
-        finally { follower = preview = replay = offer = undefined; }
-        return {};
+        finally {
+          followers.delete(arm.label);
+          follower = preview = replay = offer = undefined;
+        }
+        return {arms: snapshots()};
       case "read-pose":
       case "save-rest":
       case "prepare-rest":
@@ -402,31 +509,6 @@ const hostedArm = (() => {
         if (!arm.atRest()) throw new Error("The live pose is outside the saved rest tolerance.");
         return arm.snapshot();
       }
-      case "deploy": {
-        if (replay || !preview?.targets || preview.id !== data.preview_id) throw new Error("Preview the current program first.");
-        arm.current = await arm.bus.positions();
-        arm.verifyStartingPose(arm.initial, arm.current);
-        const {targets} = preview;
-        replay = {id: crypto.randomUUID(), index: 0, targets, expected: {...arm.initial}};
-        arm.stopped = false;
-        return {...nextStep(), targets: targets.map(reviewTargets)};
-      }
-      case "move": {
-        if (!replay || replay.id !== data.plan_id || replay.index !== data.index) throw new Error("This step is no longer current.");
-        const targets = replay.targets[replay.index];
-        try {
-          const results = await arm.moveTogether(targets, replay.expected);
-          Object.assign(replay.expected, targets);
-          replay.index++;
-          return {...nextStep(), arm: arm.snapshot(), results, result_index: data.index};
-        } catch (error) {
-          replay = preview = undefined;
-          throw error;
-        }
-      }
-      case "discard":
-        replay = preview = undefined;
-        return {};
       default:
         throw new Error("Use the local bridge for this arm setup operation.");
     }
@@ -436,7 +518,7 @@ const hostedArm = (() => {
     if (code) {
       if (action === "compile") {
         const route = await hostedPython.parse(data.source);
-        if (route.steps.some(step => step.actions)) {
+        if (route.steps.some(step => step.actions || step.follower)) {
           throw new Error("For simultaneous moves, disconnect the bridge and reconnect the calibrated arm by USB.");
         }
       }
@@ -444,17 +526,22 @@ const hostedArm = (() => {
       return bridge(action, data);
     }
     if (action === "stop") {
-      if (follower) follower.stopped = true;
+      stopFollowers();
       return {};
     }
     if (action === "telemetry") {
-      if (!follower) return {arm: null, live: false};
-      if (busy) return {arm: follower.snapshot(), joints: follower.activeJoints, live: follower.moving};
-      if (scan) return {arm: follower.snapshot(), live: false};
+      const readings = live => ({
+        arm: follower?.snapshot(), arms: snapshots(), live,
+        active: Object.fromEntries([...followers].map(([label, arm]) => [label, arm.activeJoints ?? []])),
+      });
+      if (!followers.size) return readings(false);
+      if (busy) return readings([...followers.values()].some(arm => arm.moving));
+      if (scan) return readings(false);
       try {
-        scan = follower.bus.positions();
-        follower.current = await scan;
-        return {arm: follower.snapshot(), live: true};
+        const results = await (scan = Promise.allSettled([...followers.values()].map(async arm => {
+          arm.current = await arm.bus.positions();
+        })));
+        return readings(results.every(result => result.status === "fulfilled"));
       } finally {
         scan = undefined;
       }
@@ -476,10 +563,11 @@ const hostedArm = (() => {
   }
 
   return {
-    get mode() { return code ? "bridge" : follower ? "usb" : null; },
+    get mode() { return code ? "bridge" : followers.size ? "usb" : null; },
     supportsUSB: "serial" in navigator,
+    selectUSB,
     async pair(pairingCode) {
-      if (follower || code || !pairingCode) throw new Error("Enter the bridge’s pairing code with USB disconnected.");
+      if (followers.size || code || !pairingCode) throw new Error("Enter the bridge’s pairing code with USB disconnected.");
       code = pairingCode;
       try {
         const session = await bridge("session");

@@ -12,7 +12,8 @@ const stepStatus = get("step-status");
 const motorStatus = get("active-motor");
 const programLibrary = get("program-library");
 const calibrationLibrary = get("cal-library");
-let render, initialized, currentStep, previewId;
+let render, renderB, initialized, currentStep, previewId;
+let armSnapshots = {}, simulatedPoses = {}, missingFollowers = [];
 let animation = 0, settings, moving = false, calibrating = false, actionPending = false;
 let compiling = false;
 let simulating = false;
@@ -148,9 +149,10 @@ function initGuideDemo() {
 
 function updateControls() {
   for (const tab of tabs) tab.disabled = moving && !returningToRest && tab.dataset.view !== "deployment";
-  get("deploy").disabled = !initialized || !previewId || Boolean(currentStep) || moving || actionPending;
+  get("deploy").disabled = !previewId || missingFollowers.length > 0 || (!initialized && !Object.keys(armSnapshots).length)
+    || Boolean(currentStep) || moving || actionPending;
   if (!currentStep && !moving) {
-    deploymentStatus.textContent = !initialized ? "Connect a calibrated arm in USB connection."
+    deploymentStatus.textContent = previewId && missingFollowers.length ? `Connect ${missingFollowers.map(label => "follower " + label).join(" and ")} and preview again.`
       : !previewId ? "Preview your program in Simulation to prepare a route."
       : "Preview ready. Prepare deployment to review the joint targets.";
   }
@@ -166,44 +168,79 @@ function updateControls() {
   }
   get("rest-actions").hidden = !initialized && !returningToRest;
   get("stop-rest").hidden = !returningToRest;
-  for (const id of ["cal-read", "cal-apply", "cal-start", "arm-profile"]) {
-    get(id).disabled = Boolean(initialized) || calibrating || actionPending;
+  const anyConnected = Boolean(initialized) || Object.keys(armSnapshots).length > 0;
+  for (const id of ["cal-read", "cal-apply", "cal-start"]) {
+    get(id).disabled = anyConnected || calibrating || actionPending;
   }
+  get("arm-profile").disabled = calibrating || actionPending || compiling || simulating || Boolean(currentStep) || moving;
   code.readOnly = Boolean(currentStep) || actionPending;
   if (pythonEditor && pythonEditor.getOption("readOnly") !== code.readOnly) {
     pythonEditor.setOption("readOnly", code.readOnly);
   }
   const bridge = hostedArm.mode === "bridge";
+  if (bridge && initialized) get("arm-profile").disabled = true;
   const paired = Boolean(hostedArm.mode);
   const blocked = paired || calibrating || actionPending || compiling || simulating;
-  get("connect-usb").disabled = blocked || !hostedArm.supportsUSB;
+  get("connect-usb").disabled = bridge || Boolean(initialized) || calibrating || actionPending
+    || compiling || simulating || Boolean(currentStep) || moving || !hostedArm.supportsUSB;
   get("pair-bridge").disabled = blocked;
   get("init").disabled ||= !bridge;
   get("cal-read").disabled ||= !paired && !hostedArm.supportsUSB;
   get("cal-apply").disabled ||= !bridge && (!hostedArm.supportsUSB || !assignedCalibration());
   get("cal-start").disabled ||= !bridge && !hostedArm.supportsUSB;
-  get("cal-default").disabled = Boolean(initialized) || calibrating || actionPending;
+  get("cal-default").disabled = anyConnected || calibrating || actionPending;
   get("cal-use").disabled = get("cal-default").disabled;
   get("bridge-port-options").hidden = !bridge;
   get("scan-ports").disabled = calibrating || actionPending || Boolean(initialized);
   get("save-port").disabled = get("scan-ports").disabled;
 }
 
-function drawPose(pose, joints, mode) {
-  const active = Array.isArray(joints) ? joints : joints ? [joints] : [];
-  if (render) render(pose, active.length ? {joints: active, mode} : undefined);
-  motorStatus.hidden = !active.length;
+function drawScene(poses, active = {}, mode) {
+  const selected = get("arm-profile").value;
+  const labels = Object.keys(poses).sort();
+  if (!labels.length) labels.push(selected);
+  const dual = labels.length > 1;
+  get("dual-viewport").classList.toggle("has-two-arms", dual);
+  get("arm-b-view").hidden = !dual;
+  const title = "Follower " + labels[0];
+  if (get("arm-a-title").textContent !== title) get("arm-a-title").textContent = title;
+  const options = label => active[label]?.length ? {joints: active[label], mode} : undefined;
+  render?.(poses[labels[0]] ?? {}, options(labels[0]));
+  if (dual && !renderB) {
+    try {
+      renderB = createViewer(get("viewer-b"), SO101_MODEL, get("camera-b"));
+    } catch {
+      renderB = () => {};
+      get("arm-b-status").textContent = "Follower B’s 3D view is unavailable.";
+      get("camera-b").disabled = true;
+    }
+  }
+  if (dual) renderB?.(poses.B ?? {}, options("B"));
+  const motors = Object.entries(active).flatMap(([label, joints]) =>
+    joints.map(joint => `${label} · ${JOINTS[joint]}`));
+  motorStatus.hidden = !motors.length;
   motorStatus.dataset.mode = mode ?? "";
-  motorStatus.textContent = active.length
-    ? `${mode === "physical" ? "Physical move" : "Simulation"} · ${active.map(joint => JOINTS[joint]).join(", ")}` : "";
+  motorStatus.textContent = motors.length
+    ? `${mode === "physical" ? "Physical move" : "Simulation"} · ${motors.join(", ")}` : "";
 }
 
-const targetText = ({joint, target}) => `${JOINTS[joint]} → ${Number(target.toFixed(2))}${joint === "gripper" ? "%" : "°"}`;
+const liveModels = () => Object.fromEntries(Object.entries(armSnapshots).map(([label, arm]) => [label, arm.model_pose]));
+function drawPose(pose, joints, mode) {
+  const label = get("arm-profile").value;
+  const poses = liveModels();
+  if (pose && (initialized || !Object.keys(poses).length)) poses[label] = pose;
+  const active = Array.isArray(joints) ? joints : joints ? [joints] : [];
+  drawScene(poses, active.length ? {[label]: active} : {}, mode);
+}
+
+const targetText = ({follower, joint, target}) => `${follower ? follower + " · " : ""}${JOINTS[joint]} → ${Number(target.toFixed(2))}${joint === "gripper" ? "%" : "°"}`;
 
 function resetPreview(resetModel = true) {
   animation++;
   simulating = false;
   previewId = undefined;
+  missingFollowers = [];
+  simulatedPoses = {};
   get("stop-preview").disabled = true;
   if (resetModel) drawPose(initialized?.model_pose ?? {});
   updateControls();
@@ -271,42 +308,51 @@ code.onkeydown = event => {
   code.dispatchEvent(new Event("input"));
 };
 
-function animate(route, id) {
+function animate(route, id, missing) {
   const generation = animation;
+  const defaultLabel = get("arm-profile").value;
+  const labelFor = action => action.follower ?? defaultLabel;
+  const labels = new Set([...Object.keys(armSnapshots), ...route.steps.flatMap(step => routeActions(step).map(labelFor))]);
+  const starts = Object.fromEntries([...labels].map(label => [label, armSnapshots[label]?.preview_start ?? {}]));
+  const poses = Object.fromEntries([...labels].map(label => [label, {...starts[label]}]));
   simulating = true;
-  const start = initialized?.preview_start ?? {};
-  const pose = {...start};
-  drawPose(pose);
+  drawScene(poses);
   get("stop-preview").disabled = false;
   function next(index) {
     if (generation !== animation) return;
     if (index === route.steps.length) {
       simulating = false;
-      drawPose(initialized?.model_pose ?? pose);
+      simulatedPoses = Object.fromEntries(Object.entries(poses).filter(([label]) => !armSnapshots[label]));
+      drawScene({...simulatedPoses, ...liveModels()});
       previewId = id;
+      missingFollowers = missing;
       get("stop-preview").disabled = true;
-      previewStatus.textContent = initialized ? "Preview complete. Open Deployment to review the route." : "Preview complete.";
+      previewStatus.textContent = missing.length
+        ? `Preview complete. Connect ${missing.map(label => "follower " + label).join(" and ")} to deploy.`
+        : "Preview complete. Open Deployment to review the route.";
       updateControls();
       return;
     }
+    const active = {};
     const axes = routeActions(route.steps[index]).map((action, i) => {
-      const {joint} = action, target = action[field(joint)];
+      const {joint} = action;
+      const follower = labelFor(action);
+      (active[follower] ??= []).push(joint);
+      const target = action[field(joint)];
       const isGripper = joint === "gripper";
-      return {joint, from: pose[joint] ?? (isGripper ? GRIP_HOME : 0),
-        end: isGripper ? target : (start[joint] ?? 0) + target,
+      return {follower, joint, from: poses[follower][joint] ?? (isGripper ? GRIP_HOME : 0),
+        end: isGripper ? target : (starts[follower][joint] ?? 0) + target,
         target: route.fixed_angles?.[index]?.[i] ?? target};
     });
-    const joints = axes.map(axis => axis.joint);
     const duration = Math.max(550, Math.min(2700, Math.max(...axes.map(axis => Math.abs(axis.end - axis.from))) * 85));
     let started;
-    drawPose(pose, joints, "simulation");
     previewStatus.textContent = `Step ${index + 1}/${route.steps.length} · ${axes.map(targetText).join(" · ")}`;
     function frame(now) {
       if (generation !== animation) return;
       started ??= now;
       const progress = Math.min(1, (now - started) / duration);
-      for (const {joint, from, end} of axes) pose[joint] = from + (end - from) * progress;
-      render(pose, {joints, mode: "simulation"});
+      for (const {follower, joint, from, end} of axes) poses[follower][joint] = from + (end - from) * progress;
+      drawScene(poses, active, "simulation");
       if (progress === 1) next(index + 1);
       else requestAnimationFrame(frame);
     }
@@ -323,14 +369,15 @@ hook("preview", async () => {
   updateControls();
   const version = animation;
   try {
-    if (initialized) connected(await api("read-pose"));
+    if (hostedArm.mode === "usb") acceptArms((await api("read-poses")).arms);
+    else if (initialized) connected(await api("read-pose"));
     const result = await api("compile", {source: code.value, label: get("arm-profile").value});
     if (version !== animation) return;
     programStatus.textContent = `Validated ${result.route.steps.length} moves.`;
     if (!get("program").hidden && (!get("codebook-panel").hidden || matchMedia("(max-width: 820px)").matches)) {
       get("side-panel-heading").scrollIntoView({block: "nearest"});
     }
-    animate(result.route, result.preview_id);
+    animate(result.route, result.preview_id, result.missing ?? (initialized ? [] : [get("arm-profile").value]));
   } finally {
     compiling = false;
     updateControls();
@@ -359,9 +406,11 @@ function showStep(step) {
     list.hidden = moving;
   }
   if (currentStep) {
+    const labels = new Set((step.targets ?? [step]).flatMap(group => routeActions(group)
+      .map(action => action.follower ?? get("arm-profile").value)));
     stepStatus.textContent = moving
       ? `Running step ${step.index + 1}/${step.count}.`
-      : `Follower ${initialized.label} will move through the targets below. Check the entire path and keep hands clear before confirming.`;
+      : `Follower ${[...labels].join(" and ")} will move. Check the full paths, including clearance between the arms. Keep hands clear before confirming.`;
     if (list.hidden && !moving) stepStatus.textContent = "Update and reconnect the Studio bridge to review and run a full route.";
   } else if (step?.done) {
     stepStatus.textContent = `Route complete. Verified ${step.count} of ${step.count} moves from encoder readings.`;
@@ -396,13 +445,18 @@ hook("move", async () => {
     while (currentStep && !routeStopped) {
       const {plan_id, index, count} = currentStep;
       showRouteFeedback();
-      drawPose(initialized.model_pose, routeActions(currentStep).map(action => action.joint), "physical");
+      const active = {};
+      for (const {follower, joint} of routeActions(currentStep)) {
+        (active[follower ?? get("arm-profile").value] ??= []).push(joint);
+      }
+      drawScene(liveModels(), active, "physical");
       const response = await api("move", {plan_id, index});
-      connected(response.arm);
-      drawPose(response.arm.model_pose);
+      if (response.arms) acceptArms(response.arms);
+      else connected(response.arm);
+      drawScene(liveModels());
       for (const result of response.results ?? [response.result]) {
         const unit = result.joint === "gripper" ? "%" : "°";
-        get("move-result").textContent += `Step ${index + 1} · ${JOINTS[result.joint]} · measured ${result.measured.toFixed(2)}${unit}, target ${result.target.toFixed(2)}${unit}.\n`;
+        get("move-result").textContent += `Step ${index + 1} · ${result.follower ? result.follower + " · " : ""}${JOINTS[result.joint]} · measured ${result.measured.toFixed(2)}${unit}, target ${result.target.toFixed(2)}${unit}.\n`;
       }
       showStep({...response, count});
     }
@@ -431,7 +485,9 @@ function showRouteFeedback(pose, live) {
   const actions = routeActions(currentStep);
   const status = `Running step ${index + 1}/${count} · ${actions.map(targetText).join(" · ")}.`;
   if (stepStatus.textContent !== status) stepStatus.textContent = status;
-  const readings = actions.map(({joint}) => ({joint, target: pose?.[joint + ".pos"]}));
+  const readings = actions.map(({follower, joint}) => ({
+    follower, joint, target: (follower ? armSnapshots[follower]?.pose : pose)?.[joint + ".pos"],
+  }));
   get("route-feedback").textContent = live && readings.every(({target}) => Number.isFinite(target))
     ? `Live encoder readings · ${readings.map(targetText).join(" · ")}`
     : "Waiting for live encoder feedback…";
@@ -623,38 +679,56 @@ get("program-file").onchange = async event => {
   }
 };
 
-function connected(arm) {
-  initialized = arm;
-  get("connection").textContent = arm ? `Follower ${arm.label} initialized` : "Browser simulator";
-  if (arm) selectStudioValue(get("arm-profile"), arm.label);
-  get("pose-sample").textContent = arm ? Object.entries(arm.pose).map(([name, value]) =>
+function acceptArms(arms) {
+  armSnapshots = arms;
+  initialized = arms[get("arm-profile").value];
+  const labels = Object.keys(arms).sort();
+  const status = labels.length ? `Connected · ${labels.join(" and ")}` : "Browser simulator";
+  if (get("connection").textContent !== status) get("connection").textContent = status;
+  for (const label of ["A", "B"]) {
+    const indicator = get("usb-status-" + label);
+    const text = arms[label] ? "Connected" : "Disconnected";
+    if (indicator.textContent !== text) indicator.textContent = text;
+  }
+  get("pose-sample").textContent = initialized ? Object.entries(initialized.pose).map(([name, value]) =>
     `${JOINTS[name.replace(".pos", "")]}: ${value.toFixed(2)}${name === "gripper.pos" ? "%" : "°"}`).join("\n") : "";
   updateControls();
+}
+function connected(arm) {
+  const label = get("arm-profile").value;
+  const arms = {...armSnapshots};
+  if (arm) arms[arm.label] = arm;
+  else delete arms[label];
+  acceptArms(arms);
 }
 
 async function pollLivePose() {
   const status = get("live-pose-status");
   try {
-    if (initialized) {
-      const previous = initialized;
+    if (Object.keys(armSnapshots).length) {
+      const previous = armSnapshots;
       const result = await api("telemetry");
-      if (initialized === previous && result.arm) {
-        connected(result.arm);
-        showRouteFeedback(result.arm.pose, result.live);
-        if (!simulating) drawPose(result.arm.model_pose, result.joints ?? result.joint, "physical");
+      if (armSnapshots === previous && (result.arms || result.arm)) {
+        if (result.arms) acceptArms(result.arms);
+        else connected(result.arm);
+        showRouteFeedback(result.arm?.pose, result.live);
+        if (!simulating) {
+          const active = result.active ?? {[result.arm.label]: result.joints ?? (result.joint ? [result.joint] : [])};
+          drawScene({...simulatedPoses, ...liveModels()}, active, "physical");
+        }
         status.hidden = simulating;
-        const label = result.arm.at_rest ? "At rest" : "Away from rest";
         const source = result.live ? "Live encoder pose" : "Last measured pose";
-        const message = `${source} · ${label}`;
+        const details = Object.values(armSnapshots).map(arm => `${arm.label} ${arm.at_rest ? "at rest" : "away from rest"}`);
+        const message = `${source} · ${details.join(" · ")}`;
         if (status.textContent !== message) status.textContent = message;
       }
     } else {
       status.hidden = true;
     }
-  } catch (error) {
+  } catch {
     showRouteFeedback();
     status.hidden = false;
-    status.textContent = "Live readings unavailable. Showing the last measured pose.";
+    status.textContent = "Live readings unavailable. Showing the last measured poses.";
   }
   setTimeout(pollLivePose, 300);
 }
@@ -718,11 +792,12 @@ hook("stop-rest", async () => {
 }, armStatus);
 armAction("disconnect", async () => {
   if (!await confirmAction("Support the arm before disconnecting. Continue?")) return;
-  await api("disconnect");
-  connected();
+  const result = await api("disconnect");
+  if (result?.arms) acceptArms(result.arms);
+  else connected();
   showStep();
   resetPreview();
-  previewStatus.textContent = "Arm disconnected. The 3D model uses its reference pose.";
+  previewStatus.textContent = "Follower disconnected. Preview again before deploying.";
   get("pose-sample").textContent = "";
   armStatus.textContent = "Arm disconnected.";
   if (!hostedArm.mode) get("bridge-status").textContent = "";
@@ -810,8 +885,10 @@ function showArmSetup() {
   get("profile-port").value = settings?.profiles[label]?.port ?? "";
 }
 get("arm-profile").onchange = () => {
+  if (hostedArm.mode !== "bridge") hostedArm.selectUSB(get("arm-profile").value);
+  acceptArms(armSnapshots);
   showArmSetup();
-  updateControls();
+  resetPreview();
 };
 
 async function saveFollowerFields(label, fields) {
@@ -938,7 +1015,7 @@ armAction("connect-usb", async () => {
   populateProfile();
   connected(result);
   resetPreview();
-  armStatus.textContent = "USB connected. Preview your route to prepare a move.";
+  armStatus.textContent = `Follower ${result.label} connected. Preview your route before deploying.`;
 });
 
 get("bridge-form").onsubmit = event => {
@@ -951,6 +1028,7 @@ get("bridge-form").onsubmit = event => {
     const bridgeSettings = await api("settings");
     showSettings(bridgeSettings);
     populateProfile();
+    if (session.arm) selectStudioValue(get("arm-profile"), session.arm.label);
     connected(session.arm);
     if (session.step) showStep(session.step);
     resetPreview();

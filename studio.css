@@ -394,3 +394,27 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
   background: var(--input);
 }
 .calibration-assignment p { margin: 2px 0 0; overflow-wrap: anywhere; }
+
+.dual-viewport { display: grid; gap: 10px; }
+.dual-viewport.has-two-arms { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.follower-view { min-width: 0; }
+.follower-view h3 { font-size: .9rem; margin-bottom: 5px; }
+.connection-list {
+  display: flex;
+  gap: 10px;
+  margin-block: 12px;
+  flex-wrap: wrap;
+}
+.connection-list > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--edge);
+  border-radius: 9px;
+  padding: 6px 10px;
+  font-size: .875rem;
+}
+.connection-list span { color: var(--muted); }
+@media (max-width: 500px) {
+  .dual-viewport.has-two-arms { grid-template-columns: minmax(0, 1fr); }
+}

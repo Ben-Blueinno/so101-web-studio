@@ -90,7 +90,7 @@ def compile_program(source):
             fail(call, "Give robot.send_action({...}) one or more joint targets.")
         action = call.args[0]
         targets = [joint_target(call, key, target) for key, target in zip(action.keys, action.values)]
-        if len({target["joint"] for target in targets}) != len(targets):
+        if len({(target.get("follower"), target["joint"]) for target in targets}) != len(targets):
             fail(call, "Give each joint only one target in a move.")
         add_step(call, targets[0] if len(targets) == 1 else {"actions": targets})
 
@@ -98,8 +98,16 @@ def compile_program(source):
         if not isinstance(key, ast.Constant) or not isinstance(key.value, str) or not key.value.endswith(".pos"):
             fail(call, 'Use a LeRobot action key like "shoulder_pan.pos".')
         joint = key.value.removesuffix(".pos")
+        follower = None
+        if "." in joint:
+            follower, joint = joint.split(".", 1)
+            if follower not in ("A", "B"):
+                fail(call, "Use A. or B. to select a follower.")
         if joint not in MODEL_LIMITS:
             fail(call, f"Unknown SO-101 joint {joint!r}.")
+        if follower:
+            field = "position_pct" if joint == "gripper" else "position_deg"
+            return {**target_for(call, joint, field, value(target)), "follower": follower}
         if joint == "gripper":
             return target_for(call, joint, "position_pct", value(target))
         if baseline(target, key.value):

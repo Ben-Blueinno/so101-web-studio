@@ -14,17 +14,18 @@ function attachPythonEditor(textarea, {preview, escape} = {}) {
   function hints(editor, explicit = false) {
     const cursor = editor.getCursor();
     const before = editor.getLine(cursor.line).slice(0, cursor.ch);
-    const quotedKey = before.match(/["']([a-z_.]*)$/);
+    const quotedKey = before.match(/["']([A-Za-z_.]*)$/);
     const method = before.match(/\brobot\.([a-z_]*)$/);
     const token = editor.getTokenAt(cursor);
     let list, partial;
     if (token.type?.includes("comment")) return;
     if (quotedKey) {
       partial = quotedKey[1];
-      list = Object.entries(JOINTS).map(([joint, name]) => ({
-        text: joint + ".pos",
-        displayText: joint + ".pos — " + name + (joint === "gripper" ? " (%)" : " (degrees)"),
-      }));
+      const prefixes = partial.startsWith("A") ? ["A."] : partial.startsWith("B") ? ["B."] : ["", "A.", "B."];
+      list = prefixes.flatMap(prefix => Object.entries(JOINTS).map(([joint, name]) => ({
+        text: prefix + joint + ".pos",
+        displayText: prefix + joint + ".pos — " + name + (joint === "gripper" ? " (%)" : " (degrees)"),
+      })));
     } else if (method) {
       partial = method[1];
       list = methods;
@@ -37,7 +38,7 @@ function attachPythonEditor(textarea, {preview, escape} = {}) {
     if (!list.length) return;
     let end = cursor.ch;
     const after = editor.getLine(cursor.line).slice(end);
-    end += (quotedKey ? after.match(/^[a-z_.]*/) : after.match(/^[a-z_]*/))[0].length;
+    end += (quotedKey ? after.match(/^[A-Za-z_.]*/) : after.match(/^[a-z_]*/))[0].length;
     return {list, from: CodeMirror.Pos(cursor.line, cursor.ch - partial.length),
       to: CodeMirror.Pos(cursor.line, end)};
   }

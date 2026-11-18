@@ -254,13 +254,14 @@ class BrowserFollower {
   }
 
   async holdCurrentPose() {
-    if (this.holding) return;
+    if (this.holding || this.stopped) return;
     this.validatePositions(this.current);
     await this.bus.write(SERIAL_REG.goal, this.current, 2);
     for (const [joint, id] of Object.entries(SERVO_ID)) {
       const goal = word(await this.bus.read(id, SERIAL_REG.goal, 2));
       if (goal !== this.current[joint]) throw new Error(`${JOINTS[joint]} did not accept its holding position.`);
     }
+    if (this.stopped) return;
     this.holding = true;
     await this.bus.write(SERIAL_REG.torque, Object.fromEntries(SERIAL_JOINTS.map(joint => [joint, 1])), 1);
   }

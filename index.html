@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=setup-flow">
+<link rel="stylesheet" href="studio.css?v=two-followers">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
 <link rel="stylesheet" href="codebook.css?v=code-colors">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
@@ -109,9 +109,22 @@
   <section id="simulation-side-panel" class="panel" aria-labelledby="side-panel-heading">
     <div class="rail"><h2 id="side-panel-heading">3D preview</h2></div>
     <div id="viewer-panel">
-      <div class="preview-stage">
-        <canvas id="viewer" width="720" height="540" tabindex="0" aria-label="SO-101 arm model. Drag or use arrow keys to orbit."></canvas>
-        <button id="camera" type="button" class="icon-action preview-reset" aria-label="Reset view"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-reset"/></svg></button>
+      <div id="dual-viewport" class="dual-viewport">
+        <div class="follower-view">
+          <h3 id="arm-a-title">Follower A</h3>
+          <div class="preview-stage">
+            <canvas id="viewer" width="720" height="540" tabindex="0" aria-label="SO-101 arm model. Drag or use arrow keys to orbit."></canvas>
+            <button id="camera" type="button" class="icon-action preview-reset" aria-label="Reset view"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-reset"/></svg></button>
+          </div>
+        </div>
+        <div id="arm-b-view" class="follower-view" hidden>
+          <h3>Follower B</h3>
+          <div class="preview-stage">
+            <canvas id="viewer-b" width="720" height="540" tabindex="0" aria-label="Follower B arm model. Drag or use arrow keys to orbit."></canvas>
+            <button id="camera-b" type="button" class="icon-action preview-reset" aria-label="Reset follower B view"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-reset"/></svg></button>
+          </div>
+          <p id="arm-b-status" class="status" role="status"></p>
+        </div>
       </div>
       <p id="live-pose-status" class="status" role="status" hidden></p>
       <p id="active-motor" role="status" hidden></p>
@@ -185,6 +198,17 @@
         <p>Targets inside the same <code>send_action()</code> move together. Studio waits for both targets before starting the next call. The optional <code>: float</code> type hint tells readers that the variable can contain a decimal. Use <code>: int</code> for a whole number. Type <code>robot.</code> or start typing a quoted joint key for suggestions.</p>
         <p>Try grouped moves in the 3D preview first. For a physical run, connect a calibrated arm by USB and check the path of all moving joints together before confirming.</p>
 
+        <h3>Move both followers together</h3>
+        <pre><code>def route(robot):
+    robot.send_action({
+        "A.wrist_roll.pos": -5,
+        "B.wrist_roll.pos": 5,
+    })
+    robot.send_action({
+        "A.wrist_roll.pos": 0,
+        "B.wrist_roll.pos": 0,
+    })</code></pre>
+        <p>Use A. and B. to choose a follower. Unprefixed keys use the selected follower. Targets in one call share a step. Check clearance between the real arms before running.</p>
         <h3>5. Repeat a move with a loop</h3>
         <pre><code>def route(robot):
     start = robot.get_observation()
@@ -221,11 +245,15 @@ run_route(robot)</code></pre>
 <section id="hardware" role="tabpanel" aria-labelledby="tab-hardware" class="panel setup-panel" hidden>
   <h2>Connect the SO-101</h2>
   <p id="usb-help" class="status" role="status"></p>
-  <label for="arm-profile">Follower profile</label><select id="arm-profile"><option>A</option><option>B</option></select>
+  <div class="connection-list" aria-label="Follower connection status">
+    <div><strong>Follower A</strong><span id="usb-status-A">Disconnected</span></div>
+    <div><strong>Follower B</strong><span id="usb-status-B">Disconnected</span></div>
+  </div>
+  <label for="arm-profile">Selected follower</label><select id="arm-profile"><option>A</option><option>B</option></select>
   <div class="actions" role="group" aria-label="Connection">
     <button id="connect-usb" class="primary">Connect by USB</button>
     <button id="read-pose" type="button" class="icon-action" aria-label="Read current pose" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-position"/></svg></button>
-    <button id="disconnect" disabled>Disconnect arm</button>
+    <button id="disconnect" disabled>Disconnect selected follower</button>
   </div>
   <div id="rest-actions" class="actions rest-actions" role="group" aria-label="Rest pose" hidden>
     <span>Rest pose</span>
@@ -233,7 +261,7 @@ run_route(robot)</code></pre>
     <button id="return-rest" disabled>Return to rest</button>
     <button id="stop-rest" class="stop labeled-action" hidden><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-stop"/></svg><span>Stop return to rest</span></button>
   </div>
-  <p id="arm-status" class="status" role="status">Choose a follower, then connect its arm over USB.</p>
+  <p id="arm-status" class="status" role="status">Select A and connect its adapter. Then select B and connect the other adapter.</p>
   <pre id="pose-sample"></pre>
   <details id="bridge-option">
     <summary>Local bridge (legacy)</summary>
@@ -327,7 +355,7 @@ run_route(robot)</code></pre>
   <h2>From SO-101 to XLeRobot</h2>
   <ol class="roadmap-list">
     <li><h3>One tabletop follower</h3><span class="stage-status">Available now</span><p>Write a Python route, preview it in 3D, then replay it over USB on one SO-101.</p></li>
-    <li><h3>Two tabletop followers</h3><span class="stage-status">Classroom hardware now</span><p>Calibrate each arm and practise separate routes. Work with one follower at a time in Studio. No cameras needed.</p></li>
+    <li><h3>Two tabletop followers</h3><span class="stage-status">Classroom hardware now</span><p>Calibrate each arm, then connect both and program a route for one or both followers. No cameras needed.</p></li>
     <li><h3>One webcam per arm</h3><p>Use basic computer vision to find an object. Let each arm move to its own target.</p></li>
     <li><h3>Shared depth camera</h3><p>Locate objects in 3D and coordinate the arms for tasks such as holding with one arm and picking with the other.</p></li>
     <li><h3>Cart and mobile base</h3><p>Mount both arms on the base. Practise driving, turning, and stopping with the arms parked.</p></li>
@@ -341,7 +369,7 @@ run_route(robot)</code></pre>
   <p>Students learn to program a robot arm in Python, test routes on a 3D SO-101, and run reviewed routes on a real follower over USB.</p>
   <dl class="about-list">
     <div><dt>Simulation</dt><dd>Runs in the browser. No arm required.</dd></div>
-    <div><dt>USB control</dt><dd>Use desktop Chrome or Edge on Mac or Windows. Studio connects to one calibrated follower at a time.</dd></div>
+    <div><dt>USB control</dt><dd>Use desktop Chrome or Edge on Mac or Windows. Connect one or two calibrated followers using separate USB adapters.</dd></div>
     <div><dt>LeRobot projects</dt><dd>Export a Python function for a connected <code>SO101Follower</code>.</dd></div>
   </dl>
   <p>Model and editor credits are in the footer.</p>
@@ -393,8 +421,8 @@ run_route(robot)</code></pre>
 <template id="help-hardware">
   <ol>
     <li>Secure the arm to the bench. Plug in motor power and USB. Use desktop Chrome or Edge and close other apps using the port.</li>
-    <li>Choose your follower. For a calibrated arm, select <strong>Connect by USB</strong> and pick its adapter when Chrome or Edge asks. For a new arm, open <strong>Calibration</strong> first.</li>
-    <li>Once connected, use the crosshair to <strong>Read current pose</strong>. Check for six readings.</li>
+    <li>Choose your follower. For a calibrated arm, select <strong>Connect by USB</strong> and pick its adapter when Chrome or Edge asks. For a new arm, open <strong>Calibration</strong> first. Disconnect both followers before calibrating.</li>
+    <li>Once connected, use the crosshair to <strong>Read current pose</strong> for the selected follower. To connect another, select its profile and choose its other adapter.</li>
   </ol>
   <p>No adapter? Check the USB data cable. Adapter but no joints? Check motor power and the cable to the first servo.</p>
 </template>
@@ -417,6 +445,7 @@ run_route(robot)</code></pre>
     <li>Select the <strong>Play</strong> icon to preview. The starter turns wrist roll to −5°, then back to 0°.</li>
     <li>Change −5 to −10. Preview again and watch the wrist.</li>
     <li>Open <strong>Codebook</strong> with the split-panel icon for Python keys, motor ranges, and examples.</li>
+    <li>Use A. and B. prefixes for two-arm targets, such as <code>"A.wrist_roll.pos"</code>. Targets in one call move together.</li>
     <li>Name your program and select the save icon. Open <strong>Files</strong> to find saved programs, import files, or export a LeRobot function.</li>
   </ol>
   <p>Type <code>robot.</code> for suggestions, or press Ctrl+Space. Use Ctrl+Enter or ⌘+Enter to preview. Press Esc to leave the editor.</p>
@@ -425,7 +454,7 @@ run_route(robot)</code></pre>
   <ol>
     <li>Read the current pose. For a first test, pick a wrist target a few degrees away and within its calibrated range.</li>
     <li>Preview the route in Simulation, then select <strong>Prepare deployment</strong>.</li>
-    <li>Review each target and check the full path with your teacher. Keep hands clear. Select <strong>Confirm and run route</strong> once.</li>
+    <li>Review each follower’s targets and check the full paths and clearance between arms with your teacher. The 3D preview shows separate models. Check real bench clearance. Keep hands clear and select <strong>Confirm and run route</strong> once.</li>
     <li>Watch the 3D preview follow the arm’s readings. Select <strong>Stop route</strong> if the arm moves unexpectedly.</li>
   </ol>
 </template>
@@ -484,14 +513,14 @@ run_route(robot)</code></pre>
 <script src="so101-tabletop-model.js?v=20261118-simultaneous"></script>
 <script src="so101-route-settings.js?v=20261118-simultaneous"></script>
 <script src="so101-viewer.js?v=side-panel"></script>
-<script src="pages-compiler.js?v=20261118-simultaneous"></script>
-<script src="pages-serial.js?v=usb-setup"></script>
-<script src="pages-arm.js?v=setup-flow"></script>
+<script src="pages-compiler.js?v=two-followers"></script>
+<script src="pages-serial.js?v=two-followers"></script>
+<script src="pages-arm.js?v=two-followers"></script>
 <script src="vendor/codemirror.js"></script>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
-<script src="python-editor.js?v=export-editor"></script>
+<script src="python-editor.js?v=two-followers"></script>
 <script src="codebook.js?v=code-colors"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=setup-flow"></script>
+<script src="studio.js?v=two-followers"></script>
 </html>
