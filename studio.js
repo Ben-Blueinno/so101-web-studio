@@ -231,8 +231,6 @@ hook("expand-editor", () => {
 code.oninput = () => {
   updateLineNumbers();
   resetPreview();
-  get("export-code").hidden = true;
-  get("copy-function").disabled = get("download-function").disabled = true;
   previewStatus.textContent = "Program changed. Preview the current version.";
 };
 code.onkeydown = event => {
@@ -546,30 +544,66 @@ hook("program-download", () => {
   const filename = get("program-name").value.replace(/[^\w-]/g, "-") || "my-route";
   downloadPython(code.value, filename);
 });
+const exportDialog = get("export-dialog");
 const exportStatus = get("export-status");
 const exportCode = get("export-code");
-hook("generate-function", async () => {
+const exportFrame = get("export-frame");
+const exportLoading = get("export-loading");
+let exportEditor, exportGeneration = 0;
+
+get("generate-function").onclick = async () => {
   const source = code.value;
-  const {code: generated} = await api("export-lerobot", {source, label: get("arm-profile").value});
-  if (source !== code.value) return;
-  exportCode.value = generated;
-  exportCode.hidden = false;
-  get("copy-function").disabled = get("download-function").disabled = false;
-  exportStatus.textContent = "Import run_route from the downloaded module and pass your connected follower.";
-}, exportStatus);
+  const generation = ++exportGeneration;
+  const isCurrent = () => generation === exportGeneration && exportDialog.open;
+  exportStatus.textContent = "";
+  exportFrame.hidden = true;
+  exportLoading.hidden = false;
+  get("copy-function").disabled = get("download-function").disabled = true;
+  exportDialog.showModal();
+  try {
+    const {code: generated} = await api("export-lerobot", {source, label: get("arm-profile").value});
+    if (!isCurrent()) return;
+    exportCode.value = generated;
+    exportFrame.hidden = false;
+    if (exportEditor) {
+      exportEditor.setValue(generated);
+      exportEditor.clearHistory();
+    } else {
+      exportEditor = attachPythonEditor(exportCode, {escape: () => exportDialog.close()});
+      exportFrame.classList.toggle("enhanced", Boolean(exportEditor));
+    }
+    exportEditor?.refresh();
+    get("copy-function").disabled = get("download-function").disabled = false;
+  } catch (error) {
+    if (isCurrent()) exportStatus.textContent = error.message;
+  } finally {
+    if (isCurrent()) exportLoading.hidden = true;
+  }
+};
+
+function generatedCode() {
+  return exportEditor?.getValue() ?? exportCode.value;
+}
+
 hook("copy-function", async () => {
   try {
-    await navigator.clipboard.writeText(exportCode.value);
-    exportStatus.textContent = "Copied the LeRobot function and its route data.";
+    await navigator.clipboard.writeText(generatedCode());
+    if (exportDialog.open) exportStatus.textContent = "Copied.";
   } catch {
-    exportCode.focus();
-    exportCode.select();
+    if (!exportDialog.open) return;
+    if (exportEditor) {
+      exportEditor.focus();
+      exportEditor.execCommand("selectAll");
+    } else {
+      exportCode.focus();
+      exportCode.select();
+    }
     exportStatus.textContent = "Code selected. Copy it with Ctrl+C or Command+C.";
   }
 }, exportStatus);
 hook("download-function", () => {
   const filename = get("program-name").value.replace(/\W+/g, "_").replace(/^\d/, "_$&") || "my_route";
-  downloadPython(exportCode.value, filename + "_lerobot");
+  downloadPython(generatedCode(), filename + "_lerobot");
 }, exportStatus);
 hook("program-import", () => get("program-file").click());
 get("program-file").onchange = async event => {
@@ -800,51 +834,57 @@ hook("profile-remove", async () => {
   populateProfile();
   settingsStatus.textContent = `Follower ${label} removed.`;
 }, settingsStatus);
+const calFilesStatus = get("cal-files-status");
 hook("cal-view", async () => {
   const name = calibrationLibrary.value;
   if (!name) throw new Error("Select a calibration file first.");
   get("cal-text").value = (await api("cal-view", {name})).text;
   get("cal-name").value = name.replace(/\.json$/i, "");
-}, settingsStatus);
-hook("cal-import", () => get("cal-file").click(), settingsStatus);
+}, calFilesStatus);
+hook("cal-import", () => get("cal-file").click(), calFilesStatus);
 get("cal-file").onchange = async event => {
   const file = event.target.files[0];
   event.target.value = "";
   if (!file) return;
   if (file.size > 16384) {
-    settingsStatus.textContent = "Calibration file is too large.";
+    calFilesStatus.textContent = "Calibration file is too large.";
     return;
   }
   get("cal-text").value = await file.text();
   get("cal-name").value = file.name.replace(/\.json$/i, "");
-  settingsStatus.textContent = "Save calibration to create a managed copy.";
+  calFilesStatus.textContent = "Save calibration to create a managed copy.";
 };
 hook("cal-new", () => {
   get("cal-text").value = "";
   get("cal-name").value = "";
-}, settingsStatus);
+  get("cal-name").focus();
+  calFilesStatus.textContent = "";
+}, calFilesStatus);
 hook("cal-save", async () => {
   const name = get("cal-name").value.trim();
   const replace = settings.files.some(file => file.toLowerCase() === (name + ".json").toLowerCase());
   if (replace && !await confirmAction("Replace this copy and archive the earlier version?")) return;
   showSettings(await api("cal-save", {name, text: get("cal-text").value, replace}), name + ".json");
-  settingsStatus.textContent = "Calibration copy saved.";
-}, settingsStatus);
+  calFilesStatus.textContent = "Calibration copy saved.";
+}, calFilesStatus);
 hook("cal-use", () => {
   if (!calibrationLibrary.value) throw new Error("Select a saved calibration file.");
   get("profile-calibration").value = "calibrations/" + calibrationLibrary.value;
-  settingsStatus.textContent = "Select Save profile to assign this calibration.";
-}, settingsStatus);
+  calFilesStatus.textContent = "Select Save profile to assign this calibration.";
+}, calFilesStatus);
 hook("cal-archive", async () => {
   const name = calibrationLibrary.value;
   if (!name || !await confirmAction(`Archive ${name}?`)) return;
   showSettings(await api("cal-archive", {name}));
-  settingsStatus.textContent = "Calibration copy archived.";
-}, settingsStatus);
+  calFilesStatus.textContent = "Calibration copy archived.";
+}, calFilesStatus);
 
 async function boot() {
   code.value = hostedPython.example;
-  pythonEditor = attachPythonEditor(code, () => get("preview").click());
+  pythonEditor = attachPythonEditor(code, {
+    preview: () => get("preview").click(),
+    escape: () => get("expand-editor").focus(),
+  });
   get("editor-frame").classList.toggle("enhanced", Boolean(pythonEditor));
   updateLineNumbers();
   showSettings(await api("settings"));

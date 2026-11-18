@@ -3,7 +3,7 @@
 const PYTHON_MODE = {name: "python", version: 3};
 const PYTHON_THEME = "material-darker";
 
-function attachPythonEditor(textarea, preview) {
+function attachPythonEditor(textarea, {preview, escape} = {}) {
   if (!window.CodeMirror) return;
   const methods = [
     {text: "send_action", displayText: "send_action(targets: dict[str, float])", className: "python-api-hint"},
@@ -49,15 +49,14 @@ function attachPythonEditor(textarea, preview) {
     indentUnit: 4,
     tabSize: 4,
     inputStyle: "contenteditable",
-    screenReaderLabel: "Python program",
+    screenReaderLabel: textarea.getAttribute("aria-label"),
     extraKeys: {
       Tab: editor => editor.somethingSelected() ? editor.indentSelection("add")
         : editor.replaceSelection("    "),
       "Shift-Tab": "indentLess",
       "Ctrl-Space": editor => editor.showHint({hint: cm => hints(cm, true), completeSingle: false}),
-      "Ctrl-Enter": preview,
-      "Cmd-Enter": preview,
-      Esc: () => document.getElementById("expand-editor").focus(),
+      ...(preview ? {"Ctrl-Enter": preview, "Cmd-Enter": preview} : {}),
+      ...(escape ? {Esc: escape} : {}),
     },
   });
   editor.on("change", () => {

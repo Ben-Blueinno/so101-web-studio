@@ -43,3 +43,7 @@
 .CodeMirror-hint-active { background: var(--selection); color: var(--ink); }
 .cm-s-material-darker.CodeMirror .python-api-hint { color: #b5d2ff; }
 #program.editor-expanded { grid-template-areas: "editor" "preview"; }
+
+#export-frame { padding-left: 0; }
+#export-frame .CodeMirror, #export-code { height: min(58dvh, 570px); }
+#export-code { border: 0; border-radius: 0; padding: 8px 10px; white-space: pre; }
