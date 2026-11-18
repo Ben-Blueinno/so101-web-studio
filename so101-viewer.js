@@ -78,13 +78,16 @@ function cameraMatrix(yaw, pitch, aspect, {target, distance}) {
 }
 
 const singleView = {yaw: -1.05, target: [0.13, 0, 0.10], distance: 0.64};
-const dualView = {yaw: 0.6, target: [-0.09, 0, 0.12], distance: 0.90};
-// XLeRobot simulation/xlerobot/xlerobot.urdf, fixed_Base and fixed_Base_2.
-// Normalize the shared mount height to the tabletop. The SO-101 mesh's pan
-// offset is along +X, while the XLeRobot reference arm's is along -Y.
+const dualView = {yaw: 0.6, target: [0, 0, 0.12], distance: 0.90};
+// XLeRobot de51ed34cfe29ba1ca6d910a8e656fff6fd949ae
+// simulation/Maniskill/assets/xlerobot/xlerobot.urdf, arm_base_joint[_2].
+// Bring the common 0.760 m mounting plane to tabletop height. The reference
+// arm's pan offset points along -Y, while our SO-101's points along +X.
+// Its +90-degree mounting yaw therefore corresponds to zero yaw here.
+// A uses the robot's right mount (-Y), and B uses its left mount (+Y).
 const xleRobotMounts = {
-  A: {position: [-0.09, -0.11, 0], yaw: -Math.PI / 2, tint: [0.48, 0.91, 0.77]},
-  B: {position: [-0.09, 0.11, 0], yaw: Math.PI / 2, tint: [0.56, 0.71, 0.99]},
+  A: {position: [-0.135, -0.133, 0], yaw: 0, tint: [0.48, 0.91, 0.77]},
+  B: {position: [-0.135, 0.133, 0], yaw: 0, tint: [0.56, 0.71, 0.99]},
 };
 
 function createViewer(canvas, model, resetButton = get("camera")) {
@@ -148,7 +151,7 @@ function createViewer(canvas, model, resetButton = get("camera")) {
     return [key, upload(points)];
   }));
   const bench = upload([-.19,-.23,0, .47,-.23,0, .47,.23,0, -.19,-.23,0, .47,.23,0, -.19,.23,0]);
-  const wideBench = upload([-.36,-.32,0, .24,-.32,0, .24,.32,0, -.36,-.32,0, .24,.32,0, -.36,.32,0]);
+  const wideBench = upload([-.30,-.34,0, .42,-.34,0, .42,.34,0, -.30,-.34,0, .42,.34,0, -.30,.34,0]);
   const root = transform([0,0,0], [0,0,0]);
   const mounts = Object.fromEntries(Object.entries(xleRobotMounts).map(([key, {position, yaw}]) =>
     [key, transform(position, [0, 0, yaw])]));

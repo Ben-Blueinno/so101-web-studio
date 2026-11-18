@@ -131,7 +131,8 @@ function sceneFollowers(labels, prefix, poses, active, mode) {
   get(prefix + "-label-b").hidden = labels.length < 2;
   return labels.map((label, index) => {
     const badge = get(prefix + "-label-" + (index ? "b" : "a"));
-    const name = "Follower " + label;
+    const side = labels.length === 2 ? (label === "A" ? " · Right" : " · Left") : "";
+    const name = "Follower " + label + side;
     if (badge.textContent !== name) badge.textContent = name;
     return {label, pose: poses[label], badge, motor: {joints: active[label] ?? [], mode}};
   });
@@ -1099,7 +1100,9 @@ async function chooseMode(id) {
 
 for (const [id, stage] of taskStages) {
   const title = taskTitle(stage) + (stage.dataset.requires ? " · Coming soon" : "");
-  modeSelector.add(new Option(title, id));
+  const option = new Option(title, id);
+  option.disabled = Boolean(stage.dataset.requires);
+  modeSelector.add(option);
   stage.querySelector("[data-stage-action]").onclick = () => {
     if (!stage.dataset.requires) {
       selectView("getting-started");
