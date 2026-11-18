@@ -12,7 +12,7 @@ const stepStatus = get("step-status");
 const motorStatus = get("active-motor");
 const programLibrary = get("program-library");
 const calibrationLibrary = get("cal-library");
-let render, renderB, initialized, currentStep, previewId;
+let render, initialized, currentStep, previewId;
 let armSnapshots = {}, simulatedPoses = {}, missingFollowers = [];
 let animation = 0, settings, moving = false, calibrating = false, actionPending = false;
 let compiling = false;
@@ -20,11 +20,12 @@ let simulating = false;
 let returningToRest = false;
 let routeStopped = false;
 let pythonEditor;
-const taskSelector = get("simulation-task");
+const modeSelector = get("robot-mode");
 const taskStages = new Map([...document.querySelectorAll("[data-task-stage]")].map(stage => [
   stage.dataset.taskStage, stage,
 ]));
-let activeTask = "single";
+let activeMode = "single";
+let cleanProgram, guideDraw, guideFrame;
 
 async function api(action, data = {}) {
   return hostedArm.request(action, data);
@@ -40,9 +41,10 @@ function hook(id, fn, status = programStatus) {
   };
 }
 
-function confirmAction(message) {
+function confirmAction(message, buttonText = "Continue") {
   const dialog = get("confirm-dialog");
   dialog.returnValue = "";
+  dialog.querySelector('button[value="confirm"]').textContent = buttonText;
   get("confirm-message").textContent = message;
   return new Promise(resolve => {
     dialog.addEventListener("close", () => resolve(dialog.returnValue === "confirm"), {once: true});
@@ -61,14 +63,16 @@ function selectView(view) {
     tab.tabIndex = current ? 0 : -1;
   }
   get("codebook-switch").hidden = view !== "program";
-  get("simulation-task-tools").hidden = view !== "program";
   if (view === "deployment") setCodebook(false);
   if (view === "program" || view === "deployment") {
     get(view).append(get("simulation-side-panel"));
   }
   if (view === "calibration") showArmSetup();
   if (view === "program") pythonEditor?.refresh();
-  if (view === "getting-started") initGuideDemo();
+  if (view === "getting-started") {
+    initGuideDemo();
+    resetGuideDemo();
+  } else cancelAnimationFrame(guideFrame);
 }
 
 for (const [index, tab] of tabs.entries()) {
@@ -119,33 +123,54 @@ get("show-help").onclick = () => {
   const tab = tabs.find(item => item.getAttribute("aria-selected") === "true");
   get("help-title").textContent = tab.textContent;
   get("help-content").replaceChildren(get("help-" + tab.dataset.view).content.cloneNode(true));
+  for (const item of get("help-content").querySelectorAll("[data-dual-only]")) item.hidden = activeMode !== "dual";
   get("help-dialog").showModal();
 };
 
-let guideReady = false;
+function sceneFollowers(labels, prefix, poses, active, mode) {
+  get(prefix + "-label-b").hidden = labels.length < 2;
+  return labels.map((label, index) => {
+    const badge = get(prefix + "-label-" + (index ? "b" : "a"));
+    const name = "Follower " + label;
+    if (badge.textContent !== name) badge.textContent = name;
+    return {label, pose: poses[label], badge, motor: {joints: active[label] ?? [], mode}};
+  });
+}
+
+function resetGuideDemo() {
+  cancelAnimationFrame(guideFrame);
+  if (!guideDraw) return;
+  get("guide-play").disabled = false;
+  get("guide-status").textContent = "";
+  const labels = activeMode === "dual" ? ["A", "B"] : [get("arm-profile").value];
+  guideDraw.scene(sceneFollowers(labels, "guide", {}, {}, "simulation"));
+}
+
 function initGuideDemo() {
-  if (guideReady) return;
-  guideReady = true;
+  if (guideDraw || get("guide-camera").disabled) return;
   const play = get("guide-play"), status = get("guide-status");
   try {
-    const draw = createViewer(get("guide-model"), SO101_MODEL, get("guide-camera"));
-    play.disabled = false;
+    guideDraw = createViewer(get("guide-model"), SO101_MODEL, get("guide-camera"));
+    resetGuideDemo();
     play.onclick = () => {
       play.disabled = true;
-      const motor = {joints: ["wrist_roll", "gripper"], mode: "simulation"};
-      status.textContent = "Moving wrist roll and gripper together…";
+      const labels = activeMode === "dual" ? ["A", "B"] : [get("arm-profile").value];
+      const active = Object.fromEntries(labels.map(label => [label, ["wrist_roll"]]));
+      status.textContent = labels.length === 2 ? "Both wrists turn together, then return." : "Wrist roll turns, then returns.";
       let started;
       function frame(now) {
         started ??= now;
-        const progress = Math.min(1, (now - started) / 1000);
-        draw({wrist_roll: -15 * progress, gripper: GRIP_HOME + (55 - GRIP_HOME) * progress}, motor);
-        if (progress < 1) requestAnimationFrame(frame);
+        const progress = Math.min(1, (now - started) / 1600);
+        const amount = 5 * (1 - Math.abs(2 * progress - 1));
+        const poses = Object.fromEntries(labels.map((label, index) => [label, {wrist_roll: index ? amount : -amount}]));
+        guideDraw.scene(sceneFollowers(labels, "guide", poses, progress < 1 ? active : {}, "simulation"));
+        if (progress < 1) guideFrame = requestAnimationFrame(frame);
         else {
           play.disabled = false;
-          status.textContent = "Wrist roll reached −15°. Gripper reached 55%.";
+          status.textContent = "Starter complete.";
         }
       }
-      requestAnimationFrame(frame);
+      guideFrame = requestAnimationFrame(frame);
     };
   } catch {
     get("guide-camera").disabled = true;
@@ -163,10 +188,10 @@ function updateControls() {
       : "Preview ready. Prepare deployment to review the joint targets.";
   }
   get("preview").disabled = !render || compiling || moving || Boolean(currentStep) || actionPending;
-  const taskLocked = compiling || simulating || moving || Boolean(currentStep) || actionPending;
-  taskSelector.disabled = get("load-task-starter").disabled = taskLocked;
+  const modeLocked = compiling || simulating || moving || calibrating || Boolean(currentStep) || actionPending;
+  modeSelector.disabled = modeLocked;
   for (const stage of taskStages.values()) {
-    if (!stage.dataset.requires) stage.querySelector("[data-stage-action]").disabled = taskLocked;
+    if (!stage.dataset.requires) stage.querySelector("[data-stage-action]").disabled = modeLocked;
   }
   get("move").disabled = moving || !currentStep || get("route-targets").hidden;
   get("stop-motion").disabled = !moving || !currentStep;
@@ -189,12 +214,12 @@ function updateControls() {
     pythonEditor.setOption("readOnly", code.readOnly);
   }
   const bridge = hostedArm.mode === "bridge";
-  if (bridge && initialized) get("arm-profile").disabled = true;
+  if (activeMode === "single" && anyConnected) get("arm-profile").disabled = true;
   const paired = Boolean(hostedArm.mode);
   const blocked = paired || calibrating || actionPending || compiling || simulating;
-  get("connect-usb").disabled = bridge || Boolean(initialized) || calibrating || actionPending
+  get("connect-usb").disabled = bridge || (activeMode === "dual" ? Boolean(initialized) : anyConnected) || calibrating || actionPending
     || compiling || simulating || Boolean(currentStep) || moving || !hostedArm.supportsUSB;
-  get("pair-bridge").disabled = blocked;
+  get("pair-bridge").disabled = blocked || activeMode === "dual";
   get("init").disabled ||= !bridge;
   get("cal-read").disabled ||= !paired && !hostedArm.supportsUSB;
   get("cal-apply").disabled ||= !bridge && (!hostedArm.supportsUSB || !assignedCalibration());
@@ -208,25 +233,8 @@ function updateControls() {
 
 function drawScene(poses, active = {}, mode) {
   const selected = get("arm-profile").value;
-  const labels = activeTask === "dual" ? ["A", "B"] : Object.keys(poses).sort();
-  if (!labels.length) labels.push(selected);
-  const dual = labels.length > 1;
-  get("dual-viewport").classList.toggle("has-two-arms", dual);
-  get("arm-b-view").hidden = !dual;
-  const title = "Follower " + labels[0];
-  if (get("arm-a-title").textContent !== title) get("arm-a-title").textContent = title;
-  const options = label => active[label]?.length ? {joints: active[label], mode} : undefined;
-  render?.(poses[labels[0]] ?? {}, options(labels[0]));
-  if (dual && !renderB) {
-    try {
-      renderB = createViewer(get("viewer-b"), SO101_MODEL, get("camera-b"));
-    } catch {
-      renderB = () => {};
-      get("arm-b-status").textContent = "Follower B’s 3D view is unavailable.";
-      get("camera-b").disabled = true;
-    }
-  }
-  if (dual) renderB?.(poses.B ?? {}, options("B"));
+  const labels = activeMode === "dual" ? ["A", "B"] : [selected];
+  if (render) render.scene(sceneFollowers(labels, "viewer", poses, active, mode));
   const motors = Object.entries(active).flatMap(([label, joints]) =>
     joints.map(joint => `${label} · ${JOINTS[joint]}`));
   motorStatus.hidden = !motors.length;
@@ -405,7 +413,7 @@ hook("preview", async () => {
   try {
     if (hostedArm.mode === "usb") acceptArms((await api("read-poses")).arms);
     else if (initialized) connected(await api("read-pose"));
-    const result = await api("compile", {source: code.value, label: get("arm-profile").value});
+    const result = await api("compile", {source: code.value, label: get("arm-profile").value, mode: activeMode});
     if (version !== animation) return;
     programStatus.textContent = `Validated ${result.route.steps.length} moves.`;
     if (!get("program").hidden && (!get("codebook-panel").hidden || matchMedia("(max-width: 820px)").matches)) {
@@ -584,9 +592,15 @@ hook("program-save", async () => {
   if (existing >= 0) programs[existing].text = code.value;
   else programs.push({name, text: code.value});
   localStorage.setItem(key, JSON.stringify(programs));
+  get("program-name").value = name;
+  markProgramClean();
   listPrograms(name);
   programStatus.textContent = `Saved “${name}” in this browser.`;
 });
+function markProgramClean() {
+  cleanProgram = {text: code.value, name: get("program-name").value};
+}
+
 function openCode(text, name) {
   if (code.readOnly) throw new Error("Finish or discard the active deployment first.");
   if (pythonEditor) pythonEditor.setValue(text);
@@ -616,6 +630,7 @@ hook("program-open", () => {
   const saved = listing().find(item => item.name === programLibrary.value);
   if (!saved) throw new Error("Choose a saved program.");
   openCode(saved.text, saved.name);
+  markProgramClean();
   savedProgramsDialog.close();
 }, savedProgramsStatus);
 hook("program-delete", async () => {
@@ -1023,52 +1038,86 @@ function taskTitle(stage) {
   return stage.querySelector("[data-stage-action]").textContent.trim();
 }
 
-function chooseTask(id) {
+function showMode() {
+  const dual = activeMode === "dual";
+  get("mode-status").textContent = taskTitle(taskStages.get(activeMode));
+  get("guide-model").setAttribute("aria-label", dual
+    ? "Two SO-101 arms in the XLeRobot layout. Drag or use arrow keys to orbit."
+    : "One SO-101 arm. Drag or use arrow keys to orbit.");
+  get("viewer").setAttribute("aria-label", get("guide-model").getAttribute("aria-label"));
+  get("guide-connect-step").textContent = dual ? "Connect both followers by USB." : "Plug in USB and motor power.";
+  get("guide-calibrate-step").textContent = dual ? "Set ranges for each arm." : "Set ranges for this arm.";
+  get("follower-connections").hidden = !dual;
+  get("codebook-dual-example").hidden = !dual;
+  get("bridge-option").hidden = dual;
+  resetGuideDemo();
+}
+
+async function chooseMode(id) {
+  selectStudioValue(modeSelector, activeMode);
   const stage = taskStages.get(id);
-  if (!stage) return false;
+  if (!stage || id === activeMode) return;
+  get("mode-message").textContent = "";
   if (stage.dataset.requires) {
-    selectStudioValue(taskSelector, activeTask);
     get("task-title").textContent = taskTitle(stage) + " · Coming soon";
     get("task-description").textContent = stage.querySelector("p").textContent;
     get("task-requirements").textContent = stage.dataset.requires;
     get("task-details").showModal();
-    return false;
+    return;
   }
-  if (taskSelector.disabled) return false;
-  selectStudioValue(taskSelector, id);
-  if (id !== activeTask) {
-    activeTask = id;
-    resetPreview();
-    previewStatus.textContent = "Task selected. Preview your program or load the starter route.";
+  if (modeSelector.disabled) return;
+  if (id === "single" && Object.keys(armSnapshots).length > 1) {
+    get("mode-message").textContent = "Disconnect one follower in USB connection before switching.";
+    return;
   }
-  return true;
+  if (id === "dual" && hostedArm.mode === "bridge") {
+    get("mode-message").textContent = "Two-follower mode uses direct USB. End the bridge session before switching.";
+    return;
+  }
+  if (code.value !== cleanProgram.text || get("program-name").value !== cleanProgram.name) {
+    const proceed = await confirmAction(
+      "You have unsaved changes. Switching mode replaces the editor with the new starter. To keep your changes, cancel and save in Simulation.",
+      "Switch mode",
+    );
+    if (!proceed) return;
+  }
+  activeMode = id;
+  selectStudioValue(modeSelector, id);
+  const [connectedLabel] = Object.keys(armSnapshots);
+  if (id === "single" && connectedLabel) {
+    selectStudioValue(get("arm-profile"), connectedLabel);
+    get("arm-profile").onchange();
+  }
+  const dual = id === "dual";
+  openCode(dual ? dualStarter : hostedPython.example, dual ? "two-followers" : "one-follower");
+  markProgramClean();
+  programStatus.textContent = "";
+  previewStatus.textContent = "Starter loaded. Run it to see the route.";
+  showMode();
+  resetPreview();
 }
 
 for (const [id, stage] of taskStages) {
   const title = taskTitle(stage) + (stage.dataset.requires ? " · Coming soon" : "");
-  taskSelector.add(new Option(title, id));
+  modeSelector.add(new Option(title, id));
   stage.querySelector("[data-stage-action]").onclick = () => {
-    if (!chooseTask(id)) return;
-    selectView("program");
-    get("simulation-task-trigger").focus();
+    if (!stage.dataset.requires) {
+      selectView("getting-started");
+      get("robot-mode-trigger").focus();
+    }
+    return chooseMode(id);
   };
 }
-taskSelector.onchange = () => chooseTask(taskSelector.value);
-hook("load-task-starter", async () => {
-  const starter = activeTask === "dual" ? dualStarter : hostedPython.example;
-  const current = code.value.trim();
-  if (current === starter.trim()) return;
-  if (current && current !== hostedPython.example.trim() && current !== dualStarter.trim()) {
-    if (!await confirmAction("Replace the current editor text with the starter route?")) return;
-  }
-  openCode(starter, activeTask === "dual" ? "two-followers" : "one-follower");
-});
+modeSelector.onchange = () => chooseMode(modeSelector.value);
 
 async function boot() {
   code.value = hostedPython.example;
+  get("program-name").value = "one-follower";
+  markProgramClean();
   pythonEditor = attachPythonEditor(code, {
     preview: () => get("preview").click(),
     escape: () => get("expand-editor").focus(),
+    dualFollower: () => activeMode === "dual",
   });
   get("editor-frame").classList.toggle("enhanced", Boolean(pythonEditor));
   updateLineNumbers();
@@ -1085,6 +1134,8 @@ async function boot() {
     programStatus.textContent = "Browser storage is unavailable. You can download your program.";
   }
   render = createViewer(get("viewer"), SO101_MODEL);
+  showMode();
+  drawPose({});
   const views = {"#codebook": "program", "#simulation": "program", "#coming-soon": "roadmap", "#about": "about"};
   selectView(views[location.hash] ?? "getting-started");
   if (location.hash === "#codebook") setCodebook(true);
@@ -1094,7 +1145,7 @@ async function boot() {
 }
 
 armAction("connect-usb", async () => {
-  const result = await hostedArm.connectUSB(get("arm-profile").value);
+  const result = await hostedArm.connectUSB(get("arm-profile").value, activeMode);
   showSettings(await api("settings"));
   populateProfile();
   connected(result);
@@ -1104,7 +1155,7 @@ armAction("connect-usb", async () => {
 
 get("bridge-form").onsubmit = event => {
   event.preventDefault();
-  if (actionPending || hostedArm.mode) return;
+  if (actionPending || hostedArm.mode || activeMode !== "single") return;
   actionPending = true;
   updateControls();
   hostedArm.pair(get("bridge-code").value.trim()).then(async session => {

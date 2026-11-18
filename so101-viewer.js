@@ -64,10 +64,9 @@ function transform(xyz, [r, p, y]) {
   matrix.splice(12, 3, ...xyz);
   return matrix;
 }
-function cameraMatrix(yaw, pitch, aspect) {
-  const target = [0.13, 0, 0.10];
+function cameraMatrix(yaw, pitch, aspect, {target, distance}) {
   const back = [Math.cos(yaw) * Math.cos(pitch), Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch)];
-  const eye = target.map((value, i) => value + 0.64 * back[i]);
+  const eye = target.map((value, i) => value + distance * back[i]);
   const right = normalize(cross([0, 0, 1], back)), up = cross(back, right);
   const view = [
     right[0], up[0], back[0], 0, right[1], up[1], back[1], 0, right[2], up[2], back[2], 0,
@@ -77,6 +76,16 @@ function cameraMatrix(yaw, pitch, aspect) {
   return multiply([f/aspect,0,0,0, 0,f,0,0, 0,0,(near+far)/(near-far),-1,
     0,0,2*near*far/(near-far),0], view);
 }
+
+const singleView = {yaw: -1.05, target: [0.13, 0, 0.10], distance: 0.64};
+const dualView = {yaw: 0.6, target: [-0.09, 0, 0.12], distance: 0.90};
+// XLeRobot simulation/xlerobot/xlerobot.urdf, fixed_Base and fixed_Base_2.
+// Normalize the shared mount height to the tabletop. The SO-101 mesh's pan
+// offset is along +X, while the XLeRobot reference arm's is along -Y.
+const xleRobotMounts = {
+  A: {position: [-0.09, -0.11, 0], yaw: -Math.PI / 2, tint: [0.48, 0.91, 0.77]},
+  B: {position: [-0.09, 0.11, 0], yaw: Math.PI / 2, tint: [0.56, 0.71, 0.99]},
+};
 
 function createViewer(canvas, model, resetButton = get("camera")) {
   const gl = canvas.getContext("webgl", {antialias: true});
@@ -139,10 +148,13 @@ function createViewer(canvas, model, resetButton = get("camera")) {
     return [key, upload(points)];
   }));
   const bench = upload([-.19,-.23,0, .47,-.23,0, .47,.23,0, -.19,-.23,0, .47,.23,0, -.19,.23,0]);
+  const wideBench = upload([-.36,-.32,0, .24,-.32,0, .24,.32,0, -.36,-.32,0, .24,.32,0, -.36,.32,0]);
   const root = transform([0,0,0], [0,0,0]);
+  const mounts = Object.fromEntries(Object.entries(xleRobotMounts).map(([key, {position, yaw}]) =>
+    [key, transform(position, [0, 0, yaw])]));
   // Each SO-101 servo is mounted on the parent link of the joint it drives.
   const motorLinks = Object.fromEntries(model.joints.map(([joint, parent]) => [joint, parent]));
-  let yaw = -1.05, pitch = 0.47, pose = {}, pointer, activeMotor;
+  let view = singleView, yaw = view.yaw, pitch = 0.47, pointer, instances = [{}];
   function part([buffer, length], matrix, tint) {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.vertexAttribPointer(positions, 3, gl.FLOAT, false, 24, 0);
@@ -151,16 +163,7 @@ function createViewer(canvas, model, resetButton = get("camera")) {
     gl.uniform3fv(color, tint);
     gl.drawArrays(gl.TRIANGLES, 0, length);
   }
-  function render(offsets, motor) {
-    if (offsets !== undefined) {
-      pose = offsets;
-      activeMotor = motor;
-    }
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0.062, 0.11, 0.115, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.uniformMatrix4fv(camera, false, cameraMatrix(yaw, pitch, canvas.width / canvas.height));
-    part(bench, transform([0,0,-0.008], [0,0,0]), [0.13,0.21,0.22]);
+  function drawArm(pose, activeMotor, root, bodyTint) {
     const frames = {base_link: root};
     for (const [name, parent, child, xyz, rpy, axis] of model.joints) {
       const angle = name === "gripper"
@@ -174,15 +177,52 @@ function createViewer(canvas, model, resetButton = get("camera")) {
         const highlighted = isServo && (activeMotor?.joints ?? [activeMotor?.joint])
           .some(joint => link === motorLinks[joint]);
         const highlight = activeMotor?.mode === "physical" ? [0.25,0.80,1] : [1,0.74,0.20];
-        const tint = highlighted ? highlight : isServo ? [0.39,0.45,0.48] : [0.48,0.91,0.77];
+        const tint = highlighted ? highlight : isServo ? [0.39,0.45,0.48] : bodyTint;
         part(meshes[mesh], multiply(frames[link], transform(xyz, rpy)), tint);
       }
     }
   }
+  function drawFrame() {
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.062, 0.11, 0.115, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    const matrix = cameraMatrix(yaw, pitch, canvas.width / canvas.height, view);
+    gl.uniformMatrix4fv(camera, false, matrix);
+    part(view === dualView ? wideBench : bench, transform([0,0,-0.008], [0,0,0]), [0.13,0.21,0.22]);
+    for (const {label, pose = {}, motor, badge} of instances) {
+      const mount = view === dualView ? xleRobotMounts[label] : undefined;
+      drawArm(pose, motor, mount ? mounts[label] : root, mount?.tint ?? xleRobotMounts.A.tint);
+      if (badge) {
+        const point = mount?.position ?? [0, 0, 0];
+        const [x, y, , w] = [0, 1, 2, 3].map(row =>
+          matrix[row] * point[0] + matrix[row + 4] * point[1] + matrix[row + 12]);
+        badge.hidden = false;
+        badge.style.left = (50 + 50 * x / w) + "%";
+        badge.style.top = (50 - 50 * y / w) + "%";
+      }
+    }
+  }
+  function render(offsets, motor) {
+    render.scene([{pose: offsets, motor}]);
+  }
+  function resetView() {
+    yaw = view.yaw;
+    pitch = .47;
+    drawFrame();
+  }
+  render.scene = next => {
+    const nextView = next.length === 2 ? dualView : singleView;
+    instances = next;
+    if (nextView === view) drawFrame();
+    else {
+      view = nextView;
+      resetView();
+    }
+  };
   function orbit(dx, dy) {
     yaw -= dx;
     pitch = Math.max(-0.25, Math.min(1.35, pitch + dy));
-    render();
+    drawFrame();
   }
   canvas.addEventListener("pointerdown", event => {
     canvas.setPointerCapture(event.pointerId);
@@ -200,7 +240,7 @@ function createViewer(canvas, model, resetButton = get("camera")) {
     event.preventDefault();
     orbit(...moves[event.key]);
   });
-  if (resetButton) resetButton.onclick = () => { yaw = -1.05; pitch = .47; render(); };
-  render();
+  if (resetButton) resetButton.onclick = resetView;
+  drawFrame();
   return render;
 }

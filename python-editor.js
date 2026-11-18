@@ -3,7 +3,7 @@
 const PYTHON_MODE = {name: "python", version: 3};
 const PYTHON_THEME = "material-darker";
 
-function attachPythonEditor(textarea, {preview, escape} = {}) {
+function attachPythonEditor(textarea, {preview, escape, dualFollower = () => false} = {}) {
   if (!window.CodeMirror) return;
   const methods = [
     {text: "send_action", displayText: "send_action(targets: dict[str, float])", className: "python-api-hint"},
@@ -21,7 +21,7 @@ function attachPythonEditor(textarea, {preview, escape} = {}) {
     if (token.type?.includes("comment")) return;
     if (quotedKey) {
       partial = quotedKey[1];
-      const prefixes = partial.startsWith("A") ? ["A."] : partial.startsWith("B") ? ["B."] : ["", "A.", "B."];
+      const prefixes = dualFollower() ? ["", "A.", "B."] : [""];
       list = prefixes.flatMap(prefix => Object.entries(JOINTS).map(([joint, name]) => ({
         text: prefix + joint + ".pos",
         displayText: prefix + joint + ".pos — " + name + (joint === "gripper" ? " (%)" : " (degrees)"),

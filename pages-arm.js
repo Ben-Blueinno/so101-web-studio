@@ -99,7 +99,8 @@ const hostedArm = (() => {
     }));
   }
 
-  async function connectUSB(label) {
+  async function connectUSB(label, mode) {
+    if (mode === "single" && followers.size) throw new Error("Disconnect the current follower before connecting another in this mode.");
     if (code || followers.has(label) || busy || replay || calibrationSession) throw new Error("Finish calibration or disconnect the active arm first.");
     busy = true;
     let bus;
@@ -164,6 +165,9 @@ const hostedArm = (() => {
       const actions = routeActions(step).map(action => {
         const {follower: explicit, position_deg: fixed, ...target} = action;
         const label = explicit ?? data.label;
+        if (data.mode === "single" && label !== data.label) {
+          throw new Error("This route targets another follower. Choose Two tabletop followers in Start here.");
+        }
         const {joint} = target;
         if (!stored.profiles[label]) throw new Error("Choose follower A or B.");
         const key = label + "." + joint;
