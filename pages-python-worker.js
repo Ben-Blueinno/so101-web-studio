@@ -7,7 +7,9 @@ async function load() {
   const {loadPyodide} = await import(runtimeURL + "pyodide.mjs");
   const python = await loadPyodide({indexURL: runtimeURL});
   for (const file of ["program_editor.py", "lerobot_export.py"]) {
-    const response = await fetch(file);
+    const url = new URL(file, self.location.href);
+    url.search = self.location.search;
+    const response = await fetch(url);
     if (!response.ok) throw new Error(`Could not load ${file}.`);
     python.FS.writeFile(file, await response.text());
   }

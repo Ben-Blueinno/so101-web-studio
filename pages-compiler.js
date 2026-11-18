@@ -3,9 +3,12 @@
 const hostedPython = (() => {
   let worker, nextId = 0;
   const requests = new Map();
+  const scriptURL = new URL(document.currentScript.src);
+  const workerURL = new URL("pages-python-worker.js", scriptURL);
+  workerURL.search = scriptURL.search;
 
   function startWorker() {
-    const runtime = new Worker("pages-python-worker.js", {type: "module"});
+    const runtime = new Worker(workerURL, {type: "module"});
     runtime.onmessage = ({data: {id, value, error}}) => {
       const request = requests.get(id);
       if (!request) return;
