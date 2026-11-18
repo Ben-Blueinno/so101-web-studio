@@ -126,7 +126,9 @@ get("show-help").onclick = () => {
   const tab = tabs.find(item => item.getAttribute("aria-selected") === "true");
   get("help-title").textContent = tab.textContent;
   get("help-content").replaceChildren(get("help-" + tab.dataset.view).content.cloneNode(true));
-  for (const item of get("help-content").querySelectorAll("[data-dual-only]")) item.hidden = activeMode !== "dual";
+  for (const item of get("help-content").querySelectorAll("[data-mode]")) {
+    if (item.dataset.mode !== activeMode) item.remove();
+  }
   get("help-dialog").showModal();
 };
 
@@ -946,6 +948,7 @@ function showArmSetup() {
     setupFollower = label;
   }
   const assigned = assignedCalibration();
+  updateCodebookMode(activeMode === "dual", label);
   const title = "Follower " + label + (activeMode === "dual" ? (label === "A" ? " · Right" : " · Left") : "");
   get("cal-follower").textContent = title;
   get("hardware-title").textContent = activeMode === "dual" ? "Connect both followers" : "Connect follower A";
@@ -1098,6 +1101,10 @@ function showMode() {
   get("guide-calibrate-step").textContent = dual ? "Set ranges for each arm." : "Set ranges for this arm.";
   get("follower-connections").hidden = !dual;
   get("codebook-dual-example").hidden = !dual;
+  for (const section of get("codebook-panel").querySelectorAll("[data-mode]")) {
+    section.hidden = section.dataset.mode !== activeMode;
+  }
+  updateCodebookMode(dual, get("arm-profile").value);
   get("bridge-option").hidden = dual;
   get("settings-follower-field").hidden = true;
   const labels = dual ? ["A", "B"] : ["A"];

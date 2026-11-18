@@ -60,11 +60,14 @@ def compile_program(source):
             fail(node, "Number is outside the supported range.")
         return number
 
-    def target_for(call, joint, field, amount):
+    def target_for(call, joint, field, amount, follower=None):
         low, high = (-360, 360) if native and joint != "gripper" else MODEL_LIMITS[joint]
         if not low <= amount <= high:
             fail(call, f"{joint} must be between {low:g} and {high:g}.")
-        return {"joint": joint, field: amount}
+        result = {"joint": joint, field: amount}
+        if follower:
+            result["follower"] = follower
+        return result
 
     def add_step(call, step):
         if len(steps) >= 32:
@@ -105,18 +108,15 @@ def compile_program(source):
                 fail(call, "Use A. or B. to select a follower.")
         if joint not in MODEL_LIMITS:
             fail(call, f"Unknown SO-101 joint {joint!r}.")
-        if follower:
-            field = "position_pct" if joint == "gripper" else "position_deg"
-            return {**target_for(call, joint, field, value(target)), "follower": follower}
         if joint == "gripper":
-            return target_for(call, joint, "position_pct", value(target))
+            return target_for(call, joint, "position_pct", value(target), follower)
         if baseline(target, key.value):
-            return target_for(call, joint, "offset_deg", 0)
+            return target_for(call, joint, "offset_deg", 0, follower)
         if (isinstance(target, ast.BinOp) and isinstance(target.op, (ast.Add, ast.Sub))
                 and baseline(target.left, key.value)):
             delta = value(target.right)
-            return target_for(call, joint, "offset_deg", -delta if isinstance(target.op, ast.Sub) else delta)
-        return target_for(call, joint, "position_deg", value(target))
+            return target_for(call, joint, "offset_deg", -delta if isinstance(target.op, ast.Sub) else delta, follower)
+        return target_for(call, joint, "position_deg", value(target), follower)
 
     def visit(body):
         nonlocal budget

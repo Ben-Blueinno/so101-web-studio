@@ -17,6 +17,20 @@ function initCodebookModel() {
   }
 }
 
+function updateCodebookMode(dual, label) {
+  get("codebook-mode-note").textContent = dual
+    ? "A is right and B is left. The basic examples use the active follower. Use the two-arm example to move both together."
+    : "These examples control follower A. Joint angles use degrees and the gripper uses percent.";
+  for (const button of motorButtons) {
+    const key = (dual ? label + "." : "") + button.dataset.motor + ".pos";
+    button.querySelector("code").textContent = key;
+    const copy = button.closest("tr").querySelector("[data-copy-key]");
+    copy.dataset.copyKey = key;
+    copy.setAttribute("aria-label", "Copy " + key);
+  }
+  get("codebook-copy-status").textContent = "";
+}
+
 function defaultRange(joint) {
   const unit = joint === "gripper" ? "%" : "°";
   return LIMITS[joint].map(value => String(value).replace("-", "−") + unit).join(" to ");
@@ -39,10 +53,10 @@ selectMotor(motorButtons[0]);
 
 for (const button of document.querySelectorAll(".copy-codebook")) {
   const example = button.dataset.copyExample ? get(button.dataset.copyExample) : undefined;
-  const key = button.dataset.copyKey;
   const icon = button.querySelector("use");
   let feedbackTimer;
   button.onclick = async () => {
+    const key = button.dataset.copyKey;
     try {
       await navigator.clipboard.writeText(example?.textContent ?? key);
       codebookCopyStatus.textContent = example ? "Python example copied." : `Copied ${key}`;

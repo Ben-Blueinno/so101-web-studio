@@ -142,6 +142,7 @@
       <button id="close-codebook" class="icon-action" type="button" aria-label="Close Codebook"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-close"/></svg></button>
     </div>
       <div class="codebook-body" tabindex="0" role="region" aria-label="Python examples and motor reference">
+        <p id="codebook-mode-note"></p>
         <h3>Motor ranges</h3>
         <p id="range-note">Select a motor to highlight it. Use the copy icon for its Python key. A connected arm uses its own calibration.</p>
         <div class="motor-guide">
@@ -186,7 +187,7 @@
     start = robot.get_observation()
     robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + 8})
     robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
-        <p><code>get_observation()</code> reads all six starting positions. <code>start["shoulder_pan.pos"]</code> picks the base angle from those readings. If it starts at 10°, adding 8 sends it to 18°. The last line sends it back to 10°. You can skip the observation line when all targets are fixed numbers.</p>
+        <p><code>get_observation()</code> records the route’s starting positions. <code>start["shoulder_pan.pos"]</code> picks the base angle from those readings. If it starts at 10°, adding 8 sends it to 18°. The last line sends it back to 10°. You can skip the observation line when all targets are fixed numbers.</p>
 
         <div class="code-example-title"><h3>3. Open and close the gripper</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-3" aria-label="Copy example — 3. Open and close the gripper"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-3">def route(robot):
@@ -206,17 +207,24 @@
         <p>Try grouped moves in the 3D preview first. For a physical run, connect a calibrated arm by USB and check the path of all moving joints together before confirming.</p>
 
         <section id="codebook-dual-example" hidden>
-        <div class="code-example-title"><h3>Move both followers together</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-5" aria-label="Copy example — Move both followers together"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
+        <div class="code-example-title"><h3>Move both arms and return to rest</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-5" aria-label="Copy example — Move both arms and return to rest"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-5">def route(robot):
+    start = robot.get_observation()
     robot.send_action({
-        "A.wrist_roll.pos": -5,
-        "B.wrist_roll.pos": 5,
+        "A.wrist_roll.pos": start["A.wrist_roll.pos"] - 5,
+        "B.wrist_roll.pos": start["B.wrist_roll.pos"] + 5,
     })
     robot.send_action({
-        "A.wrist_roll.pos": 0,
-        "B.wrist_roll.pos": 0,
+        "A.wrist_roll.pos": start["A.wrist_roll.pos"],
+        "B.wrist_roll.pos": start["B.wrist_roll.pos"],
     })</code></pre>
-        <p>Use A. and B. to choose a follower. Unprefixed keys use the selected follower. Targets in one call share a step. Check clearance between the real arms before running.</p>
+        <ol>
+          <li>A is the robot’s right arm. B is its left arm. Both face forward in the shared preview.</li>
+          <li><code>start</code> records the starting positions. Each wrist’s starting angle is its rest target for this exercise.</li>
+          <li>The first call moves A’s wrist −5° and B’s wrist +5° together. The second call returns both to their recorded angles.</li>
+          <li>Preview first. Watch both wrist motors highlight during each step, then clear when the route ends.</li>
+        </ol>
+        <p>For a physical run, connect both arms and read each current pose before previewing. To start from saved rest, select each follower in USB connection and use its Return to rest control first.</p>
         </section>
         <div class="code-example-title"><h3>5. Repeat a move with a loop</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-6" aria-label="Copy example — 5. Repeat a move with a loop"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <pre><code id="codebook-example-6">def route(robot):
@@ -227,11 +235,18 @@
         robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
         <p><code>range(2)</code> repeats the indented lines twice. Python starts counting at 0, so the first turn adds 6° and the second adds 8°. Change <code>turn</code> to 3 and predict both turns before previewing. Keep each route to 32 moves or fewer.</p>
 
+        <section data-mode="single">
         <div class="code-example-title"><h3>Export to your project</h3><button type="button" class="icon-action copy-codebook" data-copy-example="codebook-example-7" aria-label="Copy example — Export to your project"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-copy"/></svg></button></div>
         <p>Open <strong>Files</strong> and choose <strong>Generate LeRobot function</strong>. The downloaded module uses your connected, calibrated <code>SO101Follower</code> with <code>use_degrees=True</code> and reads position feedback while moving.</p>
         <pre><code id="codebook-example-7">from my_route_lerobot import run_route
 
 run_route(robot)</code></pre>
+        </section>
+        <section data-mode="dual" hidden>
+          <h3>Save and export</h3>
+          <p>Name the program and select the save icon to keep it in this browser. In Files, choose Download Python source to keep the full A/B route.</p>
+          <p>Generate LeRobot function supports one follower. Use a route with unprefixed keys for that export.</p>
+        </section>
         <p>In Web Studio, select <strong>Start here</strong> for connection and calibration instructions. After previewing, choose <strong>Prepare deployment</strong> and review the full route with your teacher. Select <strong>Confirm and run route</strong> once to run the moves in order.</p>
       </div>
   </section>
@@ -434,68 +449,36 @@ run_route(robot)</code></pre>
   </form>
 </dialog>
 <template id="help-getting-started">
-  <ol>
-    <li>Choose <strong>Robot mode</strong> here, then open <strong>Simulation</strong> to practise without an arm.</li>
-    <li>To use a real arm, work through <strong>USB connection</strong> and <strong>Calibration</strong> first.</li>
-    <li>Open <strong>Show me how</strong> in any tab for its steps.</li>
-  </ol>
+  <div data-mode="single"><ol><li>Use One tabletop follower in Robot mode. The arm is follower A.</li><li>Play the starter in the right-hand viewer, then open Simulation to edit its Python.</li><li>For hardware, connect A in USB connection and set up its calibration.</li></ol></div>
+  <div data-mode="dual"><ol><li>Use Two tabletop followers in Robot mode. The shared viewer labels A · Right and B · Left.</li><li>Play the starter to see both wrists move together and return.</li><li>Open Simulation and Codebook. Copy Move both arms and return to rest to practise a route that returns to its starting angles.</li><li>For hardware, connect and calibrate each follower using its own USB adapter.</li></ol></div>
 </template>
 <template id="help-hardware">
-  <ol>
-    <li>Secure the arm to the bench. Plug in motor power and USB. Use desktop Chrome or Edge and close other apps using the port.</li>
-    <li>Use the connection button and pick the arm’s adapter when Chrome or Edge asks. For a new arm, open <strong>Calibration</strong> first.</li>
-    <li data-dual-only hidden>Choose A · Right or B · Left above the tabs or on its connection card. Connect each arm’s own adapter.</li>
-    <li>Once connected, use the crosshair to <strong>Read current pose</strong> for the selected follower.</li>
-  </ol>
-  <p>No adapter? Check the USB data cable. Adapter but no joints? Check motor power and the cable to the first servo.</p>
+  <div data-mode="single"><ol><li>Secure follower A and connect motor power and USB. Use desktop Chrome or Edge and close other apps using its port.</li><li>Choose Connect follower A and pick its adapter. For a new arm, use Calibration first.</li><li>Use the crosshair to read A’s current pose. Save its rest pose with the save icon.</li><li>Return A to rest shows a warning before moving. Support A before disconnecting.</li></ol></div>
+  <div data-mode="dual"><ol><li>Secure both arms. Connect motor power and each arm’s USB data cable. Close other apps using the ports.</li><li>Choose A · Right above the tabs or on its card. Select Connect follower A and pick A’s adapter.</li><li>Choose B · Left and connect B’s other adapter. Check both connection cards.</li><li>The crosshair, Save rest, Return to rest, and Disconnect act on the active follower. Read and save rest for each arm separately.</li><li>The labels use the robot’s perspective. Match your tabletop layout to the shared preview.</li></ol></div>
 </template>
 <template id="help-calibration">
-  <h3>New arm</h3>
-  <ol>
-    <li data-dual-only hidden>Disconnect both followers in Studio. Choose A · Right or B · Left above the tabs. Calibrate each arm separately using its own adapter and file.</li>
-    <li>Support the arm before selecting <strong>Calibrate new</strong>. The joints can move freely when motor torque releases.</li>
-    <li>Put the joints near the middle of their travel. Select <strong>Capture midpoint</strong>.</li>
-    <li>Gently move each joint through its usable range by hand, skipping wrist roll. Select <strong>Save range</strong>. Studio assigns the verified file to this follower in Settings.</li>
-  </ol>
-  <h3>Restore a saved file</h3>
-  <ol>
-    <li>In <strong>Calibration</strong>, import and save a file for this same arm. Open <strong>Calibration file actions</strong> and choose <strong>Use for this follower</strong>.</li>
-    <li>Check the active follower above the tabs. Select <strong>Restore saved calibration</strong>.</li>
-    <li>After Studio verifies the settings, return to <strong>USB connection</strong> and connect the arm.</li>
-  </ol>
+  <div data-mode="single"><ol><li>Disconnect follower A in Studio and support it. Choose Calibrate new, or import and save A’s existing calibration JSON.</li><li>For new calibration, put the joints near mid-travel and select Capture midpoint.</li><li>Move each joint gently through its usable range, skipping wrist roll. Select Save range.</li><li>For a saved file, choose it in Calibration files, open its actions menu, and select Use for follower A. Then choose Restore saved calibration.</li><li>Check Calibration source, then connect A in USB connection.</li></ol></div>
+  <div data-mode="dual"><ol><li>Disconnect both followers in Studio. Support the arm being calibrated.</li><li>Choose A · Right or B · Left above the tabs. Check the follower name and Calibration source before proceeding.</li><li>Choose Calibrate new and pick that arm’s adapter. Capture midpoint, move each joint gently through its usable range while skipping wrist roll, then Save range.</li><li>To restore a file, import and save JSON from that same arm. Choose Use for follower A or B in the file menu, then Restore saved calibration.</li><li>Repeat for the other arm with its own adapter and file. Each arm keeps its own calibration draft.</li><li>Return to USB connection and connect both followers.</li></ol></div>
 </template>
 <template id="help-program">
-  <ol>
-    <li>Select the <strong>Play</strong> icon to preview the loaded starter and its return.</li>
-    <li>Change −5 to −10. Preview again and watch the wrist.</li>
-    <li>Open <strong>Codebook</strong> with the split-panel icon for Python keys, motor ranges, and examples.</li>
-    <li data-dual-only hidden>Use A. and B. prefixes for two-arm targets, such as <code>"A.wrist_roll.pos"</code>. Targets in one call move together.</li>
-    <li>Name your program and select the save icon. Open <strong>Files</strong> to find saved programs, import files, or export a LeRobot function.</li>
-  </ol>
-  <p>Type <code>robot.</code> for suggestions, or press Ctrl+Space. Use Ctrl+Enter or ⌘+Enter to preview. Press Esc to leave the editor.</p>
+  <div data-mode="single"><ol><li>Open Codebook for follower A’s motor keys, ranges, and copyable Python examples.</li><li>Copy an example into the Python editor. Keys such as <code>"wrist_roll.pos"</code> control A.</li><li>Select Play to preview. Motor highlights show which joints are moving.</li><li>Name the program and use the save icon. Files holds saved programs, Python downloads, and Generate LeRobot function.</li></ol></div>
+  <div data-mode="dual"><ol><li>Open Codebook and copy Move both arms and return to rest into the Python editor.</li><li><code>A.</code> selects the right arm and <code>B.</code> the left. Put targets for both in one <code>send_action()</code> call to move them together.</li><li>Select Play. Watch both labeled arms, the wrist highlights, and their return to the recorded starting angles.</li><li>Motor-key copy icons use the active follower. Unprefixed keys control that selected follower.</li><li>Name and save the program. Files → Download Python source keeps the complete A/B route. LeRobot function generation supports a single follower with unprefixed keys.</li></ol></div>
 </template>
 <template id="help-deployment">
-  <ol>
-    <li>Read the current pose. For a first test, pick a wrist target a few degrees away and within its calibrated range.</li>
-    <li>Preview the route in Simulation, then select <strong>Prepare deployment</strong>.</li>
-    <li>Review the targets and full movement paths with your teacher. Keep hands clear and select <strong>Confirm and run route</strong> once.</li>
-    <li data-dual-only hidden>Check A and B targets and the space between both arms. The shared preview uses the XLeRobot layout. Match the real mounting positions and check clearance.</li>
-    <li>Watch the 3D preview follow the arm’s readings. Select <strong>Stop route</strong> if the arm moves unexpectedly.</li>
-  </ol>
+  <div data-mode="single"><ol><li>Connect follower A and read its current pose in USB connection. Use Return A to rest first if the route should start at saved rest.</li><li>Preview the code in Simulation, then select Prepare deployment.</li><li>Review A’s targets and the full path with your teacher. Keep hands clear and choose Confirm and run route once.</li><li>Watch live position feedback and motor highlights. Stop route stops the run.</li></ol></div>
+  <div data-mode="dual"><ol><li>Connect both followers and read each current pose. To begin at saved rest, use Return to rest for each follower first.</li><li>Preview your A/B route, then select Prepare deployment. Check the follower label on every target.</li><li>Check both full paths, the space between arms, and the real mounting layout with your teacher.</li><li>Keep hands clear and select Confirm and run route once. Targets in the same call move together.</li><li>Watch both labeled arms and live feedback. Each step must finish before the next starts. Stop route stops both followers.</li></ol></div>
 </template>
 <template id="help-settings">
-  <ol>
-    <li>Set the active follower’s <strong>LeRobot ID</strong> if you use it in a LeRobot project.</li>
-    <li data-dual-only hidden>Choose A · Right or B · Left to edit each profile independently. The selection also applies in USB connection and Calibration.</li>
-    <li>Open <strong>Advanced settings</strong> to set joint directions after comparing the real movement with the model.</li>
-    <li>Select <strong>Save profile</strong>.</li>
-  </ol>
+  <div data-mode="single"><ol><li>Settings edits follower A’s profile. Set its LeRobot ID if you use it in a LeRobot project.</li><li>Use Advanced settings to set joint directions after comparing A’s real motion with its preview.</li><li>Select Save profile. Remove profile removes A’s stored profile.</li><li>Use Calibration to manage A’s calibration file.</li></ol></div>
+  <div data-mode="dual"><ol><li>Choose A · Right or B · Left above the tabs. Check the profile heading.</li><li>Edit that follower’s LeRobot ID and, in Advanced settings, its joint directions. Select Save profile.</li><li>Switch followers and save the other profile separately. The active selection also applies to USB, calibration, and unprefixed Python keys.</li><li>Remove profile affects the selected follower. Calibration files and rest poses are assigned separately to each arm.</li></ol></div>
 </template>
 <template id="help-roadmap">
-  <p>Choose a tabletop stage to set Robot mode in Start here. Select a later stage to see what you’ll need.</p>
+  <div data-mode="single"><p>You are practising with follower A. Choose an available mode in Start here. Coming soon modes are disabled; their roadmap entries explain the required hardware.</p></div>
+  <div data-mode="dual"><p>You are practising with both tabletop followers. The roadmap continues through cameras, coordinated actions, the mobile base, and onboard control. Coming soon modes are disabled; select their roadmap entries to read the requirements.</p></div>
 </template>
 <template id="help-about">
-  <p>Use <strong>Simulation</strong> to try Web Studio without plugging in an arm. Hardware and browser requirements are listed on this page.</p>
+  <div data-mode="single"><p>Use Simulation to practise with follower A. Real-arm control uses desktop Chrome or Edge and USB. Open Show me how in each tab for its steps.</p></div>
+  <div data-mode="dual"><p>Use Simulation to practise with two labeled followers in the XLeRobot layout. Real-arm control uses desktop Chrome or Edge and a separate USB adapter for each follower. Open Show me how in each tab for its steps.</p></div>
 </template>
 <dialog id="confirm-dialog" aria-labelledby="confirm-title">
   <form method="dialog">
@@ -539,14 +522,14 @@ run_route(robot)</code></pre>
 <script src="so101-tabletop-model.js?v=20261118-simultaneous"></script>
 <script src="so101-route-settings.js?v=20261118-simultaneous"></script>
 <script src="so101-viewer.js?v=mode-workspaces"></script>
-<script src="pages-compiler.js?v=two-followers"></script>
+<script src="pages-compiler.js?v=mode-guides"></script>
 <script src="pages-serial.js?v=two-followers"></script>
 <script src="pages-arm.js?v=mode-workspaces"></script>
 <script src="vendor/codemirror.js"></script>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=robot-mode"></script>
-<script src="codebook.js?v=copy-icons"></script>
+<script src="codebook.js?v=mode-guides"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=mode-workspaces"></script>
+<script src="studio.js?v=mode-guides"></script>
 </html>
