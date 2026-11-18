@@ -240,9 +240,11 @@ function resetPreview(resetModel = true) {
   simulating = false;
   previewId = undefined;
   missingFollowers = [];
-  simulatedPoses = {};
   get("stop-preview").disabled = true;
-  if (resetModel) drawPose(initialized?.model_pose ?? {});
+  if (resetModel) {
+    simulatedPoses = {};
+    drawPose(initialized?.model_pose ?? {});
+  }
   updateControls();
 }
 
@@ -312,25 +314,39 @@ function animate(route, id, missing) {
   const generation = animation;
   const defaultLabel = get("arm-profile").value;
   const labelFor = action => action.follower ?? defaultLabel;
-  const labels = new Set([...Object.keys(armSnapshots), ...route.steps.flatMap(step => routeActions(step).map(labelFor))]);
+  const routedLabels = new Set(route.steps.flatMap(step => routeActions(step).map(labelFor)));
+  const labels = new Set([...Object.keys(armSnapshots), ...routedLabels]);
   const starts = Object.fromEntries([...labels].map(label => [label, armSnapshots[label]?.preview_start ?? {}]));
   const poses = Object.fromEntries([...labels].map(label => [label, {...starts[label]}]));
   simulating = true;
+  get("live-pose-status").hidden = true;
   drawScene(poses);
   get("stop-preview").disabled = false;
+  function finish() {
+    if (generation !== animation) return;
+    simulating = false;
+    const live = liveModels();
+    simulatedPoses = Object.fromEntries(Object.entries(poses).filter(([label]) => !armSnapshots[label]));
+    drawScene({...simulatedPoses, ...live});
+    previewId = id;
+    missingFollowers = missing;
+    get("stop-preview").disabled = true;
+    get("live-pose-status").hidden = !Object.keys(live).length;
+    previewStatus.textContent = missing.length
+      ? `Preview complete. Connect ${missing.map(label => "follower " + label).join(" and ")} to deploy.`
+      : "Preview complete. Open Deployment to review the route.";
+    updateControls();
+  }
   function next(index) {
     if (generation !== animation) return;
     if (index === route.steps.length) {
-      simulating = false;
-      simulatedPoses = Object.fromEntries(Object.entries(poses).filter(([label]) => !armSnapshots[label]));
-      drawScene({...simulatedPoses, ...liveModels()});
-      previewId = id;
-      missingFollowers = missing;
-      get("stop-preview").disabled = true;
-      previewStatus.textContent = missing.length
-        ? `Preview complete. Connect ${missing.map(label => "follower " + label).join(" and ")} to deploy.`
-        : "Preview complete. Open Deployment to review the route.";
-      updateControls();
+      if ([...routedLabels].some(label => armSnapshots[label])) {
+        // Give the last simulated frame time to paint before switching back to live readings.
+        previewStatus.textContent = "Final simulated pose. Returning to live readings…";
+        setTimeout(finish, 450);
+      } else {
+        finish();
+      }
       return;
     }
     const active = {};
@@ -364,7 +380,7 @@ function animate(route, id, missing) {
 hook("preview", async () => {
   if (currentStep) return;
   expandEditor(false);
-  resetPreview();
+  resetPreview(false);
   compiling = true;
   updateControls();
   const version = animation;
