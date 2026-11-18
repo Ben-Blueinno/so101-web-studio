@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=stacked-robot-cards">
+<link rel="stylesheet" href="studio.css?v=grouped-calibration">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
 <link rel="stylesheet" href="codebook.css?v=independent-cards">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
@@ -401,25 +401,32 @@ run_route(robot)</code></pre>
   <section class="panel settings-panel">
     <div class="rail"><h2 data-field="calibration-files-title">Arm calibration files</h2><button type="button" class="icon-action card-help" data-help-view="calibration-files" aria-label="Help with calibration files" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div>
     <p>Use a calibration file from this same arm.</p>
-    <div class="actions calibration-tools">
-      <select data-field="cal-library" aria-label="Saved calibration files"></select>
-      <button data-field="cal-view" type="button" class="icon-action" aria-label="View file"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-eye"/></svg></button>
-      <button data-field="cal-import" type="button" class="icon-action" aria-label="Import JSON"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-upload"/></svg></button>
-      <button data-field="cal-new" type="button" class="icon-action" aria-label="New file"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-new-file"/></svg></button>
-      <input data-field="cal-file" type="file" accept=".json" hidden>
+    <div class="actions calibration-file-toolbar">
+      <input data-field="cal-name" aria-label="Calibration file name" title="Calibration file name" maxlength="60" placeholder="follower-a" autocomplete="off" spellcheck="false">
+      <button data-field="cal-save" type="button" class="icon-action primary" aria-label="Save calibration in browser"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-save"/></svg></button>
+      <button data-field="cal-files" type="button" class="dropdown-trigger file-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="cal-file-menu" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-folder"/></svg><span>Files</span><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-chevron"/></svg></button>
     </div>
-    <label for="cal-name">File name</label>
-    <input data-field="cal-name" maxlength="60" placeholder="follower-a">
-    <label for="cal-text">Calibration JSON</label>
-    <textarea data-field="cal-text" spellcheck="false"></textarea>
-    <div class="actions">
-      <button data-field="cal-save" class="primary">Save calibration</button>
-      <button data-field="cal-file-options" type="button" class="icon-action" aria-label="Calibration file actions" aria-haspopup="menu" aria-expanded="false" aria-controls="cal-file-menu" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-more"/></svg></button>
-      <div data-field="cal-file-menu" class="studio-dropdown action-menu" role="menu" aria-label="Calibration file actions" popover="auto">
-        <button data-field="cal-use" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-attach"/></svg><span>Use for this follower</span></button>
-        <button data-field="cal-archive" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-archive"/></svg><span>Archive selected file</span></button>
+    <div data-field="cal-file-menu" class="studio-dropdown file-menu" role="menu" aria-label="Calibration files" popover="auto">
+      <div role="group" aria-label="Saved calibrations and files">
+        <div class="menu-heading" aria-hidden="true">Calibration files</div>
+        <button data-field="cal-saved" type="button" role="menuitem" tabindex="-1" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-folder"/></svg><span>Saved calibrations…</span></button>        <button data-field="cal-import" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-upload"/></svg><span>Import JSON…</span></button>        <button data-field="cal-new" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-new-file"/></svg><span>New calibration file</span></button>
+      </div>
+      <div role="group" aria-label="File assignment and archive">
+        <button data-field="cal-use" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-attach"/></svg><span>Use for this arm</span></button>        <button data-field="cal-archive" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-archive"/></svg><span>Archive selected file</span></button>
       </div>
     </div>
+    <input data-field="cal-file" type="file" accept=".json" hidden>
+    <label for="cal-text">Calibration JSON</label>
+    <textarea data-field="cal-text" spellcheck="false"></textarea>
+    <dialog data-field="cal-saved-dialog" aria-labelledby="cal-saved-title">
+      <div class="rail"><h2 data-field="cal-saved-title">Saved calibration files</h2>
+        <form method="dialog"><button type="submit" class="icon-action" aria-label="Close saved calibrations"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-close"/></svg></button></form>
+      </div>
+      <label for="cal-library">Calibration file</label>
+      <select data-field="cal-library" aria-label="Saved calibration files"></select>
+      <p data-field="cal-saved-status" class="status" role="status"></p>
+      <div class="actions"><button data-field="cal-view" type="button" class="icon-action primary" aria-label="Open selected calibration file" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-eye"/></svg></button></div>
+    </dialog>
     <p data-field="cal-files-status" class="status" role="status"></p>
   </section>
 </template>
@@ -454,24 +461,24 @@ run_route(robot)</code></pre>
   <div data-mode="dual"><ol><li>Secure both arms. Connect motor power and each arm’s USB data cable. Close other apps using the ports.</li><li>On the Right arm · A card, select Connect USB and pick A’s adapter.</li><li>On the Left arm · B card, select Connect USB and pick B’s other adapter. Check both card states.</li><li>Select Pose and rest on that arm’s card for Read pose, Save rest, Return to rest, and Disconnect. Read and save rest for each arm separately.</li><li>The labels use the robot’s perspective. Match your tabletop layout to the shared preview.</li></ol></div>
 </template>
 <template id="help-calibration">
-  <div data-mode="single"><ol><li>Disconnect follower A in Studio and support it. Choose Calibrate new, or import and save A’s existing calibration JSON.</li><li>For new calibration, put the joints near mid-travel and select Capture midpoint.</li><li>Move each joint gently through its usable range, skipping wrist roll. Select Save range.</li><li>For a saved file, choose it in Calibration files, open its actions menu, and select Use for follower A. Then open Calibration actions and choose Restore saved calibration.</li><li>Check the Calibration file and servo readback, then connect A in Robot.</li></ol></div>
-  <div data-mode="dual"><ol><li>Disconnect both followers in Studio. Support the arm being calibrated.</li><li>Use the arm’s own calibration card. Servo settings and the selected JSON file are shown separately.</li><li>Choose Calibrate new and pick that arm’s adapter. Capture midpoint, move each joint gently through its usable range while skipping wrist roll, then Save range.</li><li>To restore a file, import and save JSON from that same arm. Choose Use for follower A or B in the file menu, then use Calibration actions → Restore saved calibration.</li><li>Repeat for the other arm with its own adapter and file. Each arm keeps its own calibration draft.</li><li>Return to Robot and connect both followers.</li></ol></div>
+  <div data-mode="single"><ol><li>Disconnect follower A in Studio and support it. Choose Calibrate new, or import and save A’s existing calibration JSON.</li><li>For new calibration, put the joints near mid-travel and select Capture midpoint.</li><li>Move each joint gently through its usable range, skipping wrist roll. Select Save range.</li><li>For a saved file, choose it in Calibration files, open Files and select Use for arm A. Then open Calibration actions and choose Restore saved calibration.</li><li>Check the Calibration file and servo readback, then connect A in Robot.</li></ol></div>
+  <div data-mode="dual"><ol><li>Disconnect both followers in Studio. Support the arm being calibrated.</li><li>Use the arm’s own calibration card. Servo settings and the selected JSON file are shown separately.</li><li>Choose Calibrate new and pick that arm’s adapter. Capture midpoint, move each joint gently through its usable range while skipping wrist roll, then Save range.</li><li>To restore a file, import and save JSON from that same arm. Choose Use for arm A or B in Files, then use Calibration actions → Restore saved calibration.</li><li>Repeat for the other arm with its own adapter and file. Each arm keeps its own calibration draft.</li><li>Return to Robot and connect both followers.</li></ol></div>
 </template>
 <template id="help-program">
   <div data-mode="single"><ol><li>Open Codebook for follower A’s motor keys, ranges, and copyable Python examples.</li><li>Copy an example into the Python editor. Keys such as <code>"A.wrist_roll.pos"</code> control A.</li><li>Select Play to preview. Motor highlights show which joints are moving.</li><li>Name the program and use the save icon. Files holds saved programs, Python downloads, and Generate LeRobot function.</li></ol></div>
   <div data-mode="dual"><ol><li>Open Codebook and copy Move both arms and return to rest into the Python editor.</li><li><code>A.</code> selects the right arm and <code>B.</code> the left. Put targets for both in one <code>send_action()</code> call to move them together.</li><li>Select Play. Watch both labeled arms, the wrist highlights, and their return to the recorded starting angles.</li><li>Use the explicit A. and B. keys in a two-arm route. Every action key must name A. or B.; a missing arm prefix shows an error.</li><li>Name and save the program. Files → Download Python source keeps the complete A/B route. LeRobot function generation supports a single follower for one named arm.</li></ol></div>
 </template>
 <template id="help-deployment">
-  <div data-mode="single"><ol><li>Connect follower A and read its current pose in Robot. Open A’s Controls and use Return A to rest first if the route should start at saved rest.</li><li>Preview the code in Simulation, then select Prepare deployment.</li><li>Review A’s targets and the full path with your teacher. Keep hands clear and choose Confirm and run route once.</li><li>Watch live position feedback and motor highlights. Stop route stops the run.</li></ol></div>
+  <div data-mode="single"><ol><li>Connect follower A and read its current pose in Robot. Open A’s Pose and rest panel and use Return to rest first if the route should start at saved rest.</li><li>Preview the code in Simulation, then select Prepare deployment.</li><li>Review A’s targets and the full path with your teacher. Keep hands clear and choose Confirm and run route once.</li><li>Watch live position feedback and motor highlights. Stop route stops the run.</li></ol></div>
   <div data-mode="dual"><ol><li>Connect both followers and read each current pose. To begin at saved rest, open Pose and rest on each arm’s card and use Return to rest first.</li><li>Preview your A/B route, then select Prepare deployment. Check the follower label on every target.</li><li>Check both full paths, the space between arms, and the real mounting layout with your teacher.</li><li>Keep hands clear and select Confirm and run route once. Targets in the same call move together.</li><li>Watch both labeled arms and live feedback. Each step must finish before the next starts. Stop route stops both followers.</li></ol></div>
 </template>
 <template id="help-settings">
   <div data-mode="single"><ol><li>Settings edits follower A’s profile. Set its LeRobot ID if you use it in a LeRobot project.</li><li>Use Advanced settings to set joint directions after comparing A’s real motion with its preview.</li><li>Select Save profile. Remove profile removes A’s stored profile.</li><li>Use Calibration to manage A’s calibration file.</li></ol></div>
-  <div data-mode="dual"><ol><li>Use the arm’s own Settings card. Check its name before editing.</li><li>Edit that follower’s LeRobot ID and, in Advanced settings, its joint directions. Select Save profile.</li><li>Switch followers and save the other profile separately. The other arm’s settings are in a separate card.</li><li>Remove profile affects the selected follower. Calibration files and rest poses are assigned separately to each arm.</li></ol></div>
+  <div data-mode="dual"><ol><li>Use the arm’s own Settings card. Check its name before editing.</li><li>Edit that follower’s LeRobot ID and, in Advanced settings, its joint directions. Select Save profile.</li><li>Edit and save the other arm’s profile in its own card.</li><li>Remove profile affects that card’s arm. Calibration files and rest poses are assigned separately to each arm.</li></ol></div>
 </template>
 <template id="help-calibration-files">
-  <div data-mode="single"><ol><li>Use the import icon to load follower A’s JSON, or the new-file icon to enter it.</li><li>Name the file and choose Save calibration.</li><li>Use the eye icon to inspect a saved file. In its actions menu, choose Use for follower A.</li><li>Restore saved calibration from A’s calibration actions menu to write it to the arm.</li></ol></div>
-  <div data-mode="dual"><ol><li>Each arm has its own calibration and file cards. Check the arm name before assigning a file.</li><li>Import JSON from that same arm, name it, and Save calibration.</li><li>Use the eye icon to inspect it. In its actions menu, choose Use for follower A or B.</li><li>Restore saved calibration from that arm’s calibration actions menu. Each arm keeps its own draft and assignment.</li></ol></div>
+  <div data-mode="single"><ol><li>Open Files to import follower A’s JSON or create a new calibration file.</li><li>Name the file and select the save icon.</li><li>Open Files → Saved calibrations and use the eye icon to open a file. In Files, choose Use for arm A to assign it.</li><li>Restore saved calibration from A’s calibration actions menu to write it to the arm.</li></ol></div>
+  <div data-mode="dual"><ol><li>Each arm has its own calibration and file cards. Check the arm name before assigning a file.</li><li>In that arm’s Files menu, import its JSON or create a new file. Enter a name and select the save icon.</li><li>Use Files → Saved calibrations to open a copy. Choose Use for arm A or B in the same Files menu to assign it.</li><li>Restore saved calibration from that arm’s calibration actions menu. Each arm keeps its own draft and assignment.</li></ol></div>
 </template>
 <template id="help-preview">
   <div data-mode="single"><ol><li>Play the starter or run the Python editor to see follower A’s movement.</li><li>Drag the model or use arrow keys to orbit. The reset icon restores the camera.</li><li>Yellow motors show simulated movement. Blue highlights show physical movement with live feedback.</li></ol></div>
@@ -540,5 +547,5 @@ run_route(robot)</code></pre>
 <script src="python-editor.js?v=independent-cards"></script>
 <script src="codebook.js?v=independent-cards"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=pose-rest-buttons"></script>
+<script src="studio.js?v=grouped-calibration"></script>
 </html>

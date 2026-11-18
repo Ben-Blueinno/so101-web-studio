@@ -766,7 +766,11 @@ function mountArmCards(label) {
     const content = document.getElementById("arm-" + kind + "-template").content.cloneNode(true);
     const wrapper = document.createElement("div");
     wrapper.id = "arm-" + kind + "-" + label;
-    wrapper.className = kind === "calibration" ? "arm-calibration-group grid" : "arm-" + kind;
+    wrapper.className = kind === "calibration" ? "arm-calibration-group" : "arm-" + kind;
+    if (kind === "calibration") {
+      wrapper.setAttribute("role", "group");
+      wrapper.setAttribute("aria-labelledby", label + "-calibration-title");
+    }
     wrapper.append(content);
     for (const element of wrapper.querySelectorAll("[data-field]")) element.id = label + "-" + element.dataset.field;
     for (const element of wrapper.querySelectorAll("[for], [aria-controls], [aria-labelledby]")) {
@@ -968,7 +972,8 @@ function createArmCards(label, data) {
     get("calibration-title").textContent = armName() + " · Calibration";
     get("settings-title").textContent = armName() + " · Settings";
     get("cal-follower").textContent = "";
-    get("calibration-files-title").textContent = armName() + " · Calibration files";
+    get("calibration-files-title").textContent = "Calibration files";
+    get("cal-saved-title").textContent = armName() + " · Saved calibrations";
     get("cal-use").querySelector("span").textContent = "Use for arm " + armId;
     get("disconnect").setAttribute("aria-label", "Disconnect arm " + armId);
     get("return-rest").setAttribute("aria-label", "Return arm " + armId + " to rest");
@@ -993,6 +998,7 @@ function createArmCards(label, data) {
     calibrationLibrary.replaceChildren(new Option("Select calibration…", ""));
     for (const name of data.files) calibrationLibrary.add(new Option(name, name));
     selectStudioValue(calibrationLibrary, selection || "");
+    get("cal-view").disabled = !calibrationLibrary.value;
     showArmSetup();
   }
   hook("profile-save", async () => {
@@ -1008,12 +1014,22 @@ function createArmCards(label, data) {
     settingsStatus.textContent = `Follower ${label} removed.`;
   }, settingsStatus);
   const calFilesStatus = get("cal-files-status");
+  get("cal-saved-dialog").addEventListener("close", () => get("cal-files").focus());
+  hook("cal-saved", () => {
+    get("cal-saved-status").textContent = "";
+    get("cal-view").disabled = !calibrationLibrary.value;
+    get("cal-saved-dialog").showModal();
+  }, calFilesStatus);
+  calibrationLibrary.onchange = () => {
+    get("cal-view").disabled = !calibrationLibrary.value;
+  };
   hook("cal-view", async () => {
     const name = calibrationLibrary.value;
     if (!name) throw new Error("Select a calibration file first.");
     get("cal-text").value = (await armApi("cal-view", {name})).text;
     get("cal-name").value = name.replace(/\.json$/i, "");
-  }, calFilesStatus);
+    get("cal-saved-dialog").close();
+  }, get("cal-saved-status"));
   hook("cal-import", () => get("cal-file").click(), calFilesStatus);
   get("cal-file").onchange = async event => {
     const file = event.target.files[0];

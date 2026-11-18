@@ -370,8 +370,6 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 .settings-panel > .fields { margin-top: 16px; }
 .settings-advanced { border-top: 1px solid var(--edge); padding-top: 12px; }
 .settings-advanced summary { font-weight: 600; }
-.calibration-tools .dropdown-field { flex: 1 1 11rem; }
-.calibration-tools .dropdown-trigger { width: 100%; }
 
 .export-sheet { width: min(940px, calc(100% - 32px)); overflow-x: hidden; }
 .export-sheet:has(#export-loading:not([hidden])) { min-height: min(220px, calc(100dvh - 32px)); }
@@ -428,14 +426,25 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 .roadmap-task svg { flex: none; width: 15px; height: 15px; color: var(--muted); }
 .roadmap-task:hover:not(:disabled) { background: var(--selection); }
 
- .arm-calibration-group { margin-bottom: 20px; }
+.arm-calibration-group {
+  margin-bottom: 20px;
+  padding: clamp(16px, 2vw, 24px);
+  border: 1px solid var(--edge);
+  border-radius: 16px;
+  background: var(--panel);
+}
+.arm-calibration-group > .panel { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.arm-calibration-group > .panel + .panel { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--edge); }
+.calibration-file-toolbar { margin-bottom: 12px; }
+.calibration-file-toolbar input { flex: 1 1 160px; min-width: 0; }
+.calibration-file-toolbar .icon-action, .calibration-file-toolbar .file-trigger { flex: none; }
 .arm-settings > .panel { height: 100%; }
 .arm-controls .component-controls { margin-top: 16px; padding: 14px; }
 .component-card .rail { flex-wrap: nowrap; }
 .component-card .panel-tools { margin-inline-start: auto; }
 .card-help { flex: none; }
 .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
-#robot-components { grid-template-columns: minmax(0, 1fr); }
+#robot-components, #settings { grid-template-columns: minmax(0, 1fr); }
 .component-card { padding: 20px; border: 1px solid var(--edge); border-radius: 16px; background: var(--panel); min-width: 0; }
 .component-card .rail { margin-bottom: 0; }
 .component-state { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .9rem; }
