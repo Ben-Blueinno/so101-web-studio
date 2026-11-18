@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=grouped-calibration">
+<link rel="stylesheet" href="studio.css?v=profile-toolbar">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
 <link rel="stylesheet" href="codebook.css?v=independent-cards">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
@@ -434,13 +434,14 @@ run_route(robot)</code></pre>
   <section class="panel settings-panel">
     <div class="rail"><h2 data-field="settings-title" tabindex="-1">Follower A profile</h2><button type="button" class="icon-action card-help" data-help-view="settings" aria-label="Help with component settings" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div>
     <p data-field="settings-scope" class="status" role="status"></p>
-    <div class="fields">
-      <label for="profile-id">LeRobot ID</label>
-      <input data-field="profile-id">
+    <label for="profile-id">LeRobot ID</label>
+    <div class="actions profile-toolbar">
+      <input data-field="profile-id" placeholder="LeRobot ID" autocomplete="off" spellcheck="false">
+      <button data-field="profile-save" type="button" class="icon-action primary" aria-label="Save profile"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-save"/></svg></button>
+      <button data-field="profile-actions" type="button" class="icon-action" aria-label="Profile actions" aria-haspopup="menu" aria-expanded="false" aria-controls="profile-menu" data-studio-menu><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-more"/></svg></button>
     </div>
-    <div class="actions">
-      <button data-field="profile-save" class="primary">Save profile</button>
-      <button data-field="profile-remove" type="button">Remove profile</button>
+    <div data-field="profile-menu" class="studio-dropdown action-menu" role="menu" aria-label="Profile actions" popover="auto">
+      <button data-field="profile-remove" type="button" role="menuitem" tabindex="-1"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-trash"/></svg><span>Remove profile</span></button>
     </div>
     <p data-field="settings-status" class="status" role="status"></p>
     <details class="settings-advanced">
@@ -473,8 +474,8 @@ run_route(robot)</code></pre>
   <div data-mode="dual"><ol><li>Connect both followers and read each current pose. To begin at saved rest, open Pose and rest on each arm’s card and use Return to rest first.</li><li>Preview your A/B route, then select Prepare deployment. Check the follower label on every target.</li><li>Check both full paths, the space between arms, and the real mounting layout with your teacher.</li><li>Keep hands clear and select Confirm and run route once. Targets in the same call move together.</li><li>Watch both labeled arms and live feedback. Each step must finish before the next starts. Stop route stops both followers.</li></ol></div>
 </template>
 <template id="help-settings">
-  <div data-mode="single"><ol><li>Settings edits follower A’s profile. Set its LeRobot ID if you use it in a LeRobot project.</li><li>Use Advanced settings to set joint directions after comparing A’s real motion with its preview.</li><li>Select Save profile. Remove profile removes A’s stored profile.</li><li>Use Calibration to manage A’s calibration file.</li></ol></div>
-  <div data-mode="dual"><ol><li>Use the arm’s own Settings card. Check its name before editing.</li><li>Edit that follower’s LeRobot ID and, in Advanced settings, its joint directions. Select Save profile.</li><li>Edit and save the other arm’s profile in its own card.</li><li>Remove profile affects that card’s arm. Calibration files and rest poses are assigned separately to each arm.</li></ol></div>
+  <div data-mode="single"><ol><li>Settings edits follower A’s profile. Set its LeRobot ID if you use it in a LeRobot project.</li><li>Use Advanced settings to set joint directions after comparing A’s real motion with its preview.</li><li>Select the save icon. The profile actions menu contains Remove profile.</li><li>Use Calibration to manage A’s calibration file.</li></ol></div>
+  <div data-mode="dual"><ol><li>Use the arm’s own Settings card. Check its name before editing.</li><li>Edit that follower’s LeRobot ID and, in Advanced settings, its joint directions. Select the save icon.</li><li>Edit and save the other arm’s profile in its own card.</li><li>Remove profile, in the profile actions menu, affects that card’s arm. Calibration files and rest poses are assigned separately to each arm.</li></ol></div>
 </template>
 <template id="help-calibration-files">
   <div data-mode="single"><ol><li>Open Files to import follower A’s JSON or create a new calibration file.</li><li>Name the file and select the save icon.</li><li>Open Files → Saved calibrations and use the eye icon to open a file. In Files, choose Use for arm A to assign it.</li><li>Restore saved calibration from A’s calibration actions menu to write it to the arm.</li></ol></div>
@@ -547,5 +548,5 @@ run_route(robot)</code></pre>
 <script src="python-editor.js?v=independent-cards"></script>
 <script src="codebook.js?v=independent-cards"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=grouped-calibration"></script>
+<script src="studio.js?v=profile-toolbar"></script>
 </html>

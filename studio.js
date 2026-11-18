@@ -971,6 +971,8 @@ function createArmCards(label, data) {
     get("component-controls-title").textContent = armName() + " · Pose and rest";
     get("calibration-title").textContent = armName() + " · Calibration";
     get("settings-title").textContent = armName() + " · Settings";
+    get("profile-save").setAttribute("aria-label", "Save arm " + armId + " profile");
+    get("profile-actions").setAttribute("aria-label", "Arm " + armId + " profile actions");
     get("cal-follower").textContent = "";
     get("calibration-files-title").textContent = "Calibration files";
     get("cal-saved-title").textContent = armName() + " · Saved calibrations";

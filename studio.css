@@ -460,3 +460,7 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
   .component-card { padding: 16px; }
   .component-actions { gap: 6px; }
 }
+
+.profile-toolbar { flex-wrap: nowrap; }
+.profile-toolbar input { flex: 1 1 auto; min-width: 0; }
+.profile-toolbar .icon-action { flex: none; }
