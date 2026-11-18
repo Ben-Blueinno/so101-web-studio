@@ -4,6 +4,7 @@ const motorButtons = [...document.querySelectorAll("[data-motor]")];
 const motorName = document.getElementById("motor-name");
 const motorRange = document.getElementById("motor-range");
 const motorCamera = get("motor-camera");
+const motorCopyStatus = get("motor-copy-status");
 let drawMotor;
 function initCodebookModel() {
   if (drawMotor || motorCamera.disabled) return;
@@ -32,7 +33,16 @@ function selectMotor(button) {
 
 for (const button of motorButtons) {
   button.closest("tr").querySelector(".default-range").textContent = defaultRange(button.dataset.motor);
-  button.onclick = () => selectMotor(button);
+  button.onclick = async () => {
+    selectMotor(button);
+    const key = button.querySelector("code").textContent;
+    try {
+      await navigator.clipboard.writeText(key);
+      motorCopyStatus.textContent = `Copied ${key}`;
+    } catch {
+      motorCopyStatus.textContent = `Clipboard unavailable. Copy this key manually: ${key}`;
+    }
+  };
 }
 selectMotor(motorButtons[0]);
 

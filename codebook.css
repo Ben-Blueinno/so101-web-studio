@@ -2,7 +2,7 @@
 .codebook-body { min-width: 0; container-type: inline-size; }
 .codebook-body h3 { margin-top: 22px; font-size: 1.05rem; }
 .codebook-body h3:first-child { margin-top: 2px; }
-#range-note { font-size: .875rem; }
+#range-note, #motor-copy-status { font-size: .875rem; }
 .codebook-body pre {
   background: var(--input);
   border: 1px solid var(--edge);

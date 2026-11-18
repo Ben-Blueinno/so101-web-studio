@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
 <link rel="stylesheet" href="studio.css?v=two-followers">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
-<link rel="stylesheet" href="codebook.css?v=compact-motors">
+<link rel="stylesheet" href="codebook.css?v=copy-motors">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
   <symbol id="glyph-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.6 0c0 2-2.8 2.1-2.8 4.2m0 3.2h.01"/></symbol>
   <symbol id="glyph-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
@@ -137,7 +137,7 @@
     </div>
       <div class="codebook-body" tabindex="0" role="region" aria-label="Python examples and motor reference">
         <h3>Motor ranges</h3>
-        <p id="range-note">These are the simulator’s default ranges. A USB-connected arm uses its own calibration.</p>
+        <p id="range-note">Select a motor to copy its Python key. Ranges shown are simulator defaults. A connected arm uses its own calibration.</p>
         <div class="motor-guide">
           <div class="motor-figure">
             <figure class="motor-stage">
@@ -163,6 +163,7 @@
             </tbody>
           </table>
         </div>
+        <p id="motor-copy-status" class="status" role="status"></p>
 
         <h3>1. Give a motor a target angle</h3>
         <pre><code>def route(robot):
@@ -520,7 +521,7 @@ run_route(robot)</code></pre>
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=two-followers"></script>
-<script src="codebook.js?v=compact-motors"></script>
+<script src="codebook.js?v=copy-motors"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
 <script src="studio.js?v=two-followers"></script>
 </html>
