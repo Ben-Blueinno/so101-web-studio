@@ -65,10 +65,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:var(--muted)
       <div class="guide-demo">
         <canvas id="guide-model" width="480" height="360" tabindex="0" aria-label="Simulator example. Drag or use the arrow keys to rotate the model."></canvas>
         <div>
-          <pre><code>robot.send_action({
-    "wrist_roll.pos": -15,
-    "gripper.pos": 55,
-})</code></pre>
+          <pre><code>def route(robot):
+    robot.send_action({
+        "wrist_roll.pos": -15,
+        "gripper.pos": 55,
+    })</code></pre>
           <p>Put both targets in the same call to move the wrist and gripper together.</p>
           <div class="actions"><button id="guide-play" type="button" disabled>Play example</button><button id="guide-camera" type="button">Reset view</button></div>
           <p id="guide-status" class="status" role="status"></p>
