@@ -1,5 +1,8 @@
 "use strict";
 
+const PYTHON_MODE = {name: "python", version: 3};
+const PYTHON_THEME = "material-darker";
+
 function attachPythonEditor(textarea, preview) {
   if (!window.CodeMirror) return;
   const methods = [
@@ -40,8 +43,8 @@ function attachPythonEditor(textarea, preview) {
   }
 
   const editor = CodeMirror.fromTextArea(textarea, {
-    mode: {name: "python", version: 3},
-    theme: "material-darker",
+    mode: PYTHON_MODE,
+    theme: PYTHON_THEME,
     lineNumbers: true,
     indentUnit: 4,
     tabSize: 4,

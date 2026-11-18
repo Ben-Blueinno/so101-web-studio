@@ -1,3 +1,10 @@
+:root {
+  --python-surface: #212121;
+  --python-text: #eeffff;
+}
+.cm-s-material-darker.CodeMirror,
+.cm-s-material-darker .CodeMirror-gutters { background: var(--python-surface); }
+.cm-s-material-darker.CodeMirror { color: var(--python-text); }
 #code { min-height: 310px; white-space: pre; }
 .editor-frame {
   position: relative;

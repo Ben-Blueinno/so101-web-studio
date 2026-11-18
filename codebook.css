@@ -7,6 +7,10 @@
   padding: 12px 14px;
   font-size: .875rem;
 }
+.codebook-body pre.cm-s-material-darker {
+  background: var(--python-surface);
+  color: var(--python-text);
+}
 .motor-guide { margin-block: 12px; }
 .motor-stage canvas { max-height: 230px; object-fit: contain; }
 #motor-motion { font-size: .875rem; }
