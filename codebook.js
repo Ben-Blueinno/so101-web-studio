@@ -3,13 +3,17 @@
 const motorButtons = [...document.querySelectorAll("[data-motor]")];
 const motorName = document.getElementById("motor-name");
 const motorRange = document.getElementById("motor-range");
-const motorCamera = document.getElementById("camera");
+const motorCamera = get("motor-camera");
 let drawMotor;
-try {
-  drawMotor = createViewer(document.getElementById("motor-viewer"), SO101_MODEL, motorCamera);
-} catch {
-  motorCamera.disabled = true;
-  document.getElementById("motor-view-error").hidden = false;
+function initCodebookModel() {
+  if (drawMotor || motorCamera.disabled) return;
+  try {
+    drawMotor = createViewer(get("motor-viewer"), SO101_MODEL, motorCamera);
+    selectMotor(motorButtons.find(button => button.getAttribute("aria-pressed") === "true"));
+  } catch {
+    motorCamera.disabled = true;
+    get("motor-view-error").hidden = false;
+  }
 }
 
 function defaultRange(joint) {
@@ -22,6 +26,7 @@ function selectMotor(button) {
   for (const choice of motorButtons) choice.setAttribute("aria-pressed", choice === button);
   motorName.textContent = button.textContent;
   motorRange.textContent = defaultRange(joint);
+  get("motor-motion").textContent = button.dataset.motion;
   drawMotor?.({}, {joint, mode: "simulation"});
 }
 

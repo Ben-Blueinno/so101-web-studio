@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
 <link rel="stylesheet" href="studio.css?v=walkthrough">
 <link rel="stylesheet" href="studio-editor.css?v=workbench">
+<link rel="stylesheet" href="codebook.css?v=side-panel">
 <main id="studio">
 <header><h1>SO-101 Web Studio</h1><p id="connection" class="status" role="status">Browser simulator</p></header>
 <nav aria-label="Studio workspace" role="tablist" class="workspace-tabs">
@@ -57,7 +58,7 @@
     <li>
       <div>
         <h3>Simulation</h3>
-        <p>Click <strong>Preview in 3D</strong>. The starter turns the wrist to −5°, then back to 0°. Change −5 to −10 and preview again. Find the range and Python key for each motor in the <a href="codebook.html">Python Codebook</a>.</p>
+        <p>Click <strong>Preview in 3D</strong>. The starter turns the wrist to −5°, then back to 0°. Change −5 to −10 and preview again. Find the range and Python key for each motor in the <strong>Python Codebook</strong>, beside the editor.</p>
         <button type="button" class="text-button" data-open-tab="program">Open Simulation</button>
       </div>
     </li>
@@ -96,7 +97,7 @@
     <p id="editor-help">Type <code>robot.</code> for method and type hints, or use Ctrl+Space. Ctrl+Enter or ⌘+Enter previews the route. Esc exits the editor.</p>
     <div class="actions"><button id="preview" class="primary">Preview in 3D</button><button id="stop-preview" disabled>Stop preview</button><button type="button" data-open-tab="deployment">Go to Deployment</button></div>
     <p id="program-status" class="status" role="status"></p>
-    <div class="actions"><a href="codebook.html">Python Codebook</a><a href="route-lab.html">3D Route Lab</a></div>
+    <div class="actions"><button id="open-codebook" type="button" aria-expanded="false" aria-controls="codebook-panel">Python Codebook</button></div>
     <details><summary>Saved programs and files</summary>
       <label for="program-name">Program name</label><input id="program-name" maxlength="60" value="my-route">
       <div class="actions"><button id="program-save">Save in browser</button><select id="program-library" aria-label="Saved programs"></select><button id="program-open">Open saved</button><button id="program-delete">Delete saved</button></div>
@@ -116,6 +117,94 @@
     <p id="active-motor" role="status" hidden></p>
     <p id="preview-status" class="status" role="status">Run your Python program to preview the route.</p>
     <p>The live model uses the joint positions read from the arm.</p>
+  </section>
+  <section id="codebook-panel" class="panel codebook" aria-labelledby="codebook-heading" hidden>
+    <div class="rail">
+      <h2 id="codebook-heading" tabindex="-1">Python Codebook</h2>
+      <button id="close-codebook" type="button">Back to 3D preview</button>
+    </div>
+    <div class="codebook-body" tabindex="0" role="region" aria-label="Python examples and motor reference">
+      <p>A route is a set of moves the arm follows in order. Try each example in the Python editor and choose <strong>Preview in 3D</strong>.</p>
+
+      <h3>Find the six motors</h3>
+      <p>Pick a motor to highlight it in gold. Drag the model or use the arrow keys to turn it.</p>
+      <p id="range-note">These are the simulator’s default ranges. A USB-connected arm uses its own calibration.</p>
+      <div class="motor-guide">
+        <div class="motor-figure">
+          <figure class="motor-stage">
+            <canvas id="motor-viewer" width="640" height="480" tabindex="0" aria-label="SO-101 motor model. Drag or use the arrow keys to turn the view."></canvas>
+            <figcaption class="motor-caption" role="status">
+              <strong id="motor-name">Shoulder pan</strong>
+              <span id="motor-range"></span>
+            </figcaption>
+          </figure>
+          <p id="motor-motion"></p>
+          <p id="motor-view-error" role="status" hidden>The 3D view is unavailable. You can still select a motor and read its range.</p>
+          <button id="motor-camera" type="button">Reset view</button>
+        </div>
+        <table aria-label="SO-101 motor ranges and Python keys" aria-describedby="range-note">
+          <thead><tr><th scope="col">Motor and Python key</th><th scope="col">Default range</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><button type="button" data-motor="shoulder_pan" data-motion="Turns the base left or right." aria-pressed="true">Shoulder pan</button><code>shoulder_pan.pos</code></th><td class="default-range"></td></tr>
+            <tr><th scope="row"><button type="button" data-motor="shoulder_lift" data-motion="Raises or lowers the upper arm." aria-pressed="false">Shoulder lift</button><code>shoulder_lift.pos</code></th><td class="default-range"></td></tr>
+            <tr><th scope="row"><button type="button" data-motor="elbow_flex" data-motion="Bends or straightens the elbow." aria-pressed="false">Elbow flex</button><code>elbow_flex.pos</code></th><td class="default-range"></td></tr>
+            <tr><th scope="row"><button type="button" data-motor="wrist_flex" data-motion="Tilts the gripper up or down." aria-pressed="false">Wrist flex</button><code>wrist_flex.pos</code></th><td class="default-range"></td></tr>
+            <tr><th scope="row"><button type="button" data-motor="wrist_roll" data-motion="Twists the gripper like a doorknob." aria-pressed="false">Wrist roll</button><code>wrist_roll.pos</code></th><td class="default-range"></td></tr>
+            <tr><th scope="row"><button type="button" data-motor="gripper" data-motion="Opens or closes the jaws." aria-pressed="false">Gripper</button><code>gripper.pos</code></th><td class="default-range"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>1. Give a motor a target angle</h3>
+      <pre><code>def route(robot):
+    robot.send_action({"wrist_roll.pos": -5})
+    robot.send_action({"wrist_roll.pos": 0})</code></pre>
+      <ol>
+        <li><code>def route(robot):</code> names the function. Indent its instructions by four spaces.</li>
+        <li><code>robot.send_action(...)</code> gives one motor a target. The quoted key picks the motor and the number sets the angle in degrees.</li>
+        <li>The wrist goes to −5° first and then 0°. Change −5 to −10 and preview again to see the difference.</li>
+      </ol>
+
+      <h3>2. Move a few degrees from where you start</h3>
+      <pre><code>def route(robot):
+    start = robot.get_observation()
+    robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + 8})
+    robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
+      <p><code>get_observation()</code> reads all six starting positions. <code>start["shoulder_pan.pos"]</code> picks the base angle from those readings. If it starts at 10°, adding 8 sends it to 18°. The last line sends it back to 10°. You can skip the observation line when all targets are fixed numbers.</p>
+
+      <h3>3. Open and close the gripper</h3>
+      <pre><code>def route(robot):
+    robot.send_action({"gripper.pos": 45})
+    robot.send_action({"gripper.pos": 33})</code></pre>
+      <p>The gripper uses a percentage of its travel, from 0 to 100.</p>
+
+      <h3>4. Move two joints together</h3>
+      <pre><code>def route(robot):
+    wrist_angle: float = -5.0
+    robot.send_action({
+        "wrist_roll.pos": wrist_angle,
+        "gripper.pos": 45,
+    })
+    robot.send_action({"wrist_roll.pos": 0, "gripper.pos": 33})</code></pre>
+      <p>Targets inside the same <code>send_action()</code> move together. Studio waits for both targets before starting the next call. The optional <code>: float</code> type hint tells readers that the variable can contain a decimal. Use <code>: int</code> for a whole number. Type <code>robot.</code> or start typing a quoted joint key for suggestions.</p>
+      <p>Try grouped moves in the 3D preview first. For a physical run, connect a calibrated arm by USB and check the path of all moving joints together before confirming.</p>
+
+      <h3>5. Repeat a move with a loop</h3>
+      <pre><code>def route(robot):
+    start = robot.get_observation()
+    turn = 6
+    for attempt in range(2):
+        robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + (turn + attempt * 2)})
+        robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
+      <p><code>range(2)</code> repeats the indented lines twice. Python starts counting at 0, so the first turn adds 6° and the second adds 8°. Change <code>turn</code> to 3 and predict both turns before previewing. Keep each route to 32 moves or fewer.</p>
+
+      <h3>Export to your project</h3>
+      <p>Open <strong>Export to a LeRobot project</strong> and generate the function. The downloaded module uses your connected, calibrated <code>SO101Follower</code> with <code>use_degrees=True</code> and reads position feedback while moving.</p>
+      <pre><code>from my_route_lerobot import run_route
+
+run_route(robot)</code></pre>
+      <p>In Web Studio, select <strong>Start here</strong> for connection and calibration instructions. After previewing, choose <strong>Prepare deployment</strong> and review the full route with your teacher. Select <strong>Confirm and run route</strong> once to run the moves in order.</p>
+    </div>
   </section>
 </div>
 <div id="deployment" role="tabpanel" aria-labelledby="tab-deployment" class="grid" hidden>
@@ -224,7 +313,7 @@
 </main>
 <script src="so101-tabletop-model.js?v=20261118-simultaneous"></script>
 <script src="so101-route-settings.js?v=20261118-simultaneous"></script>
-<script src="so101-route-lab.js?v=20261118-simultaneous"></script>
+<script src="so101-viewer.js?v=side-panel"></script>
 <script src="pages-compiler.js?v=20261118-simultaneous"></script>
 <script src="pages-serial.js?v=20261118-tabbed-studio"></script>
 <script src="pages-arm.js?v=20261118-tabbed-studio"></script>
@@ -232,5 +321,6 @@
 <script src="vendor/codemirror-python.js"></script>
 <script src="vendor/codemirror-hint.js"></script>
 <script src="python-editor.js?v=20261118-simultaneous"></script>
-<script src="studio.js?v=workbench"></script>
+<script src="codebook.js?v=side-panel"></script>
+<script src="studio.js?v=side-panel"></script>
 </html>

@@ -53,6 +53,7 @@ function selectView(view) {
     tab.setAttribute("aria-selected", current);
     tab.tabIndex = current ? 0 : -1;
   }
+  if (view === "deployment") setCodebook(false);
   if (view === "program" || view === "deployment") get(view).append(get("viewer-panel"));
   if (view === "calibration") get("cal-follower").textContent = "Follower " + get("arm-profile").value;
   if (view === "program") pythonEditor?.refresh();
@@ -80,6 +81,26 @@ for (const button of document.querySelectorAll("[data-open-tab]")) {
     tab.focus();
   };
 }
+
+function setCodebook(open) {
+  get("open-codebook").setAttribute("aria-expanded", open);
+  get("codebook-panel").hidden = !open;
+  get("viewer-panel").hidden = open;
+  if (open) {
+    expandEditor(false);
+    initCodebookModel();
+  }
+}
+
+get("open-codebook").onclick = () => {
+  const opening = get("codebook-panel").hidden;
+  setCodebook(opening);
+  if (opening) get("codebook-heading").focus({preventScroll: matchMedia("(min-width: 821px)").matches});
+};
+get("close-codebook").onclick = () => {
+  setCodebook(false);
+  get("open-codebook").focus();
+};
 
 let guideReady = false;
 function initGuideDemo() {
@@ -187,7 +208,9 @@ function expandEditor(expanded) {
   pythonEditor?.refresh();
 }
 hook("expand-editor", () => {
-  expandEditor(get("expand-editor").getAttribute("aria-pressed") !== "true");
+  const expanded = get("expand-editor").getAttribute("aria-pressed") !== "true";
+  if (expanded) setCodebook(false);
+  expandEditor(expanded);
   (pythonEditor ?? code).focus();
 });
 
@@ -279,6 +302,7 @@ function animate(route, id) {
 
 hook("preview", async () => {
   if (currentStep) return;
+  setCodebook(false);
   expandEditor(false);
   resetPreview();
   compiling = true;
@@ -411,6 +435,32 @@ hook("discard", async () => {
 function listing() {
   return JSON.parse(localStorage.getItem(key) || "[]");
 }
+function routeToPython(route) {
+  return validateRoute(route).map(step => step.joint === "gripper"
+    ? `grip(${step.position_pct})`
+    : `move(${JSON.stringify(step.joint)}, ${step.offset_deg})`).join("\n") + "\n";
+}
+
+function migrateSavedMoveSets() {
+  const oldKey = "so101-route-lab:move-sets:v1";
+  const old = localStorage.getItem(oldKey);
+  if (!old) return;
+  const drafts = JSON.parse(old);
+  const programs = listing();
+  for (const draft of drafts) {
+    if (typeof draft?.name !== "string" || !draft.name.trim()) throw new Error("Invalid saved move set name.");
+    const text = routeToPython(draft);
+    let name = draft.name;
+    let copy = 2;
+    while (programs.some(program => program.name === name && program.text !== text)) {
+      name = `${draft.name} (${copy++})`;
+    }
+    if (!programs.some(program => program.name === name)) programs.push({name, text});
+  }
+  localStorage.setItem(key, JSON.stringify(programs));
+  localStorage.removeItem(oldKey);
+}
+
 function listPrograms(selected = "") {
   programLibrary.replaceChildren(new Option("Saved programs…", ""));
   for (const item of listing()) programLibrary.add(new Option(item.name, item.name));
@@ -494,11 +544,7 @@ get("program-file").onchange = async event => {
   try {
     if (file.size > 20000) throw new Error("This file is too large.");
     let text = await file.text();
-    if (/\.json$/i.test(file.name)) {
-      const steps = validateRoute(JSON.parse(text));
-      text = steps.map(step => step.joint === "gripper" ? `grip(${step.position_pct})`
-        : `move(${JSON.stringify(step.joint)}, ${step.offset_deg})`).join("\n") + "\n";
-    }
+    if (/\.json$/i.test(file.name)) text = routeToPython(JSON.parse(text));
     openCode(text, file.name.replace(/\.(py|json)$/i, ""));
   } catch (error) {
     programStatus.textContent = error.message;
@@ -769,12 +815,19 @@ async function boot() {
   showSettings(await api("settings"));
   populateProfile();
   try {
+    migrateSavedMoveSets();
+  } catch {
+    programStatus.textContent = "Previous move sets could not be imported.";
+  }
+  try {
     listPrograms();
   } catch {
     programStatus.textContent = "Browser storage is unavailable. You can download your program.";
   }
   render = createViewer(get("viewer"), SO101_MODEL);
-  selectView(location.hash === "#simulation" ? "program" : "getting-started");
+  const openCodebook = location.hash === "#codebook";
+  selectView(openCodebook || location.hash === "#simulation" ? "program" : "getting-started");
+  if (openCodebook) setCodebook(true);
   pollLivePose();
   if (!hostedArm.supportsUSB) get("usb-help").textContent = "USB connection requires desktop Chrome or Edge and browser permission.";
   if (!hostedArm.supportsUSB) get("settings-scope").textContent = "Open this page in desktop Chrome or Edge to scan for USB serial ports.";

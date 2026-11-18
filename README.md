@@ -1,6 +1,6 @@
 # SO-101 Web Studio
 
-The browser simulator supports Python routes, a visual route editor, browser-local saves, and downloads. The Python route parser runs locally in the browser using Pyodide. The visual Route Lab works without the Python runtime.
+The browser simulator supports Python routes, browser-local saves, and downloads. Open **Python Codebook** in **Simulation** to swap the 3D preview for examples and motor ranges while you edit. The Python route parser runs locally in the browser using Pyodide.
 
 Web Studio uses CodeMirror 5.65.21 for Python syntax highlighting and completion. Use several joint keys in the same `robot.send_action({...})` call to move them together in the simulator or through direct USB. The local bridge supports calibration and single-joint moves. After calibrating, reconnect by USB to deploy grouped moves.
 
