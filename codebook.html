@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SO-101 Python Codebook</title>
+<style>
+:root{color-scheme:dark}body{background:#0e1918;color:#edf7f2;font:17px/1.6 system-ui,sans-serif;margin:0}
+main{max-width:790px;margin:auto;padding:36px 24px}h1{margin:0 0 10px;font-size:clamp(32px,6vw,48px);line-height:1.1}
+h2{margin:30px 0 6px}a{color:#a7f3d0}code,pre{font:0.95em/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}
+pre{background:#182b28;padding:14px 17px;border-radius:8px;overflow:auto}
+</style>
+<main>
+<h1>SO-101 Python Codebook</h1>
+<p>Edit a route in Web Studio and select <strong>Preview in 3D</strong>. The examples use the standard SO-101 LeRobot API.</p>
+
+<h2>Move one joint and return</h2>
+<pre><code>def route(robot):
+    start = robot.get_observation()
+    robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + 8})
+    robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
+<p><code>get_observation()</code> reads calibrated joint positions. <code>send_action()</code> takes a joint key and a target position. Each body joint target uses the corresponding starting position plus or minus a degree offset.</p>
+<p>Body joint keys are <code>shoulder_pan.pos</code>, <code>shoulder_lift.pos</code>, <code>elbow_flex.pos</code>, <code>wrist_flex.pos</code>, and <code>wrist_roll.pos</code>.</p>
+
+<h2>Use the gripper</h2>
+<pre><code>def route(robot):
+    start = robot.get_observation()
+    robot.send_action({"gripper.pos": 45})
+    robot.send_action({"gripper.pos": 33})</code></pre>
+<p>The gripper target is an absolute percentage of its calibrated travel. The Studio preview supports one joint per action.</p>
+
+<h2>Reuse a number and repeat moves</h2>
+<pre><code>def route(robot):
+    start = robot.get_observation()
+    turn = 6
+    for attempt in range(2):
+        robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"] + (turn + attempt * 2)})
+        robot.send_action({"shoulder_pan.pos": start["shoulder_pan.pos"]})</code></pre>
+<p>Keep the offset in a variable or put parentheses around a calculation, as in <code>start["shoulder_pan.pos"] + (turn + attempt * 2)</code>. The editor supports numeric variables, arithmetic, and bounded loops. Routes can contain up to 32 moves. Errors show the line to check.</p>
+
+<h2>Export to your project</h2>
+<p>Open <strong>Export to a LeRobot project</strong> and generate the function. The downloaded module uses your connected, calibrated <code>SO101Follower</code> with <code>use_degrees=True</code> and reads position feedback while moving.</p>
+<pre><code>from my_route_lerobot import run_route
+
+run_route(robot)</code></pre>
+<p>To use the classroom’s physical arm, download the Python source and import it in the local Web Studio. Finish the preview, initialize the follower, and select <strong>Prepare deployment</strong>. Review each target and confirm each step with your teacher.</p>
+<p><a href="index.html">Open Web Studio</a></p>
+</main>
+</html>

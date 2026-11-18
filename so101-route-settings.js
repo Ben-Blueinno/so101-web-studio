@@ -1,0 +1,2 @@
+// Model limits from the bundled SO-101 URDF. Shared by the browser and tabletop console.
+const SO101_ROUTE_SETTINGS = {"home":{"shoulder_lift":-0.7,"elbow_flex":0.6,"wrist_flex":1.25,"gripper":0.45},"limits":{"gripper":[0,100],"wrist_roll":[-157.21,162.78],"wrist_flex":[-166.61,23.38],"elbow_flex":[-131.2,62.45],"shoulder_lift":[-59.89,140.1],"shoulder_pan":[-109.99,109.99]},"gripperAngles":[-0.174533,1.74533]};
