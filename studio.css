@@ -107,8 +107,6 @@ summary { cursor: pointer; }
 .workspace-tabs [aria-selected="true"] { background: var(--panel); border-color: var(--edge); color: var(--ink); }
 .workspace-tabs [role="tab"]:focus-visible { outline-offset: -3px; }
 .workspace-tools { justify-content: flex-end; margin-bottom: 12px; }
-.help-action { display: inline-flex; align-items: center; gap: 6px; font-size: .875rem; }
-.help-action svg { width: 18px; height: 18px; }
 #connection, #mode-status { margin: 0; font-size: .875rem; }
 .studio-header-status { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px 12px; margin-inline-start: auto; }
 #mode-status { padding: 3px 9px; border-radius: 8px; background: var(--selection); color: var(--accent); font-weight: 650; }
@@ -413,22 +411,6 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 }
 .calibration-assignment p { margin: 2px 0 0; overflow-wrap: anywhere; }
 
-.connection-list {
-  display: flex;
-  gap: 10px;
-  margin-block: 12px;
-  flex-wrap: wrap;
-}
-.connection-list > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--edge);
-  border-radius: 9px;
-  padding: 6px 10px;
-  font-size: .875rem;
-}
-.connection-list span { color: var(--muted); }
 .mode-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-block: 12px; }
 .mode-picker label { margin: 0; }
 .mode-picker .dropdown-trigger { max-width: min(19rem, 75vw); }
@@ -446,12 +428,32 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 .roadmap-task svg { flex: none; width: 15px; height: 15px; color: var(--muted); }
 .roadmap-task:hover:not(:disabled) { background: var(--selection); }
 
-.follower-picker { display: flex; align-items: center; gap: 8px; margin-inline-end: auto; }
-.follower-picker label { margin: 0; font-size: .875rem; }
-.connection-list > div { flex: 1 1 180px; justify-content: space-between; }
-.connection-list button { min-height: 38px; font-size: .875rem; }
+#component-context { display: flex; gap: 8px; align-items: center; margin-inline-end: auto; font-size: .9rem; font-weight: 650; }
+#component-overview svg { transform: rotate(180deg); }
+.component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.component-card { padding: 20px; border: 1px solid var(--edge); border-radius: 16px; background: var(--panel); min-width: 0; }
+.component-card .rail { margin-bottom: 0; }
+.component-state { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: .9rem; }
+.component-state::before { content: ""; width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--muted); }
+.component-card[data-connected="true"] .component-state { color: var(--accent); }
+.component-card[data-connected="true"] .component-state::before { background: var(--accent); }
+.component-calibration { font-size: .8rem; overflow-wrap: anywhere; }
+.component-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 10px; }
+.component-actions button { font-size: .875rem; }
+#component-count { color: var(--muted); font-size: .875rem; }
+.component-controls { margin-top: 20px; }
+.component-expansion { margin-block: 18px; border-bottom: 1px solid var(--edge); padding-bottom: 16px; }
+.future-components { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-block: 14px; }
+.future-components > div { padding: 12px; border: 1px dashed var(--control-edge); border-radius: 10px; font-size: .875rem; }
+.future-components span { display: block; color: var(--muted); font-size: .8rem; margin-top: 4px; }
 @media (max-width: 500px) {
-  .workspace-tools { gap: 8px; }
-  .follower-picker { flex-wrap: wrap; }
-  .follower-picker label { flex-basis: 100%; }
+  .future-components { grid-template-columns: minmax(0, 1fr); }
+  .component-card { padding: 16px; }
+  .component-actions { gap: 4px; }
+  .component-actions button:not(.icon-action) { padding-inline: 10px; }
 }
+
+.component-card .rail { flex-wrap: nowrap; }
+.component-card .panel-tools { margin-inline-start: auto; }
+.card-help { flex: none; }
+#component-controls-title { font-size: 1.1rem; }

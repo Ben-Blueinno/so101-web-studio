@@ -19,7 +19,7 @@ function initCodebookModel() {
 
 function updateCodebookMode(dual, label) {
   get("codebook-mode-note").textContent = dual
-    ? "A is right and B is left. The basic examples use the active follower. Use the two-arm example to move both together."
+    ? "A is right and B is left. Basic examples use the default arm named above the editor. Use the two-arm example to move both together."
     : "These examples control follower A. Joint angles use degrees and the gripper uses percent.";
   for (const button of motorButtons) {
     const key = (dual ? label + "." : "") + button.dataset.motor + ".pos";

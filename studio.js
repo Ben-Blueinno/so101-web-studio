@@ -65,7 +65,11 @@ function selectView(view) {
     tab.tabIndex = current ? 0 : -1;
   }
   get("codebook-switch").hidden = view !== "program";
-  get("follower-picker").hidden = activeMode !== "dual" || !["hardware", "calibration", "settings", "program", "deployment"].includes(view);
+  const componentTitle = get("component-title-" + get("arm-profile").value).textContent;
+  get("component-context-name").textContent = view === "program"
+    ? "Default arm · " + componentTitle
+    : view === "deployment" ? "Route review" : componentTitle;
+  get("component-context").hidden = !["calibration", "settings", "program", "deployment"].includes(view);
   if (view === "deployment") setCodebook(false);
   if (view === "program" || view === "deployment") {
     get(view).append(get("simulation-side-panel"));
@@ -122,15 +126,21 @@ get("close-codebook").onclick = () => {
   get("codebook-switch").focus();
 };
 
-get("show-help").onclick = () => {
-  const tab = tabs.find(item => item.getAttribute("aria-selected") === "true");
-  get("help-title").textContent = tab.textContent;
-  get("help-content").replaceChildren(get("help-" + tab.dataset.view).content.cloneNode(true));
-  for (const item of get("help-content").querySelectorAll("[data-mode]")) {
-    if (item.dataset.mode !== activeMode) item.remove();
-  }
-  get("help-dialog").showModal();
-};
+for (const button of document.querySelectorAll("[data-help-view]")) {
+  button.onclick = () => {
+    const view = button.dataset.helpView;
+    const titles = {hardware: "Connect and control", "calibration-files": "Calibration files", preview: "3D preview", codebook: "Python Codebook"};
+    const label = button.dataset.helpComponent ?? ((button.closest("#component-controls") || ["calibration", "settings", "calibration-files"].includes(view)) ? get("arm-profile").value : "");
+    const title = titles[view] ?? tabs.find(tab => tab.dataset.view === view).textContent;
+    get("help-title").textContent = title + (label ? " · Arm " + label : "");
+    get("help-content").replaceChildren(get("help-" + view).content.cloneNode(true));
+    for (const item of get("help-content").querySelectorAll("[data-mode]")) {
+      if (item.dataset.mode !== activeMode) item.remove();
+    }
+    get("help-dialog").addEventListener("close", () => button.focus(), {once: true});
+    get("help-dialog").showModal();
+  };
+}
 
 function sceneFollowers(labels, prefix, poses, active, mode) {
   get(prefix + "-label-b").hidden = labels.length < 2;
@@ -220,10 +230,7 @@ function updateControls() {
     pythonEditor.setOption("readOnly", code.readOnly);
   }
   get("settings-profile").disabled = get("arm-profile").disabled;
-  for (const button of document.querySelectorAll("[data-select-follower]")) {
-    button.disabled = get("arm-profile").disabled;
-    button.setAttribute("aria-pressed", button.dataset.selectFollower === get("arm-profile").value);
-  }
+  updateComponentCards();
   const bridge = hostedArm.mode === "bridge";
   if (activeMode === "single") get("arm-profile").disabled = get("settings-profile").disabled = true;
   const paired = Boolean(hostedArm.mode);
@@ -747,7 +754,7 @@ function acceptArms(arms) {
   if (get("connection").textContent !== status) get("connection").textContent = status;
   for (const label of ["A", "B"]) {
     const indicator = get("usb-status-" + label);
-    const text = arms[label] ? "Connected" : "Disconnected";
+    const text = arms[label] ? (arms[label].at_rest ? "Connected · At rest" : "Connected · Away from rest") : "Disconnected";
     if (indicator.textContent !== text) indicator.textContent = text;
   }
   get("pose-sample").textContent = initialized ? Object.entries(initialized.pose).map(([name, value]) =>
@@ -951,7 +958,9 @@ function showArmSetup() {
   updateCodebookMode(activeMode === "dual", label);
   const title = "Follower " + label + (activeMode === "dual" ? (label === "A" ? " · Right" : " · Left") : "");
   get("cal-follower").textContent = title;
-  get("hardware-title").textContent = activeMode === "dual" ? "Connect both followers" : "Connect follower A";
+  const componentName = activeMode === "dual" ? (label === "A" ? "Right arm · A" : "Left arm · B") : "Arm A";
+  get("component-context-name").textContent = componentName;
+  get("component-controls-title").textContent = componentName + " controls";
   get("calibration-title").textContent = "Calibrate follower " + label;
   get("settings-title").textContent = title + " profile";
   get("connect-usb").textContent = "Connect follower " + label;
@@ -962,10 +971,10 @@ function showArmSetup() {
   get("cal-use").querySelector("span").textContent = "Use for follower " + label;
   get("cal-name").placeholder = "follower-" + label.toLowerCase();
   get("connection-instructions").textContent = activeMode === "dual"
-    ? "Connect A · Right and B · Left with separate USB adapters. Select a follower for pose and rest controls."
+    ? "Pose, rest, and disconnect controls apply to this arm."
     : "Plug in follower A’s USB cable and motor power, then choose its adapter.";
   get("calibration-instructions").textContent = activeMode === "dual"
-    ? "Choose the follower above. Disconnect both arms in Studio before calibrating. Each arm uses its own adapter and calibration."
+    ? "Disconnect both arms in Robot before calibrating this arm. Use its own USB adapter and calibration file."
     : "Use follower A’s adapter and calibration file. Disconnect it in Studio before calibrating.";
   const source = get("profile-calibration");
   source.textContent = assigned.split(/[/\\]/).at(-1) || (hostedArm.mode === "bridge"
@@ -974,12 +983,52 @@ function showArmSetup() {
   get("cal-default").hidden = !assigned;
   get("profile-port").value = settings?.profiles[label]?.port ?? "";
 }
-for (const button of document.querySelectorAll("[data-select-follower]")) {
+function updateComponentCards() {
+  const locked = calibrating || actionPending || compiling || simulating || Boolean(currentStep) || moving;
+  const labels = activeMode === "dual" ? ["A", "B"] : ["A"];
+  get("component-count").textContent = labels.filter(label => armSnapshots[label]).length + " of " + labels.length + " connected";
+  for (const label of ["A", "B"]) {
+    const card = get("component-" + label);
+    card.hidden = !labels.includes(label);
+    const title = activeMode === "dual" ? (label === "A" ? "Right arm · A" : "Left arm · B") : "Arm A";
+    get("component-title-" + label).textContent = title;
+    const assigned = settings?.profiles[label]?.calibration_file;
+    const calibration = assigned ? "Calibration · " + assigned.split(/[/\\]/).at(-1) : "Calibration · Arm memory";
+    if (get("component-calibration-" + label).textContent !== calibration) get("component-calibration-" + label).textContent = calibration;
+    card.dataset.connected = Boolean(armSnapshots[label]);
+    for (const button of card.querySelectorAll("[data-component-action]")) {
+      const action = button.dataset.componentAction;
+      button.disabled = locked || (action === "connect" && (Boolean(armSnapshots[label]) || hostedArm.mode === "bridge" || !hostedArm.supportsUSB));
+      if (action === "connect") button.textContent = armSnapshots[label] ? "Connected" : "Connect USB";
+      if (action === "settings") button.setAttribute("aria-label", title + " settings");
+    }
+  }
+  get("component-controls-close").disabled = locked;
+}
+
+function openComponent(label, view) {
+  selectStudioValue(get("arm-profile"), label);
+  get("arm-profile").onchange();
+  selectView(view);
+  if (view === "hardware") {
+    get("component-controls").hidden = false;
+    get("component-controls-title").scrollIntoView({block: "nearest"});
+  }
+}
+
+for (const button of document.querySelectorAll("[data-component-action]")) {
   button.onclick = () => {
-    selectStudioValue(get("arm-profile"), button.dataset.selectFollower);
-    get("arm-profile").onchange();
+    const action = button.dataset.componentAction;
+    openComponent(button.dataset.component, action === "controls" || action === "connect" ? "hardware" : action);
+    if (action === "connect") get("connect-usb").click();
+    else if (action !== "controls") get(action === "calibration" ? "calibration-title" : "settings-title").focus();
   };
 }
+get("component-overview").onclick = () => selectView("hardware");
+get("component-controls-close").onclick = () => {
+  get("component-controls").hidden = true;
+  get("component-" + get("arm-profile").value).querySelector('[data-component-action="controls"]').focus();
+};
 get("arm-profile").onchange = () => {
   if (activeMode === "single") selectStudioValue(get("arm-profile"), "A");
   if (hostedArm.mode !== "bridge") hostedArm.selectUSB(get("arm-profile").value);
@@ -1099,7 +1148,9 @@ function showMode() {
   get("viewer").setAttribute("aria-label", get("guide-model").getAttribute("aria-label"));
   get("guide-connect-step").textContent = dual ? "Connect both followers by USB." : "Plug in USB and motor power.";
   get("guide-calibrate-step").textContent = dual ? "Set ranges for each arm." : "Set ranges for this arm.";
-  get("follower-connections").hidden = !dual;
+  get("component-B").hidden = !dual;
+  get("component-expansion").hidden = !dual;
+  get("component-controls").hidden = true;
   get("codebook-dual-example").hidden = !dual;
   for (const section of get("codebook-panel").querySelectorAll("[data-mode]")) {
     section.hidden = section.dataset.mode !== activeMode;
@@ -1120,8 +1171,6 @@ function showMode() {
   populateProfile();
   showArmSetup();
   get("physical-title").textContent = dual ? "Follower targets · A and B" : "Follower A";
-  const view = tabs.find(tab => tab.getAttribute("aria-selected") === "true").dataset.view;
-  get("follower-picker").hidden = !dual || !["hardware", "calibration", "settings", "program", "deployment"].includes(view);
   resetGuideDemo();
 }
 
@@ -1139,7 +1188,7 @@ async function chooseMode(id) {
   }
   if (modeSelector.disabled) return;
   if (id === "single" && armSnapshots.B) {
-    get("mode-message").textContent = "Disconnect follower B in USB connection before switching to follower A only.";
+    get("mode-message").textContent = "Disconnect follower B in Robot before switching to follower A only.";
     return;
   }
   if (id === "dual" && hostedArm.mode === "bridge") {
@@ -1338,7 +1387,9 @@ get("ports").onchange = () => {
 for (const trigger of document.querySelectorAll("[data-studio-menu]")) {
   attachStudioDropdown(trigger, get(trigger.getAttribute("aria-controls")));
 }
-for (const select of document.querySelectorAll("select")) attachStudioSelect(select);
+for (const select of document.querySelectorAll("select")) {
+  if (!["arm-profile", "settings-profile"].includes(select.id)) attachStudioSelect(select);
+}
 
 const limitPayload = new URLSearchParams(location.hash.slice(1)).get("limit-preview");
 if (limitPayload !== null) {
