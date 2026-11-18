@@ -26,6 +26,7 @@ button[aria-pressed=true]{background:#a7f3d0;color:#142621}button:focus-visible,
   <figure>
     <canvas id="motor-viewer" width="640" height="480" tabindex="0" aria-label="SO-101 motor model. Drag or use the arrow keys to turn the view."></canvas>
     <figcaption id="motor-caption" role="status">Shoulder pan highlighted at the base.</figcaption>
+    <button id="camera" type="button">Reset view</button>
   </figure>
   <table aria-label="SO-101 motors and Python keys">
     <thead><tr><th scope="col">Motor</th><th scope="col">Python key</th><th scope="col">What moves</th></tr></thead>
@@ -99,6 +100,7 @@ try {
   selectMotor(motorButtons[0]);
 } catch {
   for (const button of motorButtons) button.disabled = true;
+  document.getElementById("camera").disabled = true;
   motorCaption.textContent = "The 3D view is unavailable. Use the table to find each motor and its Python key.";
 }
 </script>
