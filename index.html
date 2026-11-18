@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="vendor/codemirror.css">
 <link rel="stylesheet" href="vendor/codemirror-theme.css">
 <link rel="stylesheet" href="vendor/codemirror-hint.css">
-<link rel="stylesheet" href="studio.css?v=two-followers">
+<link rel="stylesheet" href="studio.css?v=roadmap-tasks">
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
 <link rel="stylesheet" href="codebook.css?v=copy-icons">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
@@ -49,6 +49,10 @@
   <button type="button" id="tab-about" role="tab" aria-selected="false" aria-controls="about" tabindex="-1" data-view="about">About</button>
 </nav>
 <div class="workspace-tools" aria-label="Workspace tools">
+  <div id="simulation-task-tools" class="simulation-task-tools" hidden>
+    <select id="simulation-task" aria-label="Simulation task"></select>
+    <button id="load-task-starter" type="button" class="icon-action" aria-label="Load starter route"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-code"/></svg></button>
+  </div>
   <button id="codebook-switch" type="button" class="icon-action" role="switch" aria-label="Codebook" aria-checked="false" aria-controls="codebook-panel" hidden><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-sidebar"/></svg></button>
   <button id="show-help" type="button" class="help-action" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-help"/></svg><span>Show me how</span></button>
 </div>
@@ -355,14 +359,14 @@ run_route(robot)</code></pre>
 <section id="roadmap" class="workspace-page" role="tabpanel" aria-labelledby="tab-roadmap" hidden>
   <h2>From SO-101 to XLeRobot</h2>
   <ol class="roadmap-list">
-    <li><h3>One tabletop follower</h3><span class="stage-status">Available now</span><p>Write a Python route, preview it in 3D, then replay it over USB on one SO-101.</p></li>
-    <li><h3>Two tabletop followers</h3><span class="stage-status">Classroom hardware now</span><p>Calibrate each arm, then connect both and program a route for one or both followers. No cameras needed.</p></li>
-    <li><h3>One webcam per arm</h3><p>Use basic computer vision to find an object. Let each arm move to its own target.</p></li>
-    <li><h3>Shared depth camera</h3><p>Locate objects in 3D and coordinate the arms for tasks such as holding with one arm and picking with the other.</p></li>
-    <li><h3>Cart and mobile base</h3><p>Mount both arms on the base. Practise driving, turning, and stopping with the arms parked.</p></li>
-    <li><h3>Depth-based navigation</h3><p>Use the depth camera to see obstacles and navigate to a target.</p></li>
-    <li><h3>Navigate, then grab</h3><p>Drive to an object, stop and line up, then use the arms to pick it up.</p></li>
-    <li><h3>Onboard XLeRobot</h3><p>Move control from the laptop to a Raspberry Pi or similar onboard computer. Run navigation, vision, and arm control together.</p></li>
+    <li data-task-stage="single"><h3><button class="roadmap-task" type="button" data-stage-action="single">One tabletop follower<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></h3><span class="stage-status">Available now</span><p>Write a Python route, preview it in 3D, then replay it over USB on one SO-101.</p></li>
+    <li data-task-stage="dual"><h3><button class="roadmap-task" type="button" data-stage-action="dual">Two tabletop followers<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></h3><span class="stage-status">Classroom hardware now</span><p>Calibrate each arm, then connect both and program a route for one or both followers. No cameras needed.</p></li>
+    <li data-task-stage="webcams" data-requires="Two USB webcams, camera access, and object tracking for each arm."><h3><button class="roadmap-task" type="button" data-stage-action="webcams">One webcam per arm<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></h3><p>Use basic computer vision to find an object. Let each arm move to its own target.</p></li>
+    <li data-task-stage="depth" data-requires="A shared depth camera and a common coordinate frame for both arms."><h3><button class="roadmap-task" type="button" data-stage-action="depth">Shared depth camera<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></h3><p>Locate objects in 3D and coordinate the arms for tasks such as holding with one arm and picking with the other.</p></li>
+    <li data-task-stage="base" data-requires="A mobile base, drive controller, and a tested stop control."><h3><button class="roadmap-task" type="button" data-stage-action="base">Cart and mobile base<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></h3><p>Mount both arms on the base. Practise driving, turning, and stopping with the arms parked.</p></li>
+    <li data-task-stage="navigation" data-requires="A working base, a depth camera, and obstacle detection."><h3><button class="roadmap-task" type="button" data-stage-action="navigation">Depth-based navigation<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></h3><p>Use the depth camera to see obstacles and navigate to a target.</p></li>
+    <li data-task-stage="pick" data-requires="Verified base navigation and tabletop grasp routines."><h3><button class="roadmap-task" type="button" data-stage-action="pick">Navigate, then grab<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></h3><p>Drive to an object, stop and line up, then use the arms to pick it up.</p></li>
+    <li data-task-stage="onboard" data-requires="A Raspberry Pi or similar onboard computer, compatible drivers, and a power supply."><h3><button class="roadmap-task" type="button" data-stage-action="onboard">Onboard XLeRobot<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-next"/></svg></button></h3><p>Move control from the laptop to a Raspberry Pi or similar onboard computer. Run navigation, vision, and arm control together.</p></li>
   </ol>
 </section>
 <section id="about" class="workspace-page" role="tabpanel" aria-labelledby="tab-about" hidden>
@@ -375,6 +379,17 @@ run_route(robot)</code></pre>
   </dl>
   <p>Model and editor credits are in the footer.</p>
 </section>
+<dialog id="task-details" class="help-sheet" aria-labelledby="task-title">
+  <form method="dialog">
+    <div class="rail">
+      <h2 id="task-title"></h2>
+      <button type="submit" class="icon-action" aria-label="Close task details" autofocus><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-close"/></svg></button>
+    </div>
+    <p id="task-description"></p>
+    <h3>What you’ll need</h3>
+    <p id="task-requirements"></p>
+  </form>
+</dialog>
 <dialog id="export-dialog" class="export-sheet" aria-labelledby="export-title">
   <div class="rail">
     <h2 id="export-title">LeRobot function</h2>
@@ -443,6 +458,7 @@ run_route(robot)</code></pre>
 </template>
 <template id="help-program">
   <ol>
+    <li>Choose a task. Use the code icon beside it to load the starter route.</li>
     <li>Select the <strong>Play</strong> icon to preview. The starter turns wrist roll to −5°, then back to 0°.</li>
     <li>Change −5 to −10. Preview again and watch the wrist.</li>
     <li>Open <strong>Codebook</strong> with the split-panel icon for Python keys, motor ranges, and examples.</li>
@@ -467,7 +483,7 @@ run_route(robot)</code></pre>
   </ol>
 </template>
 <template id="help-roadmap">
-  <p>Start with tabletop routes. The roadmap marks the current classroom hardware and shows what gets added at each stage.</p>
+  <p>Choose a tabletop stage to open Simulation. Select a later stage to see what you’ll need.</p>
 </template>
 <template id="help-about">
   <p>Use <strong>Simulation</strong> to try Web Studio without plugging in an arm. Hardware and browser requirements are listed on this page.</p>
@@ -523,5 +539,5 @@ run_route(robot)</code></pre>
 <script src="python-editor.js?v=two-followers"></script>
 <script src="codebook.js?v=copy-icons"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=keep-preview-on-edit"></script>
+<script src="studio.js?v=roadmap-tasks"></script>
 </html>

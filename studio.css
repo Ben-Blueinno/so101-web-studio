@@ -418,3 +418,25 @@ dialog::backdrop { background: rgb(5 8 15 / .62); backdrop-filter: blur(3px); }
 @media (max-width: 500px) {
   .dual-viewport.has-two-arms { grid-template-columns: minmax(0, 1fr); }
 }
+
+.simulation-task-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-end: auto;
+  min-width: 0;
+}
+.simulation-task-tools .dropdown-trigger { max-width: min(19rem, 68vw); }
+.roadmap-task {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-color: transparent;
+  background: transparent;
+  font-size: inherit;
+  text-align: start;
+}
+.roadmap-task svg { flex: none; width: 15px; height: 15px; color: var(--muted); }
+.roadmap-task:hover:not(:disabled) { background: var(--selection); }

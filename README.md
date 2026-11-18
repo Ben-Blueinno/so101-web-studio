@@ -1,6 +1,6 @@
 # SO-101 Web Studio
 
-The browser simulator supports Python routes, browser-local saves, and downloads. Use the **Codebook** switch in **Simulation** to open Python examples and motor ranges. The 3D preview moves below the editor. The Python route parser runs locally in the browser using Pyodide.
+The browser simulator supports Python routes, browser-local saves, and downloads. Open a tabletop stage from Coming soon or select it in Simulation. Use the code icon beside the task picker to load its starter. Use the **Codebook** switch in **Simulation** to open Python examples and motor ranges. The 3D preview moves below the editor. The Python route parser runs locally in the browser using Pyodide.
 
 Web Studio uses CodeMirror 5.65.21 for Python syntax highlighting and completion. Use several joint keys in the same `robot.send_action({...})` call to move them together in the simulator or through direct USB. The local bridge supports calibration and single-joint moves. After calibrating, reconnect by USB to deploy grouped moves.
 

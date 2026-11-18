@@ -20,6 +20,11 @@ let simulating = false;
 let returningToRest = false;
 let routeStopped = false;
 let pythonEditor;
+const taskSelector = get("simulation-task");
+const taskStages = new Map([...document.querySelectorAll("[data-task-stage]")].map(stage => [
+  stage.dataset.taskStage, stage,
+]));
+let activeTask = "single";
 
 async function api(action, data = {}) {
   return hostedArm.request(action, data);
@@ -56,6 +61,7 @@ function selectView(view) {
     tab.tabIndex = current ? 0 : -1;
   }
   get("codebook-switch").hidden = view !== "program";
+  get("simulation-task-tools").hidden = view !== "program";
   if (view === "deployment") setCodebook(false);
   if (view === "program" || view === "deployment") {
     get(view).append(get("simulation-side-panel"));
@@ -157,6 +163,11 @@ function updateControls() {
       : "Preview ready. Prepare deployment to review the joint targets.";
   }
   get("preview").disabled = !render || compiling || moving || Boolean(currentStep) || actionPending;
+  const taskLocked = compiling || simulating || moving || Boolean(currentStep) || actionPending;
+  taskSelector.disabled = get("load-task-starter").disabled = taskLocked;
+  for (const stage of taskStages.values()) {
+    if (!stage.dataset.requires) stage.querySelector("[data-stage-action]").disabled = taskLocked;
+  }
   get("move").disabled = moving || !currentStep || get("route-targets").hidden;
   get("stop-motion").disabled = !moving || !currentStep;
   get("discard").disabled = moving || !currentStep;
@@ -197,7 +208,7 @@ function updateControls() {
 
 function drawScene(poses, active = {}, mode) {
   const selected = get("arm-profile").value;
-  const labels = Object.keys(poses).sort();
+  const labels = activeTask === "dual" ? ["A", "B"] : Object.keys(poses).sort();
   if (!labels.length) labels.push(selected);
   const dual = labels.length > 1;
   get("dual-viewport").classList.toggle("has-two-arms", dual);
@@ -1002,6 +1013,56 @@ hook("cal-archive", async () => {
   showSettings(await api("cal-archive", {name}));
   calFilesStatus.textContent = "Calibration copy archived.";
 }, calFilesStatus);
+
+const dualStarter = `def route(robot):
+    robot.send_action({"A.wrist_roll.pos": -5, "B.wrist_roll.pos": 5})
+    robot.send_action({"A.wrist_roll.pos": 0, "B.wrist_roll.pos": 0})
+`;
+
+function taskTitle(stage) {
+  return stage.querySelector("[data-stage-action]").textContent.trim();
+}
+
+function chooseTask(id) {
+  const stage = taskStages.get(id);
+  if (!stage) return false;
+  if (stage.dataset.requires) {
+    selectStudioValue(taskSelector, activeTask);
+    get("task-title").textContent = taskTitle(stage) + " · Coming soon";
+    get("task-description").textContent = stage.querySelector("p").textContent;
+    get("task-requirements").textContent = stage.dataset.requires;
+    get("task-details").showModal();
+    return false;
+  }
+  if (taskSelector.disabled) return false;
+  selectStudioValue(taskSelector, id);
+  if (id !== activeTask) {
+    activeTask = id;
+    resetPreview();
+    previewStatus.textContent = "Task selected. Preview your program or load the starter route.";
+  }
+  return true;
+}
+
+for (const [id, stage] of taskStages) {
+  const title = taskTitle(stage) + (stage.dataset.requires ? " · Coming soon" : "");
+  taskSelector.add(new Option(title, id));
+  stage.querySelector("[data-stage-action]").onclick = () => {
+    if (!chooseTask(id)) return;
+    selectView("program");
+    get("simulation-task-trigger").focus();
+  };
+}
+taskSelector.onchange = () => chooseTask(taskSelector.value);
+hook("load-task-starter", async () => {
+  const starter = activeTask === "dual" ? dualStarter : hostedPython.example;
+  const current = code.value.trim();
+  if (current === starter.trim()) return;
+  if (current && current !== hostedPython.example.trim() && current !== dualStarter.trim()) {
+    if (!await confirmAction("Replace the current editor text with the starter route?")) return;
+  }
+  openCode(starter, activeTask === "dual" ? "two-followers" : "one-follower");
+});
 
 async function boot() {
   code.value = hostedPython.example;
