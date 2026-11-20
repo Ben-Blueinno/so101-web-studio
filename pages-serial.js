@@ -295,6 +295,8 @@ class BrowserFollower {
       });
       const start = performance.now();
       const duration = Math.max(2500, ...axes.map(axis => axis.bestError * axis.scale * 200));
+      let finalCommanded = false;
+      let settledSince;
       while (true) {
         if (this.stopped) throw new Error("Movement stopped. Review the arm pose.");
         this.current = await this.bus.positions();
@@ -303,12 +305,30 @@ class BrowserFollower {
         for (const {joint} of axes) stationary[joint] = this.current[joint];
         this.verifyStartingPose(stationary, this.current);
         if (this.stopped) throw new Error("Movement stopped. Review the arm pose.");
+        const now = performance.now();
         if (axes.every(({joint, target, tolerance}) => Math.abs(this.current[joint] - target) <= tolerance)) {
-          return axes.map(({joint, before, target}) => ({joint, before: this.units(joint, before),
-            measured: this.units(joint, this.current[joint]), target: this.units(joint, target)}));
+          if (!finalCommanded) {
+            await this.holdCurrentPose();
+            if (this.stopped) throw new Error("Movement stopped. Review the arm pose.");
+            // Leave the servo holding the requested target, not an interpolation step.
+            await this.bus.write(SERIAL_REG.goal, targets, 2);
+            for (const {joint, target} of axes) {
+              if (this.stopped) throw new Error("Movement stopped. Review the arm pose.");
+              const goal = word(await this.bus.read(SERVO_ID[joint], SERIAL_REG.goal, 2));
+              if (goal !== target) throw new Error(`${JOINTS[joint]} did not accept its final target.`);
+            }
+            finalCommanded = true;
+          } else {
+            settledSince ??= now;
+            if (now - settledSince >= 500) {
+              return axes.map(({joint, before, target}) => ({joint, before: this.units(joint, before),
+                measured: this.units(joint, this.current[joint]), target: this.units(joint, target)}));
+            }
+          }
+        } else {
+          settledSince = undefined;
         }
         if (!this.holding && !this.stopped) await this.holdCurrentPose();
-        const now = performance.now();
         const progress = Math.min(1, (now - start) / duration);
         const goals = {};
         for (const axis of axes) {
@@ -322,6 +342,7 @@ class BrowserFollower {
           if (now - axis.lastProgress >= 3000 || now - start >= duration + 8000) {
             throw new Error(`${JOINTS[joint]} did not reach the target. Review the live pose before trying again.`);
           }
+          if (finalCommanded) continue;
           const planned = before + Math.trunc((target - before) * progress);
           const sign = Math.sign(target - current);
           const available = Math.min(error, maxLead);
