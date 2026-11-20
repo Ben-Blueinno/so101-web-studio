@@ -189,12 +189,16 @@ function initGuideDemo() {
 
 function updateControls() {
   for (const tab of tabs) tab.disabled = moving && !returningToRest && tab.dataset.view !== "deployment";
+  get("deploy").hidden = !previewId || compiling || simulating;
   get("deploy").disabled = !previewId || missingFollowers.length > 0 || (!initialized && !Object.keys(armSnapshots).length)
-    || Boolean(currentStep) || moving || actionPending;
-  if (!currentStep && !moving) {
+    || Boolean(currentStep) || moving || actionPending || compiling || simulating || calibrating;
+  get("deploy").title = missingFollowers.length
+    ? `Connect ${missingFollowers.join(" and ")} and preview again to prepare deployment`
+    : "Prepare deployment";
+  if (!currentStep && !moving && !actionPending) {
     deploymentStatus.textContent = previewId && missingFollowers.length ? `Connect ${missingFollowers.map(label => "follower " + label).join(" and ")} and preview again.`
       : !previewId ? "Preview your program in Simulation to prepare a route."
-      : "Preview ready. Prepare deployment to review the joint targets.";
+      : "In Simulation, select Prepare deployment beside Play to review the joint targets.";
   }
   get("preview").disabled = !render || compiling || moving || Boolean(currentStep) || actionPending;
   const modeLocked = compiling || simulating || moving || calibrating || Boolean(currentStep) || actionPending;
@@ -341,7 +345,7 @@ function animate(route, id, missing) {
     get("live-pose-status").hidden = !Object.keys(live).length;
     previewStatus.textContent = missing.length
       ? `Preview complete. Connect ${missing.map(label => "follower " + label).join(" and ")} to deploy.`
-      : "Preview complete. Open Deployment to review the route.";
+      : "Preview complete. Select Prepare deployment beside Play to review the route.";
     updateControls();
   }
   function next(index) {
@@ -442,7 +446,11 @@ function showStep(step) {
 }
 
 hook("deploy", async () => {
+  updateControls();
+  if (get("deploy").disabled) return;
   actionPending = true;
+  selectView("deployment");
+  deploymentStatus.textContent = "Preparing route…";
   updateControls();
   try {
     get("move-result").textContent = "";
