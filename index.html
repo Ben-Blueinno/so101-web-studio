@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="studio-editor.css?v=export-editor">
 <link rel="stylesheet" href="codebook.css?v=independent-cards">
 <svg class="studio-glyphs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0">
-  <symbol id="glyph-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.6 0c0 2-2.8 2.1-2.8 4.2m0 3.2h.01"/></symbol>
+  <symbol id="glyph-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a2.8 2.8 0 0 1 5.6 0c0 2-2.8 2.1-2.8 4.2"/><circle cx="12" cy="16.4" r="0.9" fill="currentColor" stroke="none"/></symbol>
   <symbol id="glyph-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
   <symbol id="glyph-expand" viewBox="0 0 24 24"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></symbol>
   <symbol id="glyph-collapse" viewBox="0 0 24 24"><path d="M4 8h4V4m12 4h-4V4M4 16h4v4m12-4h-4v4"/></symbol>
@@ -100,6 +100,7 @@
       </div>
       <div class="panel-tools">
         <button id="preview" type="button" class="icon-action primary" aria-label="Preview in 3D"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-play"/></svg></button>
+        <button id="deploy" type="button" class="icon-action" aria-label="Prepare deployment" title="Prepare deployment" hidden disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-upload"/></svg></button>
         <button id="stop-preview" type="button" class="icon-action" aria-label="Stop preview" disabled><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-stop"/></svg></button>
         <button id="expand-editor" type="button" class="icon-action" aria-pressed="false" aria-label="Expand editor"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#glyph-expand"/></svg></button>
       </div>
@@ -245,15 +246,14 @@ run_route(robot)</code></pre>
           <p>Name the program and select the save icon to keep it in this browser. In Files, choose Download Python source to keep the full A/B route.</p>
           <p>Generate LeRobot function supports one named arm per export. Download Python source to keep a complete two-arm route.</p>
         </section>
-        <p>In Web Studio, select <strong>Start here</strong> for connection and calibration instructions. After previewing, choose <strong>Prepare deployment</strong> and review the full route with your teacher. Select <strong>Confirm and run route</strong> once to run the moves in order.</p>
+        <p>In Web Studio, select <strong>Start here</strong> for connection and calibration instructions. After previewing, choose the <strong>Prepare deployment</strong> icon beside Play in Simulation and review the full route with your teacher. Select <strong>Confirm and run route</strong> once to run the moves in order.</p>
       </div>
   </section>
 </div>
 <div id="deployment" role="tabpanel" aria-labelledby="tab-deployment" class="grid" hidden>
   <section class="panel">
     <div class="rail"><h2>Route review</h2><button type="button" class="icon-action card-help" data-help-view="deployment" aria-label="Help with route review" aria-haspopup="dialog"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><use href="#glyph-help"/></svg></button></div>
-    <p id="deployment-status" class="status" role="status">Connect a calibrated arm and preview your code to prepare a route.</p>
-    <div class="actions"><button id="deploy" class="primary" disabled>Prepare deployment</button></div>
+    <p id="deployment-status" class="status" role="status">Complete a preview in Simulation, then select Prepare deployment beside Play.</p>
     <section id="replay" hidden>
       <h3 id="physical-title">Follower A</h3>
       <p id="step-status" class="status" role="status"></p>
@@ -454,8 +454,8 @@ run_route(robot)</code></pre>
   </section>
 </template>
 <template id="help-getting-started">
-  <div data-mode="single"><ol><li>One tabletop follower uses arm A. You can practise in Simulation without connecting hardware.</li><li>Play the starter in the right viewer. In Simulation, copy a Codebook example, preview it, then use the save icon and Files menu.</li><li>For hardware, use Calibration to prepare a new arm or restore its file. In Robot, select Connect USB on A’s card.</li><li>Open Pose and rest on A’s card to read its pose or save and return to rest. Preview your route before Deployment.</li></ol></div>
-  <div data-mode="dual"><ol><li>Two tabletop followers is a development mode. A is the right arm and B the left, shown together in the preview.</li><li>Play the starter. In Simulation, copy Move both arms and return to rest from Codebook. Put A. and B. targets in one call to move both together.</li><li>Each arm has its own stacked Calibration group and Settings card. Calibration and files stay together, with a Files menu and save icon.</li><li>In Robot, connect each arm’s adapter and open its Pose and rest panel. Read each pose, preview the route, then review both arms in Deployment.</li></ol></div>
+  <div data-mode="single"><ol><li>One tabletop follower uses arm A. You can practise in Simulation without connecting hardware.</li><li>Play the starter in the right viewer. In Simulation, copy a Codebook example, preview it, then use the save icon and Files menu.</li><li>For hardware, use Calibration to prepare a new arm or restore its file. In Robot, select Connect USB on A’s card.</li><li>Open Pose and rest on A’s card to read its pose or save and return to rest. Preview your route, then select Prepare deployment beside Play in Simulation.</li></ol></div>
+  <div data-mode="dual"><ol><li>Two tabletop followers is a development mode. A is the right arm and B the left, shown together in the preview.</li><li>Play the starter. In Simulation, copy Move both arms and return to rest from Codebook. Put A. and B. targets in one call to move both together.</li><li>Each arm has its own stacked Calibration group and Settings card. Calibration and files stay together, with a Files menu and save icon.</li><li>In Robot, connect each arm’s adapter and open its Pose and rest panel. Read each pose, preview the route, then select Prepare deployment beside Play to review both arms.</li></ol></div>
 </template>
 <template id="help-hardware">
   <div data-mode="single"><ol><li>Secure A, connect motor power and USB, and close other apps using its port. Use desktop Chrome or Edge.</li><li>Select Connect USB on Arm A’s card and choose its adapter. For a new arm, use Calibration first.</li><li>Select Pose and rest. The crosshair reads the current pose; the save icon records it as rest; the reset icon returns to rest after a warning.</li><li>The disconnect icon releases the connection. Support A before confirming.</li></ol></div>
@@ -470,8 +470,8 @@ run_route(robot)</code></pre>
   <div data-mode="dual"><ol><li>Open Codebook and copy Move both arms and return to rest into the Python editor.</li><li>Every key starts with A. or B. Put targets for both arms in the same <code>send_action()</code> call for a simultaneous step.</li><li>Select Play and watch both labels and motor highlights. The example records the starting wrist angles and returns to them.</li><li>Name the program and use the save icon. Files → Saved programs reopens a copy; Download Python source keeps the full A/B route.</li><li>Generate LeRobot function exports one named arm per function. Preview after each code change before deploying.</li></ol></div>
 </template>
 <template id="help-deployment">
-  <div data-mode="single"><ol><li>In Robot, connect A and open Pose and rest. Read its current pose. Use Return to rest first if the route should begin at saved rest.</li><li>Preview the code in Simulation, then select Prepare deployment.</li><li>Review A’s targets and full path with your teacher. Keep hands clear and select Confirm and run route once.</li><li>Watch the live 3D pose and position feedback. Stop route stops the run.</li></ol></div>
-  <div data-mode="dual"><ol><li>Connect both arms in Robot. Open each Pose and rest panel and read its pose. Return each arm to saved rest first if needed.</li><li>Preview the A/B route, then select Prepare deployment. Check the arm name on every target.</li><li>Review both full paths and the space between arms with your teacher. Keep hands clear and select Confirm and run route once.</li><li>Targets in one call move together. Watch both labels and live feedback; each step finishes before the next begins. Stop route stops both arms.</li></ol></div>
+  <div data-mode="single"><ol><li>In Robot, connect A and open Pose and rest. Read its current pose. Use Return to rest first if the route should begin at saved rest.</li><li>Preview the code in Simulation, then select the Prepare deployment icon beside Play in Simulation.</li><li>Review A’s targets and full path with your teacher. Keep hands clear and select Confirm and run route once.</li><li>Watch the live 3D pose and position feedback. Stop route stops the run.</li></ol></div>
+  <div data-mode="dual"><ol><li>Connect both arms in Robot. Open each Pose and rest panel and read its pose. Return each arm to saved rest first if needed.</li><li>Preview the A/B route, then select the Prepare deployment icon beside Play in Simulation. Check the arm name on every target.</li><li>Review both full paths and the space between arms with your teacher. Keep hands clear and select Confirm and run route once.</li><li>Targets in one call move together. Watch both labels and live feedback; each step finishes before the next begins. Stop route stops both arms.</li></ol></div>
 </template>
 <template id="help-settings">
   <div data-mode="single"><ol><li>Settings shows A’s profile. Enter its LeRobot ID in the name field.</li><li>The name, save icon, and profile-actions icon stay on one row. Select the save icon to save A.</li><li>Advanced settings holds joint directions. Set them after comparing A’s real motion with the preview.</li><li>The profile-actions menu contains Remove profile and asks for confirmation. Calibration files are managed in Calibration.</li></ol></div>
@@ -548,5 +548,5 @@ run_route(robot)</code></pre>
 <script src="python-editor.js?v=independent-cards"></script>
 <script src="codebook.js?v=independent-cards"></script>
 <script src="studio-dropdowns.js?v=control-row"></script>
-<script src="studio.js?v=release-guides"></script>
+<script src="studio.js?v=simulation-handoff"></script>
 </html>
